@@ -1,4 +1,4 @@
-# 🏛️ TrialChamberPro
+<img width="723" height="133" alt="trialchamberpro-min" src="https://github.com/user-attachments/assets/7be34fce-1bfc-4639-bd34-5fe417e43610" />
 
 > _Transform your Trial Chambers from dusty, one-time dungeons into thriving content that players actually want to revisit!_
 
