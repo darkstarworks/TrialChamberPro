@@ -5,18 +5,50 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "0.1"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/") {
         name = "papermc-repo"
     }
+    maven("https://maven.enginehub.org/repo/") {
+        name = "enginehub"
+    }
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") {
+        name = "placeholderapi"
+    }
+    maven("https://jitpack.io") {
+        name = "jitpack"
+    }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    // Paper API
+    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+
+    // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
+    // Database
+    implementation("org.xerial:sqlite-jdbc:3.44.1.0")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+
+    // Economy (optional)
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+
+    // Note: FoliaLib can be added later if Folia support is needed
+    // For now, using standard Bukkit scheduler
+
+    // Optional integrations
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
+    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.2.15")
+    compileOnly("me.clip:placeholderapi:2.11.5")
+
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("io.mockk:mockk:1.13.8")
 }
 
 tasks {
@@ -33,8 +65,22 @@ kotlin {
     jvmToolchain(targetJavaVersion)
 }
 
-tasks.build {
-    dependsOn("shadowJar")
+tasks {
+    shadowJar {
+        archiveClassifier.set("")
+        relocate("kotlin", "io.github.darkstarworks.tcp.kotlin")
+        relocate("kotlinx", "io.github.darkstarworks.tcp.kotlinx")
+        relocate("org.sqlite", "io.github.darkstarworks.tcp.sqlite")
+        relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
+
+    test {
+        useJUnitPlatform()
+    }
 }
 
 tasks.processResources {

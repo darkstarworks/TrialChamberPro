@@ -1,9 +1,68 @@
 name: TrialChamberPro
-version: '0.1'
+version: ${version}
 main: io.github.darkstarworks.trialChamberPro.TrialChamberPro
 api-version: '1.21'
-prefix: DT »
-load: STARTUP
+prefix: TCP
+load: POSTWORLD
 authors: [ darkstarworks ]
-description: Custom Items for ESMP
-website: https://github.com/darkstarworks
+description: Advanced Trial Chamber management for multiplayer servers with automatic resets, per-player vault loot, and custom rewards
+website: https://github.com/darkstarworks/TrialChamberPro
+
+softdepend: [Vault, WorldGuard, WorldEdit, PlaceholderAPI]
+
+commands:
+  tcp:
+    description: Main TrialChamberPro command
+    usage: /<command> [args]
+    permission: tcp.admin
+    aliases: [trialchamberpro, chamber]
+
+permissions:
+  tcp.admin.*:
+    description: All admin permissions
+    default: op
+    children:
+      tcp.admin.create: true
+      tcp.admin.scan: true
+      tcp.admin.snapshot: true
+      tcp.admin.reset: true
+      tcp.admin.key: true
+      tcp.admin.vault: true
+      tcp.admin.reload: true
+      tcp.admin.stats: true
+  tcp.admin.create:
+    description: Create chambers
+    default: op
+  tcp.admin.scan:
+    description: Scan chambers
+    default: op
+  tcp.admin.snapshot:
+    description: Manage snapshots
+    default: op
+  tcp.admin.reset:
+    description: Force reset chambers
+    default: op
+  tcp.admin.key:
+    description: Manage trial keys
+    default: op
+  tcp.admin.vault:
+    description: Manage vaults
+    default: op
+  tcp.admin.reload:
+    description: Reload configuration
+    default: op
+  tcp.admin.stats:
+    description: View other player's statistics
+    default: op
+  tcp.stats:
+    description: View own statistics
+    default: true
+  tcp.leaderboard:
+    description: View leaderboards
+    default: true
+  tcp.bypass.cooldown:
+    description: Bypass vault cooldowns
+    default: op
+  tcp.bypass.protection:
+    description: Bypass chamber protection
+    default: op
