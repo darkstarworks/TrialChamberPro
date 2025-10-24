@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
     mavenCentral()
@@ -73,6 +73,11 @@ tasks {
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         relocate("org.sqlite", "io.github.darkstarworks.tcp.sqlite")
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
+    }
+
+    // Ensure the plain jar does not overwrite the shaded jar
+    jar {
+        archiveClassifier.set("plain")
     }
 
     build {
