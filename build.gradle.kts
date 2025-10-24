@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -68,8 +68,9 @@ kotlin {
 tasks {
     shadowJar {
         archiveClassifier.set("")
-        relocate("kotlin", "io.github.darkstarworks.tcp.kotlin")
-        relocate("kotlinx", "io.github.darkstarworks.tcp.kotlinx")
+        // Do not relocate Kotlin stdlib or kotlinx-coroutines to ensure Bukkit can find them
+        // They will be shaded into the jar with their original package names
+        // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         relocate("org.sqlite", "io.github.darkstarworks.tcp.sqlite")
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
     }
