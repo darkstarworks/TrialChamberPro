@@ -39,7 +39,7 @@ Ready to jump in? Here's what you need:
 GETTING STARTED
 [Installation](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/installation)
 
-Start here if you're new! Installation, [config.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration), [loot.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration/loot.yml), [messages.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration/messages.yml), [Commands](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/commands) and [Permissions](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/permissions).
+Start here if you're new! [Installation](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/installation), [config.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration), [loot.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration/loot.yml), [messages.yml](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/configuration/messages.yml), [Commands](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/commands) and [Permissions](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation/getting-started/permissions).
 
 (guides are currently being written)
 
