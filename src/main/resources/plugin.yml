@@ -1,0 +1,9 @@
+name: TrialChamberPro
+version: '0.1'
+main: io.github.darkstarworks.trialChamberPro.TrialChamberPro
+api-version: '1.21'
+prefix: DT »
+load: STARTUP
+authors: [ darkstarworks ]
+description: Custom Items for ESMP
+website: https://github.com/darkstarworks
