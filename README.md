@@ -28,7 +28,7 @@ This plugin turns Trial Chambers into **living, breathing content** that keeps p
 
 Ready to jump in? Here's what you need:
 
-1. **Paper 1.21.x** (or any fork like Purpur, Pufferfish)
+1. **Paper 1.21.x** (or any fork like Folia, Purpur, Pufferfish)
 2. **Java 21** or newer
 3. **Optional:** WorldEdit (for easy chamber creation)
 
