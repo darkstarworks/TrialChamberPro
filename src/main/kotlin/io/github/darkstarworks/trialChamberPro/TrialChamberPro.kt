@@ -72,6 +72,12 @@ class TrialChamberPro : JavaPlugin() {
         saveResource("messages.yml", false)
         saveResource("loot.yml", false)
 
+        // Register command executor and tab completer immediately to avoid early "/tcp [args]" usage messages
+        val tcpCommand = TCPCommand(this)
+        val tabCompleter = TCPTabCompleter(this)
+        getCommand("tcp")?.setExecutor(tcpCommand)
+        getCommand("tcp")?.tabCompleter = tabCompleter
+
         // Initialize database asynchronously
         pluginScope.launch {
             try {
@@ -102,11 +108,11 @@ class TrialChamberPro : JavaPlugin() {
                 // Start reset scheduler
                 resetManager.startResetScheduler()
 
-                // Register commands and listeners on main thread
+                // Register command, tab completer, listeners and log readiness on main thread
                 org.bukkit.Bukkit.getScheduler().runTask(this@TrialChamberPro, Runnable {
+                    // Register command executor and tab completer
                     val tcpCommand = TCPCommand(this@TrialChamberPro)
                     val tabCompleter = TCPTabCompleter(this@TrialChamberPro)
-
                     getCommand("tcp")?.setExecutor(tcpCommand)
                     getCommand("tcp")?.tabCompleter = tabCompleter
 
