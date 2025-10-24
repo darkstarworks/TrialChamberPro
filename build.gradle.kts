@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.0.3"
+version = "1.0.4"
 
 repositories {
     mavenCentral()
@@ -71,13 +71,13 @@ tasks {
         // Do not relocate Kotlin stdlib or kotlinx-coroutines to ensure Bukkit can find them
         // They will be shaded into the jar with their original package names
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
-        relocate("org.sqlite", "io.github.darkstarworks.tcp.sqlite")
+        // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
     }
 
-    // Ensure the plain jar does not overwrite the shaded jar
+    // Disable building the plain/thin jar; only produce the shaded (fat) jar
     jar {
-        archiveClassifier.set("plain")
+        enabled = false
     }
 
     build {
@@ -95,5 +95,13 @@ tasks.processResources {
     filteringCharset = "UTF-8"
     filesMatching("plugin.yml") {
         expand(props)
+    }
+}
+
+
+// Ensure IDEs and users invoking 'assemble' also get the shaded (fat) jar
+tasks {
+    assemble {
+        dependsOn(shadowJar)
     }
 }
