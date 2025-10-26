@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.0.4"
+version = "1.0.9"
 
 repositories {
     mavenCentral()
@@ -23,6 +23,7 @@ repositories {
     }
 }
 
+
 dependencies {
     // Paper API
     compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
@@ -34,6 +35,9 @@ dependencies {
     // Database
     implementation("org.xerial:sqlite-jdbc:3.44.1.0")
     implementation("com.zaxxer:HikariCP:5.1.0")
+
+    // GUI Framework
+    implementation("com.github.stefvanschie.inventoryframework:IF:0.11.5")
 
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
@@ -73,6 +77,17 @@ tasks {
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
         // Important: Do NOT relocate org.sqlite, or the sqlite-jdbc native bindings (JNI) will fail to load
         relocate("com.zaxxer.hikari", "io.github.darkstarworks.tcp.hikari")
+        relocate("com.github.stefvanschie.inventoryframework", "io.github.darkstarworks.tcp.inventoryframework")
+
+        // Exclude unnecessary SQLite native binaries to reduce jar size
+        // Keep only Windows (x86/x64), Linux (x86/x64), and Linux-ARM for common MC server platforms
+        exclude("org/sqlite/native/FreeBSD/**")
+        exclude("org/sqlite/native/Linux-Android/**")
+        exclude("org/sqlite/native/Linux-Musl/**")
+        exclude("org/sqlite/native/Mac/**")
+
+        // Exclude HikariCP unused metrics/monitoring support
+        exclude("com/zaxxer/hikari/metrics/**")
     }
 
     // Disable building the plain/thin jar; only produce the shaded (fat) jar
