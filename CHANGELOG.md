@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
 ## [1.0.9] - 2025-10-26
+### Added
+- InventoryFramework support is introduced but not used yet.
+
 ### Changed
 - Release: bump version to 1.0.9 and update changelog.
 
