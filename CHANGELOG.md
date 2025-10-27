@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.3] - 2025-10-28
+### Fixed
+- Loot Editor controls render fully on first open (Save bottom-left, Discard bottom-right, Rolls, etc.) — no initial click needed.
+- Right-click on an item opens the Amount editor on the first click; no more double-click behavior.
+- UI now refreshes instantly after edits (toggle enabled, adjust weight, add from hand, tweak rolls), and the Save button lore reflects unsaved changes immediately.
+
+### Changed
+- Replaced the Back arrow with an explicit red Discard button at the bottom-right.
+- Edits are applied to a cloned draft; pressing Discard returns without saving and the on-close handler will not persist the clone.
+
+### Internal
+- Reordered GUI build so panes are added before being populated and `gui.update()` is called at the end of the initial build to ensure a complete first render.
+- Guard save-on-close with `discardRequested` to avoid persisting discarded edits.
+- Rebuild controls after actions like Add-from-hand and Rolls adjustments to keep the UI state accurate.
+
 ## [1.1.2] - 2025-10-28
 ### Changed
 - Replaced GlobalScope with a structured plugin coroutine scope for chamber resets in GUI. Resets now run on the plugin-managed scope and marshal results back to the main thread for messaging.
@@ -137,6 +152,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.1.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.9...v1.1.0
