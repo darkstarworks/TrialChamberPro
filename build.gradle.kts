@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.0.9"
+version = "1.1.2"
 
 repositories {
     mavenCentral()
@@ -86,8 +86,8 @@ tasks {
         exclude("org/sqlite/native/Linux-Musl/**")
         exclude("org/sqlite/native/Mac/**")
 
-        // Exclude HikariCP unused metrics/monitoring support
-        exclude("com/zaxxer/hikari/metrics/**")
+        // Do not exclude HikariCP metrics; needed at runtime to avoid NoClassDefFoundError
+        // (HikariConfig references MetricsTrackerFactory via reflection)
     }
 
     // Disable building the plain/thin jar; only produce the shaded (fat) jar

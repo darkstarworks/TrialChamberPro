@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.2] - 2025-10-28
+### Changed
+- Replaced GlobalScope with a structured plugin coroutine scope for chamber resets in GUI. Resets now run on the plugin-managed scope and marshal results back to the main thread for messaging.
+- Chambers Overview now uses a lightweight TTL cache for vault counts to avoid blocking the server thread. No more runBlocking; counts refresh asynchronously and are warmed when opening the overview.
+
+### Notes
+- The cache defaults to a 30s TTL and returns last-known values (or 0/0 initially) while refreshing in the background.
+
+## [1.1.1] - 2025-10-27
+### Added
+- Chambers Overview: now shows vault counts (Normal/Ominous), players inside, time until next reset, and time since last reset with friendly formatting (weeks/months) that omits zero components.
+
+### Fixed
+- GUI wiring: aligned `LootTypeSelectView` with current APIs (reset now invoked via coroutine; exit location lookup via `Chamber.getExitLocation()`; world spawn fallback). Resolved drag/drop cancellation and improved tooltips.
+- Chambers Overview time display: corrected units (ms) and added smarter humanization.
+
+### Changed
+- Minor UI text adjustments ("Click to Manage").
+
+## [1.1.0] - 2025-10-27
+### Added
+- Admin GUI using InventoryFramework, open with `/tcp menu` (permission `tcp.admin.menu`).
+  - Chambers overview screen: shows each chamber as a block with details like world, bounds, players inside, and time until reset. Click to manage loot tables.
+  - Loot type selection: choose to edit Normal or Ominous loot tables.
+  - Loot editor: drag & drop and click variations to adjust items.
+    - Left click: +1 amount
+    - Right click: -1 amount
+    - Shift + Left click: +1 weight (weighted items only)
+    - Shift + Right click: -1 weight (weighted items only)
+    - Middle click: toggle enabled/disabled
+    - Green Save button (bottom-left) persists changes to loot.yml and updates chamber vaults to use the edited table names.
+    - Red Cancel button (bottom-right) returns without saving.
+  - Session persistence: if the GUI is closed, the last open window and unsaved draft are remembered per admin until `/tcp menu` is opened again.
+- Loot items now support an optional `enabled` flag in `loot.yml` and the generator respects it.
+
+### Changed
+- Bumped version to 1.1.0 and updated changelog.
+
+### Fixed
+- Prevent crash `UninitializedPropertyAccessException: lateinit property menuService has not been initialized` when running `/tcp menu` during startup by guarding all `/tcp` subcommands until the plugin finishes asynchronous initialization and by setting a readiness flag after registrations complete.
+
 ## [1.0.9] - 2025-10-26
 ### Added
 - InventoryFramework support is introduced but not used yet.
@@ -96,6 +137,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.1.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.9...v1.1.0
 [1.0.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.0.6...v1.0.7
