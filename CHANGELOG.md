@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.4] - 2025-10-28
+###Added
+- FastAsyncWorldEdit (and WorldEdit) soft-depend, as requested, along with FAWE/WE Detection.
+- New Schematic Manager can be called with /tcp paste to paste one of the included Trial Chambers or /tcp schematics to view a list of available schematics.
+- Without WorldEdit/FAWE, schematic features will be disabled gracefully. 
+
+### Fixed
+- Newly generated Trial Chambers appear immediately in `/tcp menu` without requiring a server restart. The Overview now sorts chambers by creation time (newest first), ensuring fresh entries are shown on the first page.
+- Cache refresh after updates: setting a chamber's exit location or snapshot file now refreshes the in-memory cache entry so the GUI reflects changes without delays.
+- Other minor bugfixes and code cleanup.
+
+### Internal
+- `ChamberManager.getCachedChambers()` now returns chambers sorted by `createdAt` descending.
+- Minor cache handling refinements when updating chamber fields.
+
 ## [1.1.3] - 2025-10-28
 ### Fixed
 - Loot Editor controls render fully on first open (Save bottom-left, Discard bottom-right, Rolls, etc.) — no initial click needed.
@@ -152,6 +167,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.1.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.0...v1.1.1
