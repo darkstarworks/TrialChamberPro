@@ -1,6 +1,6 @@
 <img width="723" height="133" alt="trialchamberpro-min" src="https://github.com/user-attachments/assets/7be34fce-1bfc-4639-bd34-5fe417e43610" />
 
-> _Transform your Trial Chambers from dusty, one-time dungeons into thriving content that players actually want to revisit!_
+> _Transform your Trial Chambers from dusty, one-time dungeons into renewable content!_
 
 Welcome, fellow dungeon master! You've stumbled upon the ultimate solution for Trial Chambers on multiplayer servers. Whether you're running a small vanilla+ server or a massive network, TrialChamberPro breathes new life into Minecraft 1.21's Trial Chambers.
 
