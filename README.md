@@ -30,7 +30,8 @@ Ready to jump in? Here's what you need:
 
 1. **Paper 1.21.x** (or any fork like Folia, Purpur, Pufferfish)
 2. **Java 21** or newer
-3. **Optional:** WorldEdit (for easy chamber creation)
+3. **Optional:** [FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit) or [WorldEdit](https://modrinth.com/plugin/worldedit)
+4. **Optional:** [LuckPerms](https://modrinth.com/plugin/luckperms)
 
 [Quick Config](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation) (for if you don't need help setting up)
 
