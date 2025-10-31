@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.5] - 2025-10-31
+### Added
+- Checking for Update from GitHub Releases with a short message, describing what has changed from the previous version.
+- Particle Visualizer for the `/tcp paste <name>` command.
+
+### Fixed
+- Pasting a schematic with `/tcp paste <name>` now works as expected.`
+- Correctly allowing WorldEdit `//undo` and `//redo` commands for pasted schematics.
+
+### Changed
+- The `/tcp paste <name>` command now visually represents the boundaries with particles before pasting. The user needs to confirm or cancel the paste in chat.
+
 ## [1.1.4] - 2025-10-28
 ### Added
 - FastAsyncWorldEdit (and WorldEdit) soft-depend, as requested, along with FAWE/WE Detection.
@@ -167,6 +179,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.1.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.1...v1.1.2

@@ -3,16 +3,10 @@ package io.github.darkstarworks.trialChamberPro
 import io.github.darkstarworks.trialChamberPro.commands.TCPCommand
 import io.github.darkstarworks.trialChamberPro.commands.TCPTabCompleter
 import io.github.darkstarworks.trialChamberPro.database.DatabaseManager
-import io.github.darkstarworks.trialChamberPro.listeners.PlayerDeathListener
-import io.github.darkstarworks.trialChamberPro.listeners.PlayerMovementListener
-import io.github.darkstarworks.trialChamberPro.listeners.ProtectionListener
-import io.github.darkstarworks.trialChamberPro.listeners.VaultInteractListener
-import io.github.darkstarworks.trialChamberPro.managers.ChamberManager
-import io.github.darkstarworks.trialChamberPro.managers.LootManager
-import io.github.darkstarworks.trialChamberPro.managers.ResetManager
-import io.github.darkstarworks.trialChamberPro.managers.SnapshotManager
-import io.github.darkstarworks.trialChamberPro.managers.StatisticsManager
-import io.github.darkstarworks.trialChamberPro.managers.VaultManager
+import io.github.darkstarworks.trialChamberPro.gui.MenuService
+import io.github.darkstarworks.trialChamberPro.listeners.*
+import io.github.darkstarworks.trialChamberPro.managers.*
+import io.github.darkstarworks.trialChamberPro.utils.UpdateChecker
 import kotlinx.coroutines.*
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
@@ -23,6 +17,11 @@ import java.io.File
  * per-player vault loot, custom loot tables, and region protection.
  */
 class TrialChamberPro : JavaPlugin() {
+
+    // Indicates when the plugin finished async initialization and is safe to use
+    @Volatile
+    var isReady: Boolean = false
+        private set
 
     // Database manager
     lateinit var databaseManager: DatabaseManager
@@ -52,8 +51,32 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var statisticsManager: StatisticsManager
         private set
 
+    // Menu (GUI) service
+    lateinit var menuService: MenuService
+        private set
+
+    // Schematic manager
+    lateinit var schematicManager: SchematicManager
+        private set
+
+    // Particle visualizer for schematic previews
+    lateinit var particleVisualizer: io.github.darkstarworks.trialChamberPro.utils.ParticleVisualizer
+        private set
+
+    // Paste confirmation manager
+    lateinit var pasteConfirmationManager: PasteConfirmationManager
+        private set
+
+    // Update checker
+    private lateinit var updateChecker: UpdateChecker
+
     // Coroutine scope for async operations
     private val pluginScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    /**
+     * Launch an asynchronous task tied to the plugin lifecycle (cancelled on disable).
+     */
+    fun launchAsync(block: suspend CoroutineScope.() -> Unit) = pluginScope.launch(Dispatchers.IO) { block() }
 
     // Snapshots directory
     val snapshotsDir: File by lazy {
@@ -63,9 +86,22 @@ class TrialChamberPro : JavaPlugin() {
     override fun onEnable() {
         // ASCII art banner
         logger.info("╔════════════════════════════════════╗")
-        logger.info("║   TrialChamberPro v${pluginMeta.version}      ║")
-        logger.info("║   Advanced Trial Chamber Manager  ║")
+        logger.info("║   TrialChamberPro v${pluginMeta.version}          ║")
+        logger.info("║   Advanced Trial Chamber Manager   ║")
         logger.info("╚════════════════════════════════════╝")
+
+        // Initialize update checker
+        updateChecker = UpdateChecker(
+            this,
+            "darkstarworks/TrialChamberPro",
+            "https://raw.githubusercontent.com/darkstarworks/TrialChamberPro/master/src/main/resources/update.txt"
+        )
+        updateChecker.checkForUpdates()
+
+        // Schedule periodic update checks (every 6 hours = 432000 ticks)
+        server.scheduler.runTaskTimerAsynchronously(this, Runnable {
+            updateChecker.checkForUpdates(notifyConsole = false)
+        }, 432000L, 432000L)
 
         // Save default config files
         saveDefaultConfig()
@@ -98,6 +134,11 @@ class TrialChamberPro : JavaPlugin() {
                 lootManager = LootManager(this@TrialChamberPro)
                 resetManager = ResetManager(this@TrialChamberPro)
                 statisticsManager = StatisticsManager(this@TrialChamberPro)
+                menuService = MenuService(this@TrialChamberPro)
+                schematicManager = SchematicManager(this@TrialChamberPro)
+                schematicManager.initialize()
+                particleVisualizer = io.github.darkstarworks.trialChamberPro.utils.ParticleVisualizer(this@TrialChamberPro)
+                pasteConfirmationManager = PasteConfirmationManager(this@TrialChamberPro)
 
                 // Load loot tables
                 lootManager.loadLootTables()
@@ -131,6 +172,14 @@ class TrialChamberPro : JavaPlugin() {
                     )
                     server.pluginManager.registerEvents(
                         PlayerDeathListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        UndoListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        PasteConfirmListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
 
@@ -174,6 +223,14 @@ class TrialChamberPro : JavaPlugin() {
                     logger.info("  - Stats Tracking: ${if (config.getBoolean("statistics.enabled")) "Enabled" else "Disabled"}")
                     logger.info("  - Time Tracking: ${if (config.getBoolean("statistics.track-time-spent")) "Enabled" else "Disabled"}")
                     logger.info("  - Leaderboards: Top ${config.getInt("statistics.top-players-count", 10)} players")
+                    logger.info("✓ Phase 9 Schematic System: Ready")
+                    logger.info("  - Schematic Manager: Initialized")
+                    logger.info("  - Available Schematics: ${schematicManager.listSchematics().size}")
+                    logger.info("  - WorldEdit/FAWE: ${if (schematicManager.isAvailable()) "Available" else "Not Found"}")
+
+                    // Mark plugin as fully ready after all sync registrations are done
+                    this@TrialChamberPro.isReady = true
+                    logger.info("✓ TrialChamberPro is fully initialized and ready!")
                 })
             } catch (e: Exception) {
                 logger.severe("Failed to initialize plugin: ${e.message}")
@@ -196,6 +253,14 @@ class TrialChamberPro : JavaPlugin() {
         // Stop reset scheduler
         if (::resetManager.isInitialized) {
             resetManager.shutdown()
+        }
+
+        // Clean up pending pastes and visualizations
+        if (::pasteConfirmationManager.isInitialized) {
+            pasteConfirmationManager.clearAll()
+        }
+        if (::particleVisualizer.isInitialized) {
+            particleVisualizer.stopAll()
         }
 
         // Close database connections
@@ -234,8 +299,8 @@ class TrialChamberPro : JavaPlugin() {
 
         // Add prefix if not a list item or header
         val shouldAddPrefix = !key.contains("list-item") &&
-                              !key.contains("header") &&
-                              !key.contains("help-")
+                !key.contains("header") &&
+                !key.contains("help-")
 
         val finalMessage = if (shouldAddPrefix) "$prefix$message" else message
 

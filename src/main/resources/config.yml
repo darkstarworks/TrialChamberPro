@@ -1,0 +1,99 @@
+# TrialChamberPro Configuration v1.0
+
+# Database settings
+database:
+  type: SQLITE # SQLITE or MYSQL
+  # MySQL settings (only used if type is MYSQL)
+  host: localhost
+  port: 3306
+  database: trialchamberpro
+  username: root
+  password: ""
+  pool-size: 10
+
+# Global chamber settings
+global:
+  default-reset-interval: 172800 # 48 hours in seconds
+  reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
+  teleport-players-on-reset: true
+  teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN
+  async-block-placement: true
+  blocks-per-tick: 500
+  auto-snapshot-on-register: true
+
+# Generation settings
+generation:
+  # Maximum number of blocks allowed when generating/registering a chamber region
+  # Keep this manageable for your server hardware
+  max-volume: 500000
+  blocks:
+    # When using /tcp generate blocks <amount>, we may need to round up to reach minimum viable dimensions.
+    # This is the maximum number of extra blocks allowed beyond the requested amount.
+    rounding-allowance: 1000
+
+# Vault settings
+vaults:
+  per-player-loot: true
+
+  # Separate cooldowns for normal and ominous vaults
+  normal-cooldown-hours: 24
+  ominous-cooldown-hours: 48
+
+  # Visual indicators
+  show-cooldown-particles: true
+  particles:
+    normal-available: VILLAGER_HAPPY
+    normal-cooldown: SMOKE_NORMAL
+    ominous-available: SOUL_FIRE_FLAME
+    ominous-cooldown: SOUL
+
+  # Sounds
+  play-sound-on-open: true
+  sounds:
+    normal-open: BLOCK_VAULT_OPEN_SHUTTER
+    ominous-open: BLOCK_VAULT_OPEN_SHUTTER
+    cooldown: BLOCK_NOTE_BLOCK_BASS
+
+# Protection settings
+protection:
+  enabled: true
+  prevent-block-break: true
+  prevent-block-place: true
+  prevent-container-access: false
+  allow-pvp: true
+  prevent-mob-griefing: true
+  worldguard-integration: true
+
+# Trial Key settings
+trial-keys:
+  fix-paper-bugs: true
+  prevent-duplication: true # Minimum protection. For free BIC protection, use DupeTrace https://modrinth.com/plugin/dupetrace
+  max-stack-size: 16
+  validate-key-type: true  # Ensure normal keys only open normal vaults
+
+# Reset settings
+reset:
+  clear-ground-items: true
+  remove-spawner-mobs: true
+  remove-non-chamber-mobs: false
+  reset-ominous-spawners: true  # Convert ominous back to normal
+  clear-trial-omen-effect: true
+  reset-vault-cooldowns: false  # Reset player vault cooldowns on chamber reset
+
+# Performance
+performance:
+  cache-chamber-lookups: true
+  cache-duration-seconds: 300
+  async-database-operations: true
+  time-tracking-interval: 300  # Flush time stats every 5 minutes (seconds)
+  use-folialib: true  # Enable for Folia compatibility
+
+# Statistics
+statistics:
+  enabled: true
+  track-time-spent: true
+  leaderboard-update-interval: 3600  # Update leaderboards hourly (seconds)
+  top-players-count: 10
+
+# Debug mode
+debug: false

@@ -4,8 +4,9 @@ import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -22,7 +23,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     private companion object {
         const val MAX_CACHE_SIZE = 100
     }
-    
+
     @Suppress("UNCHECKED_CAST")
     private val chamberCache = java.util.Collections.synchronizedMap(
         object : LinkedHashMap<String, Chamber>(16, 0.75f, true) {
@@ -33,7 +34,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     )
     private val cacheExpiry = ConcurrentHashMap<String, Long>()
 
-    fun getCachedChambers(): List<Chamber> = chamberCache.values.toList()
+    fun getCachedChambers(): List<Chamber> = chamberCache.values.sortedByDescending { it.createdAt }
 
     fun getCachedChamberById(id: Int): Chamber? = chamberCache.values.firstOrNull { it.id == id }
 
@@ -243,9 +244,15 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                     val updated = stmt.executeUpdate() > 0
                     if (updated) {
-                        // Invalidate cache
-                        chamberCache.remove(chamberName)
-                        cacheExpiry.remove(chamberName)
+                        // Refresh cache with updated data
+                        val refreshed = loadChamberFromDb(chamberName)
+                        if (refreshed != null) {
+                            chamberCache[chamberName] = refreshed
+                            updateCacheExpiry(chamberName)
+                        } else {
+                            chamberCache.remove(chamberName)
+                            cacheExpiry.remove(chamberName)
+                        }
                         plugin.logger.info("Set exit location for chamber: $chamberName")
                     }
                     updated
@@ -269,8 +276,15 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                     val updated = stmt.executeUpdate() > 0
                     if (updated) {
-                        chamberCache.remove(chamberName)
-                        cacheExpiry.remove(chamberName)
+                        // Refresh cache with updated data instead of invalidating only
+                        val refreshed = loadChamberFromDb(chamberName)
+                        if (refreshed != null) {
+                            chamberCache[chamberName] = refreshed
+                            updateCacheExpiry(chamberName)
+                        } else {
+                            chamberCache.remove(chamberName)
+                            cacheExpiry.remove(chamberName)
+                        }
                     }
                     updated
                 }
@@ -334,6 +348,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      *
      * @return Triple of (vaults, spawners, pots) counts
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scanChamber(chamber: Chamber): Triple<Int, Int, Int> {
         return suspendCancellableCoroutine { continuation ->
             Bukkit.getScheduler().runTask(plugin, Runnable {

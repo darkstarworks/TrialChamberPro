@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.1.2"
+version = "1.1.5"
 
 repositories {
     mavenCentral()
@@ -23,7 +23,6 @@ repositories {
     }
 }
 
-
 dependencies {
     // Paper API
     compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
@@ -39,6 +38,9 @@ dependencies {
     // GUI Framework
     implementation("com.github.stefvanschie.inventoryframework:IF:0.11.5")
 
+    // JSON parsing for update checker
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // Economy (optional)
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
 
@@ -47,8 +49,15 @@ dependencies {
 
     // Optional integrations
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
-    compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.2.15")
     compileOnly("me.clip:placeholderapi:2.11.5")
+
+    // FastAsyncWorldEdit (FAWE) - preferred over vanilla WorldEdit for performance
+    // Using BOM for version management and transitive=false to avoid dependency bloat
+    implementation(platform("com.intellectualsites.bom:bom-newest:1.55"))
+    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
+    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
+        isTransitive = false
+    }
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
@@ -112,7 +121,6 @@ tasks.processResources {
         expand(props)
     }
 }
-
 
 // Ensure IDEs and users invoking 'assemble' also get the shaded (fat) jar
 tasks {

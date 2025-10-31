@@ -15,14 +15,13 @@ commands:
     description: Main TrialChamberPro command
     usage: /<command> [args]
     permission: tcp.admin
-    aliases: [trialchamberpro, chamber]
+    aliases: [trialchamberpro, tcpro, chamber]
 
 permissions:
   tcp.admin.*:
     description: All admin permissions
     default: op
     children:
-      tcp.admin.create: true
       tcp.admin.scan: true
       tcp.admin.snapshot: true
       tcp.admin.reset: true
@@ -30,17 +29,16 @@ permissions:
       tcp.admin.vault: true
       tcp.admin.reload: true
       tcp.admin.stats: true
-  tcp.admin.create:
-    description: Create chambers
-    default: op
+      tcp.admin.generate: true
+      tcp.admin.menu: true
   tcp.admin.scan:
-    description: Scan chambers
+    description: Scan for chambers
     default: op
   tcp.admin.snapshot:
     description: Manage snapshots
     default: op
   tcp.admin.reset:
-    description: Force reset chambers
+    description: Force-reset chambers
     default: op
   tcp.admin.key:
     description: Manage trial keys
@@ -53,6 +51,12 @@ permissions:
     default: op
   tcp.admin.stats:
     description: View other player's statistics
+    default: op
+  tcp.admin.generate:
+    description: Register chambers from coordinates or blocks
+    default: op
+  tcp.admin.menu:
+    description: Open the admin GUI menu
     default: op
   tcp.stats:
     description: View own statistics

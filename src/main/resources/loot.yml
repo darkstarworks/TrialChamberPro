@@ -1,0 +1,132 @@
+# TrialChamberPro Loot Tables
+
+loot-tables:
+  # Default loot for normal vaults
+  default:
+    min-rolls: 3
+    max-rolls: 5
+
+    # Items that ALWAYS drop
+    guaranteed-items: []
+
+    # Weighted random items (higher weight = more likely)
+    weighted-items:
+      - type: DIAMOND
+        amount-min: 1
+        amount-max: 3
+        weight: 10.0
+        name: "&bTrial Diamond"
+        lore:
+          - "&7Earned from Trial Chamber"
+
+      - type: EMERALD
+        amount-min: 5
+        amount-max: 10
+        weight: 20.0
+
+      - type: GOLDEN_APPLE
+        amount-min: 1
+        amount-max: 1
+        weight: 10.0
+
+      - type: IRON_INGOT
+        amount-min: 3
+        amount-max: 7
+        weight: 15.0
+
+      - type: GOLD_INGOT
+        amount-min: 2
+        amount-max: 5
+        weight: 15.0
+
+      - type: ENCHANTED_BOOK
+        amount-min: 1
+        amount-max: 1
+        weight: 8.0
+        enchantments:
+          - "SHARPNESS:3"
+
+      - type: ARROW
+        amount-min: 16
+        amount-max: 32
+        weight: 12.0
+
+  # Loot for ominous vaults (much better rewards)
+  ominous-default:
+    min-rolls: 5
+    max-rolls: 8
+
+    guaranteed-items: []
+
+    weighted-items:
+      # Enchanted Golden Apple - 25% chance like vanilla
+      - type: ENCHANTED_GOLDEN_APPLE
+        amount-min: 1
+        amount-max: 1
+        weight: 25.0
+        name: "&6&lOminous Reward"
+
+      # Heavy Core - 8.3% chance like vanilla
+      - type: HEAVY_CORE
+        amount-min: 1
+        amount-max: 1
+        weight: 8.3
+        name: "&5&lHeavy Core"
+        lore:
+          - "&7Combine with Breeze Rod"
+          - "&7to create the Mace!"
+
+      - type: NETHERITE_INGOT
+        amount-min: 1
+        amount-max: 2
+        weight: 8.0
+
+      - type: DIAMOND
+        amount-min: 5
+        amount-max: 10
+        weight: 15.0
+
+      - type: EMERALD_BLOCK
+        amount-min: 1
+        amount-max: 3
+        weight: 10.0
+
+      - type: ENCHANTED_BOOK
+        amount-min: 1
+        amount-max: 1
+        weight: 10.0
+        enchantments:
+          - "SHARPNESS:5"
+
+      - type: ENCHANTED_BOOK
+        amount-min: 1
+        amount-max: 1
+        weight: 10.0
+        enchantments:
+          - "PROTECTION:4"
+
+      - type: GOLDEN_APPLE
+        amount-min: 2
+        amount-max: 4
+        weight: 13.7
+
+# Notes:
+# - type: The Material name from Bukkit
+# - amount-min/amount-max: Random amount between these values
+# - weight: Probability weight (higher = more common)
+# - name: Optional custom display name (supports color codes)
+# - lore: Optional lore lines (supports color codes)
+# - enchantments: Optional list of "ENCHANTMENT:LEVEL"
+#
+# For custom items from other plugins, you would add:
+#   - type: CUSTOM_ITEM
+#     plugin: ItemsAdder  # or Oraxen, MMOItems, etc.
+#     item-id: "namespace:item_id"
+#     weight: 5.0
+#
+# For economy rewards:
+#   - type: COMMAND
+#     weight: 15.0
+#     commands:
+#       - "eco give {player} 1000"
+#     display-name: "&61000 Coins"

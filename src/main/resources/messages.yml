@@ -1,0 +1,169 @@
+# TrialChamberPro Messages
+# Use & for color codes
+# Available placeholders vary by message
+
+prefix: "&8[&6TCP&8]&r "
+
+# General messages
+reload-success: "&aConfiguration reloaded successfully!"
+no-permission: "&cYou don't have permission to use this command."
+player-only: "&cThis command can only be used by players."
+unknown-command: "&cUnknown subcommand. Use /tcp help for help."
+initializing: "&eTrialChamberPro is still starting up. Please try again in a moment..."
+
+# Chamber management
+chamber-created: "&aChamber &e{chamber}&a created successfully!"
+chamber-already-exists: "&cA chamber with that name already exists."
+generation-cancelled-name-in-use: "&eGeneration cancelled: &cname {name} is already in use."
+chamber-not-found: "&cChamber &e{chamber}&c not found."
+chamber-deleted: "&aChamber &e{chamber}&a deleted successfully."
+chamber-list-header: "&6=== Registered Chambers ==="
+chamber-list-item: "&e{chamber} &7- &f{world} &7({volume} blocks)"
+chamber-list-empty: "&cNo chambers registered yet."
+no-selection: "&cYou must make a WorldEdit selection first."
+worldedit-not-found: "&cWorldEdit is not installed or enabled."
+
+# Scanning
+scan-started: "&aScanning chamber &e{chamber}&a..."
+scan-complete: "&aScanning complete! Found &e{vaults}&a vaults, &e{spawners}&a spawners, &e{pots}&a decorated pots."
+scan-failed: "&cFailed to scan chamber: {error}"
+
+# Snapshots
+snapshot-creating: "&aCreating snapshot for &e{chamber}&a..."
+snapshot-created: "&aSnapshot created successfully! (&e{blocks}&a blocks, &e{size}&a)"
+snapshot-restoring: "&aRestoring chamber &e{chamber}&a from snapshot..."
+snapshot-restored: "&aChamber restored successfully!"
+snapshot-not-found: "&cNo snapshot found for chamber &e{chamber}&c."
+snapshot-failed: "&cSnapshot operation failed: {error}"
+
+# Exit location
+exit-set: "&aExit location set for chamber &e{chamber}&a."
+exit-not-set: "&cNo exit location set for chamber &e{chamber}&c."
+
+# Chamber resets
+chamber-reset-warning: "&eWarning: &7{chamber} will reset in &6{time}&7!"
+chamber-reset-complete: "&aThe chamber has been reset!"
+chamber-resetting: "&aResetting chamber &e{chamber}&a..."
+reset-success: "&aChamber &e{chamber}&a reset successfully!"
+reset-failed: "&cFailed to reset chamber: {error}"
+
+# Vaults
+vault-opened: "&aYou opened a {type} Vault!"
+vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
+vault-reset: "&aVault cooldown reset for &e{player}&a."
+wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
+no-key: "&cYou need a Trial Key to open this vault!"
+vault-not-found: "&cNo vault found at this location."
+
+# Trial Keys
+key-given: "&aGave &e{amount}&a {type} Trial Key(s) to &e{player}&a."
+key-invalid-amount: "&cInvalid amount. Must be a positive number."
+key-check: "&e{player}&a has &e{normal}&a Normal Key(s) and &e{ominous}&a Ominous Key(s)."
+
+# Statistics
+stats-header: "&6=== Statistics for {player} ==="
+stats-chambers: "&eChambers Completed: &f{count}"
+stats-normal-vaults: "&eNormal Vaults Opened: &f{count}"
+stats-ominous-vaults: "&eOminous Vaults Opened: &f{count}"
+stats-mobs: "&eMobs Killed: &f{count}"
+stats-deaths: "&eDeaths: &f{count}"
+stats-time: "&eTime Spent: &f{time}"
+statistics-disabled: "&cStatistics are disabled in the configuration."
+invalid-stat-type: "&cInvalid stat type. Use: chambers, normal, ominous, mobs, or time"
+
+# Leaderboards
+leaderboard-header: "&6=== Top Players - {stat} ==="
+leaderboard-entry: "&e#{rank} &f{player}&7: &a{value}"
+leaderboard-empty: "&7No statistics recorded yet."
+
+# Chamber completion
+chamber-completed: "&a✓ You have completed &e{chamber}&a!"
+chamber-entered: "&7Entered chamber: &e{chamber}"
+chamber-exited: "&7Left chamber"
+player-died-in-chamber: "&c{player} died in {chamber}"
+
+# Protection
+cannot-break-blocks: "&cYou cannot break blocks in a Trial Chamber!"
+cannot-place-blocks: "&cYou cannot place blocks in a Trial Chamber!"
+cannot-access-container: "&cYou cannot access containers in a Trial Chamber!"
+
+# Teleport
+teleported-to-chamber: "&aTeleported to chamber &e{chamber}&a."
+teleported-to-exit: "&aTeleported to exit of chamber &e{chamber}&a."
+
+# Chamber info
+info-header: "&6=== Chamber Info: {chamber} ==="
+info-world: "&eWorld: &f{world}"
+info-bounds: "&eBounds: &f{minX},{minY},{minZ} to {maxX},{maxY},{maxZ}"
+info-volume: "&eVolume: &f{volume} blocks"
+info-exit: "&eExit: &f{exit}"
+info-reset-interval: "&eReset Interval: &f{interval}"
+info-last-reset: "&eLast Reset: &f{time}"
+info-vaults: "&eVaults: &f{count}"
+info-spawners: "&eSpawners: &f{count}"
+info-snapshot: "&eSnapshot: &f{status}"
+
+# Time formatting
+time-days: "{days}d"
+time-hours: "{hours}h"
+time-minutes: "{minutes}m"
+time-seconds: "{seconds}s"
+time-never: "Never"
+time-now: "Just now"
+
+# Procedural Generation
+procgen-starting: "&aGenerating Trial Chamber procedurally..."
+procgen-complete: "&a✓ Trial Chamber generated! &7({pieces} pieces, {duration}ms)"
+procgen-processing: "&7⚙ Processing jigsaw blocks (spawners, vaults, decorations)..."
+procgen-failed: "&c✗ Generation failed: &7{error}"
+procgen-already-generating: "&cYou are already generating a chamber! Please wait."
+procgen-invalid-size: "&cSize must be between {min} and {max}!"
+procgen-teleport-hint: "&7Teleport: &e/tp {x} {y} {z}"
+procgen-not-available: "&cProcedural generation is not available. Contact an administrator."
+
+# Help
+help-header: "&6=== TrialChamberPro Commands ==="
+help-add: "&e/tcp add <name> &7- Register existing chamber from WorldEdit selection"
+help-scan: "&e/tcp scan <chamber> &7- Scan for vaults/spawners"
+help-generate: "&e/tcp generate <value|coords|wand|blocks> ... &7- Register chamber from saved var, coords, WE wand, or by block amount"
+help-procgen: "&e/tcp procgen [size] &7- Generate a Trial Chamber procedurally (small, medium, large, or number)"
+help-setexit: "&e/tcp setexit <chamber> &7- Set exit location"
+help-snapshot: "&e/tcp snapshot <create|restore> <chamber> &7- Manage snapshots"
+help-reset: "&e/tcp reset <chamber> &7- Force chamber reset"
+help-reload: "&e/tcp reload &7- Reload configuration"
+help-stats: "&e/tcp stats [player] &7- View player statistics"
+help-leaderboard: "&e/tcp leaderboard <type> &7- View top players (lb, top)"
+help-key: "&e/tcp key give <player> <amount> [type] &7- Give trial keys"
+help-vault: "&e/tcp vault reset <chamber> <player> [type] &7- Reset vault cooldown"
+help-teleport: "&e/tcp teleport <chamber> &7- Teleport to chamber"
+help-list: "&e/tcp list &7- List all chambers"
+help-info: "&e/tcp info <chamber> &7- Show chamber info"
+help-delete: "&e/tcp delete <chamber> &7- Delete a chamber"
+
+# WorldEdit Variable Regions
+wevar-saved: "&aSaved selection as &e{name}&a."
+wevar-save-failed: "&cFailed to save region &e{name}&c. Ensure both corners are in the same world."
+wevar-deleted: "&aDeleted saved region &e{name}&a."
+wevar-not-found: "&cSaved region &e{name}&c not found."
+wevar-list-header: "&6=== Saved Regions ==="
+wevar-list-item: "&e{name} &7- &f{world} &7(&f{minX},{minY},{minZ}&7 -> &f{maxX},{maxY},{maxZ}&7)"
+wevar-list-empty: "&7No saved regions yet. Use &e/tcp generate value save <name>&7 to save your selection."
+
+# Undo integration
+undo-confirm: "&eType &aconfirm &eto delete chamber &e{chamber}&e (via //undo). Expires in &f{seconds}&es. Type &ccancel &eto abort."
+undo-confirm-pending: "&eConfirmation pending for &e{chamber}&e. &7Expires in &f{seconds}&7s. Type &aconfirm &7or &ccancel&7."
+undo-deleted: "&aChamber &e{chamber}&a deleted."
+undo-failed: "&cFailed to delete chamber &e{chamber}&c."
+undo-cancelled: "&eUndo cancelled."
+undo-expired: "&eUndo confirmation expired. Run &f//undo &eagain to restart."
+
+# Schematic paste confirmation
+paste-loading: "&7Loading schematic dimensions..."
+paste-preview-shown: "&7Showing preview for &e{schematic}&7 at &f{x}, {y}, {z}&7 (&e{width}x{height}x{length}&7)"
+paste-confirm-hint: "&aType 'confirm' &7to paste or &ccancel &7to abort &8(expires in {time}s)"
+paste-confirming: "&7Pasting schematic..."
+paste-success: "&aSuccessfully pasted &e{schematic}&a at &f{x}, {y}, {z}"
+paste-failed: "&cFailed to paste schematic. Check console for errors."
+paste-cancelled: "&ePaste cancelled."
+paste-timeout: "&cPaste request timed out. Run the command again to paste."
+paste-undo-hint: "&7Use &e//undo &7to undo this paste"
