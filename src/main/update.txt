@@ -1,0 +1,1 @@
+Added: FAWE soft-depend & placing chambers from included schematics
