@@ -1,0 +1,17 @@
+CRITICAL FIXES:
+  • Fixed vault opening crash (Dispatchers.Main error)
+  • Fixed vault statistics never being recorded
+  • Fixed database connection exhaustion causing 60s timeouts
+  • Fixed vault spam-clicking exploit allowing duplicate opens
+BREAKING CHANGE:
+  • Default vault cooldown changed from 24/48h to -1 (permanent lock)
+  • This matches vanilla Minecraft behavior - vaults lock until chamber reset
+  • Set custom cooldowns in config.yml if you want time-based unlocking
+NEW FEATURES:
+  • Added locked vault counts to /tcp menu chamber tooltips
+  • Added permanent lock message (distinct from cooldown messages)
+  • Added spam-click protection with 5-second in-memory lock
+MIGRATION:
+  • Existing opened vaults will now be permanently locked
+  • Use /tcp reset <chamber> to unlock all vaults in a chamber
+  • Update config.yml if you prefer time-based cooldowns
