@@ -35,6 +35,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Old vaults in database retained stale `lootTable="default"` even for ominous vaults
   - Now properly updates vault type and loot table on every scan
   - **Action Required**: Rescan chambers with `/tcp scan <name>` to apply correct loot tables
+- Fixed vault counts showing 0 in `/tcp menu` after reload
+  - Root cause: `VaultManager.countsCache` was not being cleared on reload
+  - Added `VaultManager.clearCache()` method to clear vault counts cache
+  - `/tcp reload` now clears both chamber cache and vault counts cache
+  - Vault counts are now correctly refreshed after reload
 
 ### Changed
 - Enhanced `LootItem` model with 7 new optional fields for advanced features

@@ -91,6 +91,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         plugin.reloadPluginConfig()
         plugin.chamberManager.clearCache()
+        plugin.vaultManager.clearCache()
         sender.sendMessage(plugin.getMessage("reload-success"))
     }
 

@@ -43,6 +43,15 @@ class VaultManager(private val plugin: TrialChamberPro) {
         }
     }
 
+    /**
+     * Clears the vault counts cache.
+     * Should be called during plugin reload to ensure fresh counts are fetched.
+     */
+    fun clearCache() {
+        countsCache.clear()
+        plugin.logger.info("Vault counts cache cleared")
+    }
+
     fun setLootTableForChamber(chamberId: Int, type: VaultType, tableName: String) {
         try {
             plugin.databaseManager.connection.use { conn ->
