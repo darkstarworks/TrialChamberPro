@@ -115,8 +115,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         location: org.bukkit.Location,
         vaultType: VaultType
     ) {
-        // Get vault data
-        val vault = plugin.vaultManager.getVault(location)
+        // Get vault data for the specific type (normal or ominous)
+        val vault = plugin.vaultManager.getVault(location, vaultType)
         if (vault == null) {
             player.sendMessage(plugin.getMessage("vault-not-found"))
             return

@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.0] - 2025-11-22
+### Added
+- **COMMAND Rewards System**: Run console commands when players open vaults
+  - Economy rewards (requires Vault plugin): `eco give {player} 1000`
+  - Permission grants (LuckPerms): `lp user {player} parent add vip`
+  - Experience rewards: `xp add {player} 1000`
+  - Item rewards: `give {player} diamond 64`
+  - Title/action bar messages and any console command
+  - Weight-based probability system (e.g., 25% chance for 1000 coins)
+  - Multiple commands per reward execute in sequence
+  - Player placeholders: `{player}` (name), `{uuid}` (UUID)
+  - Visual feedback with customizable display names
+  - Commands run with CONSOLE permissions (OP)
+- **Comprehensive COMMAND rewards documentation** in loot.yml
+  - 100+ lines of examples and use cases
+  - Basic single-pool format examples
+  - Advanced multi-pool format examples (separate items and bonuses)
+  - Common command examples for economy, permissions, items, XP
+  - Jackpot/rare reward examples with multiple commands
+  - Full placeholder reference
+
+### Fixed
+- Added detailed error message when using incorrect `type: COMMAND` format
+  - Shows clear comparison of WRONG vs CORRECT format
+  - Directs users to proper `command-rewards` list format
+  - Prevents common configuration mistakes
+
+### Documentation
+- Added COMMAND rewards section to loot.yml with comprehensive examples
+- Documented weight-based probability system for command rewards
+- Added examples for economy (Vault), permissions (LuckPerms), and vanilla commands
+- Included multi-command reward examples (jackpots, VIP upgrades)
+
 ## [1.1.9] - 2025-11-22
 ### Added
 - **Advanced Loot Features**: Vanilla-style loot customization with full 1.21+ support
@@ -29,19 +62,50 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Shows: "DEBUG MODE ENABLED - Verbose logging is active"
 
 ### Fixed
+- **CRITICAL:** Fixed race condition causing duplicate vault entries
+  - Multiple async saveVault() calls could insert duplicates for the same location
+  - Changed to atomic UPSERT operation with `INSERT ... ON CONFLICT DO UPDATE`
+  - Prevents duplicate vault entries during concurrent scanning operations
+- **CRITICAL:** Fixed separate cooldowns for normal vs ominous vaults
+  - Changed UNIQUE constraint from `(chamber_id, x, y, z)` to `(chamber_id, x, y, z, type)`
+  - Now stores BOTH normal and ominous vault entries at each location for independent cooldown tracking
+  - Players can have separate 24h/48h cooldowns for normal and ominous modes at the same vault
+  - `VaultManager.getVault()` now requires vault type parameter to fetch correct entry
+  - When scanning, creates both NORMAL and OMINOUS entries regardless of current block state
+- **CRITICAL:** Enabled SQLite foreign key constraints
+  - Added `?foreign_keys=on` to SQLite JDBC URL
+  - Fixes CASCADE deletion not working when chambers are deleted
+  - Orphaned vault/spawner/player data is now automatically cleaned up
+  - No more stale vault entries from deleted chambers
 - **CRITICAL:** Fixed ominous vaults giving normal loot after rescanning
   - Root cause: `ChamberManager.saveVault()` was skipping existing vaults instead of updating them
   - Changed logic to UPDATE existing vaults with correct type and loot_table when rescanning
   - Old vaults in database retained stale `lootTable="default"` even for ominous vaults
   - Now properly updates vault type and loot table on every scan
-  - **Action Required**: Rescan chambers with `/tcp scan <name>` to apply correct loot tables
+  - **Action Required**: Delete database and rescan all chambers with `/tcp scan <name>`
 - Fixed vault counts showing 0 in `/tcp menu` after reload
   - Root cause: `VaultManager.countsCache` was not being cleared on reload
   - Added `VaultManager.clearCache()` method to clear vault counts cache
   - `/tcp reload` now clears both chamber cache and vault counts cache
   - Vault counts are now correctly refreshed after reload
+- Added comprehensive debug logging for loot generation
+  - Shows requested loot table name and available tables
+  - Displays whether table lookup succeeded
+  - Logs number of items generated per vault opening
+  - Helps diagnose loot table configuration issues
 
 ### Changed
+- **Database Schema**: Updated vaults table UNIQUE constraint to include vault type
+  - Changed from `UNIQUE (chamber_id, x, y, z)` to `UNIQUE (chamber_id, x, y, z, type)`
+  - Allows both NORMAL and OMINOUS vaults to coexist at same location
+  - **Breaking Change**: Requires deleting existing database
+- **Vault Scanning**: Now creates two database entries per vault location
+  - One entry for NORMAL type with default loot table
+  - One entry for OMINOUS type with ominous-default loot table
+  - Enables independent cooldown tracking for each vault type
+- **Vault Lookup**: `VaultManager.getVault()` signature changed
+  - Added required `type: VaultType` parameter
+  - Looks up vault by location AND type for accurate cooldown checking
 - Enhanced `LootItem` model with 7 new optional fields for advanced features
 - Enhanced `LootManager.parseLootItem()` to parse all new YAML fields
 - Enhanced `LootManager.createItemStack()` to apply potions, enchantments, and durability
@@ -50,6 +114,19 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - SPLASH_POTION: 2:15 (2700 ticks)
   - LINGERING_POTION: 45 seconds (900 ticks)
   - TIPPED_ARROW: 20 seconds (400 ticks)
+
+### Migration Notes
+**IMPORTANT: This version requires deleting your existing database!**
+
+1. Stop your server
+2. Delete `plugins/TrialChamberPro/database.db`
+3. Update to v1.1.9
+4. Start your server (new database with updated schema will be created)
+5. Re-register all chambers with `/tcp register` or `/tcp generate`
+6. Scan all chambers with `/tcp scan <chamber-name>`
+7. Create snapshots with `/tcp snapshot create <chamber-name>`
+
+**Why**: Database schema changed to support separate NORMAL/OMINOUS vault tracking and enable foreign key constraints. Player cooldown data will be lost, but this ensures proper vault behavior going forward.
 
 ### Documentation
 - Added 170+ lines of examples to `loot.yml` covering all new advanced features

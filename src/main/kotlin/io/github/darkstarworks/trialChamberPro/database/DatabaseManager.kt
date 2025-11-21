@@ -52,7 +52,7 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
     private fun createSQLiteDataSource(): HikariDataSource {
         val dbFile = File(plugin.dataFolder, "database.db")
         val config = HikariConfig().apply {
-            jdbcUrl = "jdbc:sqlite:${dbFile.absolutePath}"
+            jdbcUrl = "jdbc:sqlite:${dbFile.absolutePath}?foreign_keys=on"
             driverClassName = "org.sqlite.JDBC"
             // WAL mode allows multiple concurrent readers (but still only 1 writer)
             // Setting pool size to 5 allows read operations to run concurrently
@@ -148,7 +148,8 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
                         z INT NOT NULL,
                         type VARCHAR(16) DEFAULT 'NORMAL',
                         loot_table VARCHAR(64) NOT NULL,
-                        FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE
+                        FOREIGN KEY (chamber_id) REFERENCES chambers(id) ON DELETE CASCADE,
+                        UNIQUE (chamber_id, x, y, z, type)
                     )
                     """.trimIndent()
                 )

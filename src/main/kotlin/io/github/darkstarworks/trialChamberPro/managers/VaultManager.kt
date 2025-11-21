@@ -70,20 +70,22 @@ class VaultManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Gets a vault by its location.
+     * Gets a vault by its location and type.
      *
      * @param location The vault location
+     * @param type The vault type (NORMAL or OMINOUS)
      * @return The vault data, or null if not found
      */
-    suspend fun getVault(location: Location): VaultData? = withContext(Dispatchers.IO) {
+    suspend fun getVault(location: Location, type: VaultType): VaultData? = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(
-                    "SELECT * FROM vaults WHERE x = ? AND y = ? AND z = ?"
+                    "SELECT * FROM vaults WHERE x = ? AND y = ? AND z = ? AND type = ?"
                 ).use { stmt ->
                     stmt.setInt(1, location.blockX)
                     stmt.setInt(2, location.blockY)
                     stmt.setInt(3, location.blockZ)
+                    stmt.setString(4, type.name)
 
                     val rs = stmt.executeQuery()
                     if (rs.next()) {

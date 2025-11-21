@@ -118,19 +118,6 @@ loot-tables:
 # - lore: Optional lore lines (supports color codes)
 # - enchantments: Optional list of "ENCHANTMENT:LEVEL"
 #
-# For custom items from other plugins, you would add:
-#   - type: CUSTOM_ITEM
-#     plugin: ItemsAdder  # or Oraxen, MMOItems, etc.
-#     item-id: "namespace:item_id"
-#     weight: 5.0
-#
-# For economy rewards:
-#   - type: COMMAND
-#     weight: 15.0
-#     commands:
-#       - "eco give {player} 1000"
-#     display-name: "&61000 Coins"
-#
 # ============================================
 # MULTI-POOL LOOT SYSTEM (NEW!)
 # ============================================
@@ -384,3 +371,109 @@ loot-tables:
 # - Durability values are damage (higher = more damaged)
 # - Ominous potions are 1.21+ exclusive feature
 # - All enchantment names: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html
+
+# ============================================
+# COMMAND REWARDS (ECONOMY & PERMISSIONS)
+# ============================================
+# Run console commands when a player opens a vault!
+# Great for economy rewards, permissions, titles, or any command-based rewards.
+#
+# IMPORTANT: Command rewards are NOT added to weighted-items!
+# They go in a separate "command-rewards" list at the pool level.
+#
+# ====== BASIC EXAMPLE ======
+#  default:
+#    min-rolls: 3
+#    max-rolls: 5
+#    weighted-items:
+#      - type: DIAMOND
+#        amount-min: 1
+#        amount-max: 3
+#        weight: 10.0
+#
+#    # Command rewards run with specified probability
+#    command-rewards:
+#      - weight: 25.0              # 25% chance
+#        commands:
+#          - "eco give {player} 1000"
+#        display-name: "&6+1000 Coins"
+#
+#      - weight: 10.0              # 10% chance
+#        commands:
+#          - "lp user {player} permission set special.vault.bonus true"
+#        display-name: "&5Special Permission Unlocked!"
+#
+# ====== MULTI-POOL WITH COMMANDS ======
+#  premium-vault:
+#    pools:
+#      # Regular items pool
+#      - name: items
+#        min-rolls: 3
+#        max-rolls: 5
+#        weighted-items:
+#          - type: DIAMOND
+#            amount-min: 1
+#            amount-max: 3
+#            weight: 10.0
+#
+#      # Bonus rewards pool (commands)
+#      - name: bonuses
+#        min-rolls: 1
+#        max-rolls: 1
+#        command-rewards:
+#          - weight: 50.0
+#            commands:
+#              - "eco give {player} 500"
+#            display-name: "&6+500 Coins"
+#
+#          - weight: 30.0
+#            commands:
+#              - "eco give {player} 1000"
+#            display-name: "&6+1000 Coins"
+#
+#          - weight: 15.0
+#            commands:
+#              - "eco give {player} 5000"
+#              - "give {player} nether_star 1"
+#            display-name: "&e&lJACKPOT! &6+5000 Coins"
+#
+#          - weight: 5.0
+#            commands:
+#              - "lp user {player} parent add vip"
+#              - "eco give {player} 10000"
+#              - "give {player} elytra 1"
+#            display-name: "&5&lULTRA RARE! &dVIP Rank!"
+#
+# ====== AVAILABLE PLACEHOLDERS ======
+# {player} - Player's name
+# {uuid}   - Player's UUID
+#
+# ====== NOTES ======
+# - Commands run as CONSOLE (OP permissions)
+# - Weight is probability (higher = more likely)
+# - Multiple commands execute in order
+# - Player receives a message with the display-name
+# - Works with Vault (economy), LuckPerms (permissions), any command
+#
+# ====== EXAMPLES ======
+# Economy (requires Vault):
+#   - "eco give {player} 1000"
+#   - "eco take {player} 500"
+#
+# Permissions (LuckPerms):
+#   - "lp user {player} permission set special.perk true"
+#   - "lp user {player} parent add vip"
+#
+# Items:
+#   - "give {player} diamond 64"
+#
+# Experience:
+#   - "xp add {player} 1000"
+#
+# Titles:
+#   - "title {player} title {\"text\":\"&6Rare Reward!\",\"color\":\"gold\"}"
+#
+# Multiple actions:
+#   - "eco give {player} 5000"
+#   - "give {player} elytra 1"
+#   - "xp add {player} 500"

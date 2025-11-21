@@ -153,6 +153,29 @@ class LootManager(private val plugin: TrialChamberPro) {
      */
     private fun parseLootItem(data: Map<String, Any>): LootItem? {
         val typeStr = data["type"] as? String ?: return null
+
+        // Check for common mistake: using type: COMMAND instead of command-rewards
+        if (typeStr.equals("COMMAND", ignoreCase = true)) {
+            plugin.logger.severe("═══════════════════════════════════════════════════════════════════")
+            plugin.logger.severe("ERROR: 'type: COMMAND' is NOT valid!")
+            plugin.logger.severe("Command rewards use a different format:")
+            plugin.logger.severe("")
+            plugin.logger.severe("WRONG:")
+            plugin.logger.severe("  weighted-items:")
+            plugin.logger.severe("    - type: COMMAND  ← Don't use this!")
+            plugin.logger.severe("")
+            plugin.logger.severe("CORRECT:")
+            plugin.logger.severe("  command-rewards:")
+            plugin.logger.severe("    - weight: 25.0")
+            plugin.logger.severe("      commands:")
+            plugin.logger.severe("        - \"eco give {player} 1000\"")
+            plugin.logger.severe("      display-name: \"&6+1000 Coins\"")
+            plugin.logger.severe("")
+            plugin.logger.severe("See loot.yml for full examples!")
+            plugin.logger.severe("═══════════════════════════════════════════════════════════════════")
+            return null
+        }
+
         val material = try {
             Material.valueOf(typeStr.uppercase())
         } catch (_: IllegalArgumentException) {

@@ -408,55 +408,35 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      * Checks block state to determine if it's ominous or normal.
      */
     private suspend fun saveVault(chamberId: Int, x: Int, y: Int, z: Int, block: org.bukkit.block.Block) = withContext(Dispatchers.IO) {
-        // Determine vault type from block state string (more reliable than property access)
+        // Determine current vault type from block state string
         val blockStateString = block.blockData.asString
-        val type = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
+        val currentType = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
             VaultType.OMINOUS
         } else {
             VaultType.NORMAL
         }
 
-        val lootTable = if (type == VaultType.OMINOUS) "ominous-default" else "default"
-
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("Saving vault at ($x,$y,$z): blockData='$blockStateString', type=$type, lootTable=$lootTable")
+            plugin.logger.info("Saving vault at ($x,$y,$z): blockData='$blockStateString', currentType=$currentType")
         }
 
         try {
             plugin.databaseManager.connection.use { conn ->
-                // Check if vault already exists at this location
-                var existingId: Int? = null
-                conn.prepareStatement(
-                    "SELECT id FROM vaults WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
-                ).use { stmt ->
-                    stmt.setInt(1, chamberId)
-                    stmt.setInt(2, x)
-                    stmt.setInt(3, y)
-                    stmt.setInt(4, z)
-                    val rs = stmt.executeQuery()
-                    if (rs.next()) {
-                        existingId = rs.getInt("id")
-                    }
-                }
+                // Save BOTH normal and ominous entries for this vault location
+                // This allows separate cooldown tracking for each type
+                VaultType.entries.forEach { type ->
+                    val lootTable = if (type == VaultType.OMINOUS) "ominous-default" else "default"
 
-                if (existingId != null) {
-                    // Vault already exists - UPDATE it with correct type and loot table
+                    // Use atomic UPSERT to prevent race conditions
+                    // SQLite 3.24.0+ supports INSERT ... ON CONFLICT
                     conn.prepareStatement(
-                        "UPDATE vaults SET type = ?, loot_table = ? WHERE id = ?"
-                    ).use { stmt ->
-                        stmt.setString(1, type.name)
-                        stmt.setString(2, lootTable)
-                        stmt.setInt(3, existingId)
-                        stmt.executeUpdate()
-
-                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-                            plugin.logger.info("Updated existing vault at ($x,$y,$z): type=$type, lootTable=$lootTable")
-                        }
-                    }
-                } else {
-                    // Insert new vault
-                    conn.prepareStatement(
-                        "INSERT INTO vaults (chamber_id, x, y, z, type, loot_table) VALUES (?, ?, ?, ?, ?, ?)"
+                        """
+                        INSERT INTO vaults (chamber_id, x, y, z, type, loot_table)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(chamber_id, x, y, z, type)
+                        DO UPDATE SET
+                            loot_table = excluded.loot_table
+                        """.trimIndent()
                     ).use { stmt ->
                         stmt.setInt(1, chamberId)
                         stmt.setInt(2, x)
@@ -467,9 +447,14 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                         stmt.executeUpdate()
                     }
                 }
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Saved/updated both vault types at ($x,$y,$z)")
+                }
             }
         } catch (e: Exception) {
             plugin.logger.warning("Failed to save vault: ${e.message}")
+            e.printStackTrace()
         }
     }
 

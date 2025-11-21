@@ -1072,6 +1072,270 @@ You can't remove vanilla loot directly—TrialChamberPro *replaces* vault loot e
 
 ---
 
+## 💰 COMMAND Rewards (Economy & Permissions)
+
+Want to give players **money**, **permissions**, **experience**, or run **any console command** when they open vaults? COMMAND rewards let you do exactly that!
+
+### How It Works
+
+Command rewards run console commands with a **probability** (weight-based). They execute alongside regular item drops.
+
+{% hint style="info" %}
+**Key Point:** Command rewards go in a separate `command-rewards` list, **NOT** in `weighted-items`!
+{% endhint %}
+
+### Basic Example
+
+```yaml
+loot-tables:
+  default:
+    min-rolls: 3
+    max-rolls: 5
+    weighted-items:
+      - type: DIAMOND
+        amount-min: 1
+        amount-max: 3
+        weight: 10.0
+
+    # Command rewards (separate list!)
+    command-rewards:
+      - weight: 25.0              # 25% chance
+        commands:
+          - "eco give {player} 1000"
+        display-name: "&6+1000 Coins"
+
+      - weight: 10.0              # 10% chance
+        commands:
+          - "lp user {player} permission set special.vault.bonus true"
+        display-name: "&5Special Permission Unlocked!"
+```
+
+When a player opens a vault:
+1. They get 3-5 random items (from weighted-items)
+2. 25% chance to receive 1000 coins
+3. 10% chance to get a special permission
+4. Player sees message: "&6+1000 Coins" or "&5Special Permission Unlocked!"
+
+### Multi-Pool with Bonuses
+
+Separate item drops from bonus rewards using pools:
+
+```yaml
+loot-tables:
+  premium-vault:
+    pools:
+      # Regular items pool
+      - name: items
+        min-rolls: 3
+        max-rolls: 5
+        weighted-items:
+          - type: DIAMOND
+            amount-min: 5
+            amount-max: 10
+            weight: 10.0
+          - type: NETHERITE_INGOT
+            amount-min: 1
+            amount-max: 3
+            weight: 5.0
+
+      # Bonus rewards pool (guaranteed 1 roll)
+      - name: bonuses
+        min-rolls: 1
+        max-rolls: 1
+        command-rewards:
+          - weight: 50.0
+            commands:
+              - "eco give {player} 500"
+            display-name: "&6+500 Coins"
+
+          - weight: 30.0
+            commands:
+              - "eco give {player} 1000"
+            display-name: "&6+1000 Coins"
+
+          - weight: 15.0
+            commands:
+              - "eco give {player} 5000"
+              - "give {player} nether_star 1"
+            display-name: "&e&lJACKPOT! &6+5000 Coins"
+
+          - weight: 5.0
+            commands:
+              - "lp user {player} parent add vip"
+              - "eco give {player} 10000"
+              - "give {player} elytra 1"
+            display-name: "&5&lULTRA RARE! &dVIP Rank!"
+```
+
+Player opens vault:
+- Gets 3-5 premium items (diamonds, netherite)
+- Gets exactly 1 bonus (weighted probability):
+  - 50% chance: 500 coins
+  - 30% chance: 1000 coins
+  - 15% chance: 5000 coins + nether star
+  - 5% chance: VIP rank + 10000 coins + elytra
+
+### Common Examples
+
+#### Economy Rewards (Vault Plugin)
+```yaml
+command-rewards:
+  # Give money
+  - weight: 30.0
+    commands:
+      - "eco give {player} 1000"
+    display-name: "&6+1000 Coins"
+
+  # Take money (punishment vault!)
+  - weight: 5.0
+    commands:
+      - "eco take {player} 500"
+    display-name: "&c-500 Coins (Cursed Vault!)"
+```
+
+#### Permissions (LuckPerms)
+```yaml
+command-rewards:
+  # Grant permission
+  - weight: 15.0
+    commands:
+      - "lp user {player} permission set special.perk true"
+    display-name: "&dSpecial Perk Unlocked!"
+
+  # Add to group
+  - weight: 5.0
+    commands:
+      - "lp user {player} parent add vip"
+    display-name: "&5&lVIP RANK UNLOCKED!"
+
+  # Temporary permission (1 hour)
+  - weight: 20.0
+    commands:
+      - "lp user {player} permission settemp special.bonus.1h true 1h"
+    display-name: "&a1-Hour Bonus Active!"
+```
+
+#### Experience & Levels
+```yaml
+command-rewards:
+  # Give XP
+  - weight: 25.0
+    commands:
+      - "xp add {player} 1000"
+    display-name: "&a+1000 XP"
+
+  # Give levels
+  - weight: 10.0
+    commands:
+      - "xp add {player} 10 levels"
+    display-name: "&a+10 Levels"
+```
+
+#### Items (Vanilla)
+```yaml
+command-rewards:
+  # Give items
+  - weight: 20.0
+    commands:
+      - "give {player} diamond 64"
+    display-name: "&b+64 Diamonds"
+
+  # Give multiple items
+  - weight: 10.0
+    commands:
+      - "give {player} elytra 1"
+      - "give {player} firework_rocket 64"
+    display-name: "&5Flight Kit!"
+```
+
+#### Titles & Messages
+```yaml
+command-rewards:
+  - weight: 5.0
+    commands:
+      - "title {player} title {\"text\":\"JACKPOT!\",\"color\":\"gold\",\"bold\":true}"
+      - "title {player} subtitle {\"text\":\"You won the grand prize!\",\"color\":\"yellow\"}"
+      - "playsound minecraft:ui.toast.challenge_complete master {player}"
+    display-name: "&6&l★ JACKPOT ★"
+```
+
+#### Combined Rewards
+```yaml
+command-rewards:
+  # Ultimate reward package
+  - weight: 1.0                 # 1% chance - very rare!
+    commands:
+      - "lp user {player} parent add vip"
+      - "eco give {player} 50000"
+      - "give {player} elytra 1"
+      - "give {player} netherite_ingot 16"
+      - "xp add {player} 100 levels"
+      - "title {player} title {\"text\":\"LEGENDARY REWARD!\",\"color\":\"gold\",\"bold\":true}"
+    display-name: "&6&l⚡ LEGENDARY REWARD PACKAGE ⚡"
+```
+
+### Available Placeholders
+
+- `{player}` - Player's name
+- `{uuid}` - Player's UUID
+
+Example:
+```yaml
+commands:
+  - "eco give {player} 1000"        # Becomes: eco give Steve 1000
+  - "lp user {player} parent add vip"  # Becomes: lp user Steve parent add vip
+```
+
+### Important Notes
+
+{% hint style="warning" %}
+**Commands run as CONSOLE** with OP permissions. Be careful with what commands you allow!
+{% endhint %}
+
+{% hint style="success" %}
+**Weight = Probability**. Higher weight = more likely. A `weight: 50.0` is twice as likely as `weight: 25.0`.
+{% endhint %}
+
+{% hint style="info" %}
+**Multiple commands execute in order**. Great for jackpot rewards that give items + money + permissions!
+{% endhint %}
+
+{% hint style="danger" %}
+**Don't use `type: COMMAND` in weighted-items!** That's incorrect. Use the `command-rewards` list instead.
+{% endhint %}
+
+### Required Plugins
+
+Command rewards work with **any** plugin that uses console commands:
+
+- **Economy**: [Vault](https://www.spigotmc.org/resources/vault.34315/) (+ economy plugin like EssentialsX)
+- **Permissions**: [LuckPerms](https://luckperms.net/)
+- **Custom Items**: ItemsAdder, Oraxen, MMOItems (use their give commands)
+- **Vanilla**: No plugins needed for vanilla commands (give, xp, title, etc.)
+
+### Troubleshooting
+
+**"Commands aren't running!"**
+- Check console for errors when vault opens
+- Verify command syntax is correct (test in console manually)
+- Ensure required plugins (Vault, LuckPerms) are installed
+
+**"Getting 'type: COMMAND is not valid' error"**
+- You're using the wrong format! Don't put commands in `weighted-items`
+- Use `command-rewards` list instead (see examples above)
+
+**"Player gets no message"**
+- Make sure `display-name` is set
+- Check if commands are actually executing (console logs)
+- Weight might be too low (increase for testing)
+
+**"Economy commands don't work"**
+- Vault plugin required for `eco` commands
+- Need an economy plugin (EssentialsX, CMI, etc.) alongside Vault
+- Test command manually in console: `/eco give PlayerName 1000`
+
+---
+
 ## 🎯 What's Next?
 
 Now that you've mastered loot configuration, check out:
