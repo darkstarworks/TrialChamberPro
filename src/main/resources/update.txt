@@ -1,5 +1,5 @@
-&e[v1.1.9] &fAdvanced Loot & Schema Update
-&a+ &fAdv. Loot: &7Tipped Arrows, Custom Potions, Enchants
-&a+ &fSeparate Normal vs Ominous Cooldowns
-&c! &fFixed: &cDuplicate vaults & Foreign Keys
-&4&lACTION REQ: &cDELETE database.db & RESCAN!
+&e[v1.2.0] &fCommand Rewards Update
+&a+ &fNEW: &aCommand Rewards &7(Run console cmds as loot)
+&a+ &fSupports: &7Economy, Ranks, XP, Weights & more
+&a+ &fFeatures: &7{player} placeholders & multi-commands
+&b* &fCheck loot.yml for 100+ lines of new examples!
