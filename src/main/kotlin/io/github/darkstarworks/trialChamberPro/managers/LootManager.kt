@@ -278,10 +278,23 @@ class LootManager(private val plugin: TrialChamberPro) {
      * @return List of generated items
      */
     fun generateLoot(tableName: String, player: Player): List<ItemStack> {
+        // Debug logging
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("==== LOOT GENERATION DEBUG ====")
+            plugin.logger.info("Requested table: '$tableName'")
+            plugin.logger.info("Available tables: ${lootTables.keys.joinToString(", ")}")
+            plugin.logger.info("Table exists: ${lootTables.containsKey(tableName)}")
+        }
+
         val lootTable = lootTables[tableName]
         if (lootTable == null) {
-            plugin.logger.warning("Loot table not found: $tableName")
+            plugin.logger.warning("Loot table not found: $tableName (available: ${lootTables.keys.joinToString(", ")})")
             return emptyList()
+        }
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Using loot table: ${lootTable.name}")
+            plugin.logger.info("Pools: ${lootTable.getEffectivePools().size}")
         }
 
         val items = mutableListOf<ItemStack>()
@@ -292,6 +305,11 @@ class LootManager(private val plugin: TrialChamberPro) {
         // Generate loot from each pool independently (like vanilla)
         pools.forEach { pool ->
             items.addAll(generateLootFromPool(pool, player))
+        }
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Generated ${items.size} items from table '$tableName'")
+            plugin.logger.info("================================")
         }
 
         return items

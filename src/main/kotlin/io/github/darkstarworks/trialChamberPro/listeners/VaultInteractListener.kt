@@ -193,6 +193,11 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         // Update statistics (for leaderboards and /tcp stats)
         plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
 
+        // Debug logging
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Opening vault ID ${vault.id}: type=${vault.type}, lootTable='${vault.lootTable}'")
+        }
+
         // Generate loot (async, player might disconnect during this)
         val loot = plugin.lootManager.generateLoot(vault.lootTable, player)
 
