@@ -1,0 +1,5 @@
+&e[v1.1.8] &fCritical Fixes & Migration
+&c! &fFIXED: &cOminous Vault &fdetection logic
+&a+ &fFixed chambers vanishing after reload
+&c! &lACTION REQ:&c Run /tcp scan <name> on old chambers!
+&7(Rescan required to fix stored vault types)
