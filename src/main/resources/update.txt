@@ -1,5 +1,5 @@
-&e[v1.1.7] &fMulti-Pools & Fixes
-&a+ &fMulti-Pool Loot System &7(Vanilla-style pools)
-&a+ &fLuck Effect Support &7(Potions add rolls)
-&a+ &fUpdated GUI Editor
-&c! &fFIXED: &cOminous Vault &fdetection & keys
+&e[v1.1.8] &fCritical Fixes & Migration
+&c! &fFIXED: &cOminous Vault &fdetection logic
+&a+ &fFixed chambers vanishing after reload
+&c! &lACTION REQ:&c Run /tcp scan <name> on old chambers!
+&7(Rescan required to fix stored vault types)
