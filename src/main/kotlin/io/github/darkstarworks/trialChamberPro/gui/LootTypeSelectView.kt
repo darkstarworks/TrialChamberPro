@@ -51,12 +51,12 @@ class LootTypeSelectView(
         // Layout: Row 1 - Normal and Ominous loot
         pane.addItem(GuiItem(normal) {
             it.isCancelled = true
-            menu.openLootEditor(player, chamber, MenuService.LootKind.NORMAL)
+            handleLootKindClick(player, MenuService.LootKind.NORMAL)
         }, 2, 1)
 
         pane.addItem(GuiItem(ominous) {
             it.isCancelled = true
-            menu.openLootEditor(player, chamber, MenuService.LootKind.OMINOUS)
+            handleLootKindClick(player, MenuService.LootKind.OMINOUS)
         }, 6, 1)
 
         // Row 2 - Reset Chamber and Exit Players
@@ -83,6 +83,29 @@ class LootTypeSelectView(
 
         gui.addPane(pane)
         return gui
+    }
+
+    /**
+     * Handles clicks on loot kind buttons (Normal/Ominous).
+     * Detects multi-pool tables and redirects to pool selector, otherwise opens loot editor directly.
+     */
+    private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
+        // Determine table name based on kind
+        val tableName = when (kind) {
+            MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
+            MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+        }
+
+        // Get the loot table
+        val table = plugin.lootManager.getTable(tableName)
+
+        // If table exists and is multi-pool format, show pool selector
+        // Otherwise, open loot editor directly (for legacy format or new tables)
+        if (table != null && !table.isLegacyFormat()) {
+            menu.openPoolSelect(player, chamber, kind)
+        } else {
+            menu.openLootEditor(player, chamber, kind, null)
+        }
     }
 
     private fun createResetChamberItem(): ItemStack {

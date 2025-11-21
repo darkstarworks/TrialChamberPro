@@ -15,7 +15,6 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/tcp help` | Show command list | None |
-| `/tcp add <name>` | Register existing chamber from WorldEdit selection | `tcp.admin.create` |
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
@@ -57,15 +56,11 @@ Only shows commands you have permission to use!
 
 ---
 
-### `/tcp add <name>`
-
-Registers an existing Trial Chamber from your WorldEdit selection for management.
-
 ### `/tcp generate <value|coords|wand|blocks>`
 
 Registers a chamber using either a saved WorldEdit variable (named region), your current WorldEdit selection, explicit coordinates, or by a desired block amount at your current facing.
 
-Usage:
+**Usage:**
 ```
 /tcp generate value save <varName>
 /tcp generate value list
@@ -76,57 +71,22 @@ Usage:
 /tcp generate blocks <amount> [chamberName] [roundingAllowance]
 ```
 
-Behavior:
-- value save: Saves your current WorldEdit selection to a named variable for later use.
-- value list: Shows all saved region variables.
-- value delete: Removes a saved region by name.
-- value <varName> [chamberName]: Generates a chamber from the saved region. If chamberName is omitted, <varName> is used as the chamber name. If no saved var exists and the sender is a player with a WorldEdit selection, falls back to using the selection.
-- coords: Generates a chamber from two corners specified as either `<x1,y1,z1> <x2,y2,z2>` or legacy `<x1,y1,z1-x2,y2,z2>`. From console, you must also provide `[world]`.
-- wand: Generates a chamber from your current WorldEdit selection. Handy shortcut for admins.
-- blocks: Generates a chamber at your current location and facing, sized to approximately `<amount>` blocks. The plugin enforces a minimum of 31x15x31 and will round up by at most `generation.blocks.rounding-allowance` (default 1000) to form a clean region.
+**Permission:** `tcp.admin.generate`
 
-Notes:
+**Behavior:**
+- **value save**: Saves your current WorldEdit selection to a named variable for later use.
+- **value list**: Shows all saved region variables.
+- **value delete**: Removes a saved region by name.
+- **value <varName> [chamberName]**: Generates a chamber from the saved region. If chamberName is omitted, <varName> is used as the chamber name. If no saved var exists and the sender is a player with a WorldEdit selection, falls back to using the selection.
+- **coords**: Generates a chamber from two corners specified as either `<x1,y1,z1> <x2,y2,z2>` or legacy `<x1,y1,z1-x2,y2,z2>`. From console, you must also provide `[world]`.
+- **wand**: Generates a chamber from your current WorldEdit selection. Handy shortcut for admins.
+- **blocks**: Generates a chamber at your current location and facing, sized to approximately `<amount>` blocks. The plugin enforces a minimum of 31x15x31 and will round up by at most `generation.blocks.rounding-allowance` (default 1000) to form a clean region.
+
+**Notes:**
 - Minimum size enforced: 31x15x31 (width x height x depth)
 - Maximum volume limited by `generation.max-volume` in config.yml
-- WorldEdit must be installed for the `value` operations
-- Mirrors auto-scan and auto-snapshot behavior from `/tcp add`
-
----
-
-Registers an existing Trial Chamber from your WorldEdit selection for management by the plugin.
-
-**Usage:**
-```
-/tcp add <chamber_name>
-```
-
-**Permission:** `tcp.admin.create`
-
-**Requirements:**
-- Must be a player (not console)
-- WorldEdit must be installed
-- Must have an active WorldEdit selection
-
-**Arguments:**
-- `<chamber_name>` - Name for your chamber (no spaces!)
-
-**Examples:**
-```
-/tcp add MainChamber
-/tcp add NetherChamber1
-/tcp add SpawnTC
-```
-
-**What it does:**
-1. Registers the selected region as a managed chamber
-2. Auto-scans for vaults/spawners (if `auto-scan-on-register: true`)
-3. Auto-creates snapshot (if `auto-snapshot-on-register: true`)
-
-{% hint style="info" %}
-**Note:** This command registers **existing** Trial Chambers. Use WorldEdit to select the entire chamber structure, then run this command to add it to the plugin's management system.
-{% endhint %}
-
-**Related:** See [Your First Chamber](../getting-started/your-first-chamber.md) guide
+- WorldEdit must be installed for the `value` and `wand` operations
+- Auto-scans for vaults/spawners and creates snapshots based on config settings
 
 ---
 
@@ -622,7 +582,7 @@ Reloads the plugin configuration without restarting the server.
 # (left-click + right-click corners)
 
 # 2. Register chamber
-/tcp add MyChamber
+/tcp generate wand MyChamber
 
 # 3. Scan is automatic, but you can re-scan if needed
 /tcp scan MyChamber

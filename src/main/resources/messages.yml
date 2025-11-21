@@ -50,6 +50,7 @@ reset-failed: "&cFailed to reset chamber: {error}"
 # Vaults
 vault-opened: "&aYou opened a {type} Vault!"
 vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
+vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
 vault-reset: "&aVault cooldown reset for &e{player}&a."
 wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
 no-key: "&cYou need a Trial Key to open this vault!"
@@ -123,7 +124,6 @@ procgen-not-available: "&cProcedural generation is not available. Contact an adm
 
 # Help
 help-header: "&6=== TrialChamberPro Commands ==="
-help-add: "&e/tcp add <name> &7- Register existing chamber from WorldEdit selection"
 help-scan: "&e/tcp scan <chamber> &7- Scan for vaults/spawners"
 help-generate: "&e/tcp generate <value|coords|wand|blocks> ... &7- Register chamber from saved var, coords, WE wand, or by block amount"
 help-procgen: "&e/tcp procgen [size] &7- Generate a Trial Chamber procedurally (small, medium, large, or number)"

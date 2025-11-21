@@ -3,6 +3,7 @@ package io.github.darkstarworks.trialChamberPro.managers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.CommandReward
 import io.github.darkstarworks.trialChamberPro.models.LootItem
+import io.github.darkstarworks.trialChamberPro.models.LootPool
 import io.github.darkstarworks.trialChamberPro.models.LootTable
 import org.bukkit.Bukkit
 import org.bukkit.Material
@@ -59,43 +60,96 @@ class LootManager(private val plugin: TrialChamberPro) {
 
     /**
      * Parses a loot table from configuration.
+     * Supports both legacy single-pool and new multi-pool formats.
      */
     private fun parseLootTable(name: String, section: ConfigurationSection): LootTable {
-        val minRolls = section.getInt("min-rolls", 1)
-        val maxRolls = section.getInt("max-rolls", 3)
+        // Check if this is a multi-pool format
+        val poolsSection = section.getList("pools")
+
+        if (poolsSection != null && poolsSection.isNotEmpty()) {
+            // New multi-pool format
+            val pools = mutableListOf<LootPool>()
+            val maxPools = plugin.config.getInt("loot.max-pools-per-table", 5)
+
+            poolsSection.take(maxPools).forEach { poolData ->
+                if (poolData is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    parseLootPool(poolData as Map<String, Any>)?.let { pools.add(it) }
+                }
+            }
+
+            return LootTable(name = name, pools = pools)
+        } else {
+            // Legacy single-pool format (backwards compatible)
+            val minRolls = section.getInt("min-rolls", 3)
+            val maxRolls = section.getInt("max-rolls", 5)
+
+            // Parse guaranteed items
+            val guaranteedItems = mutableListOf<LootItem>()
+            section.getList("guaranteed-items")?.forEach { item ->
+                if (item is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    parseLootItem(item as Map<String, Any>)?.let { guaranteedItems.add(it) }
+                }
+            }
+
+            // Parse weighted items
+            val weightedItems = mutableListOf<LootItem>()
+            section.getList("weighted-items")?.forEach { item ->
+                if (item is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    parseLootItem(item as Map<String, Any>)?.let { weightedItems.add(it) }
+                }
+            }
+
+            // Parse command rewards (optional)
+            val commandRewards = mutableListOf<CommandReward>()
+            section.getList("command-rewards")?.forEach { item ->
+                if (item is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    parseCommandReward(item as Map<String, Any>)?.let { commandRewards.add(it) }
+                }
+            }
+
+            return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards)
+        }
+    }
+
+    /**
+     * Parses a loot pool from configuration.
+     */
+    private fun parseLootPool(data: Map<String, Any>): LootPool? {
+        val poolName = data["name"] as? String ?: return null
+        val minRolls = (data["min-rolls"] as? Number)?.toInt() ?: 1
+        val maxRolls = (data["max-rolls"] as? Number)?.toInt() ?: 1
 
         // Parse guaranteed items
         val guaranteedItems = mutableListOf<LootItem>()
-        section.getList("guaranteed-items")?.forEach { item ->
-            if (item is Map<*, *>) {
-                @Suppress("UNCHECKED_CAST")
-                parseLootItem(item as Map<String, Any>)?.let { guaranteedItems.add(it) }
-            }
+        @Suppress("UNCHECKED_CAST")
+        (data["guaranteed-items"] as? List<Map<String, Any>>)?.forEach { item ->
+            parseLootItem(item)?.let { guaranteedItems.add(it) }
         }
 
         // Parse weighted items
         val weightedItems = mutableListOf<LootItem>()
-        section.getList("weighted-items")?.forEach { item ->
-            if (item is Map<*, *>) {
-                @Suppress("UNCHECKED_CAST")
-                parseLootItem(item as Map<String, Any>)?.let { weightedItems.add(it) }
-            }
+        @Suppress("UNCHECKED_CAST")
+        (data["weighted-items"] as? List<Map<String, Any>>)?.forEach { item ->
+            parseLootItem(item)?.let { weightedItems.add(it) }
         }
 
-        // Parse command rewards (optional)
+        // Parse command rewards
         val commandRewards = mutableListOf<CommandReward>()
-        section.getList("command-rewards")?.forEach { item ->
-            if (item is Map<*, *>) {
-                @Suppress("UNCHECKED_CAST")
-                parseCommandReward(item as Map<String, Any>)?.let { commandRewards.add(it) }
-            }
+        @Suppress("UNCHECKED_CAST")
+        (data["command-rewards"] as? List<Map<String, Any>>)?.forEach { item ->
+            parseCommandReward(item)?.let { commandRewards.add(it) }
         }
 
-        return LootTable(name, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards)
+        return LootPool(poolName, minRolls, maxRolls, guaranteedItems, weightedItems, commandRewards)
     }
 
     /**
      * Parses a loot item from configuration.
+     * Supports advanced features: potions, tipped arrows, enchantment ranges, variable durability.
      */
     private fun parseLootItem(data: Map<String, Any>): LootItem? {
         val typeStr = data["type"] as? String ?: return null
@@ -114,6 +168,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         @Suppress("UNCHECKED_CAST")
         val lore = data["lore"] as? List<String>
 
+        // Parse fixed enchantments (legacy format: "SHARPNESS:5")
         val enchantments = mutableMapOf<Enchantment, Int>()
         @Suppress("UNCHECKED_CAST")
         (data["enchantments"] as? List<String>)?.forEach { enchStr ->
@@ -129,6 +184,58 @@ class LootManager(private val plugin: TrialChamberPro) {
             }
         }
 
+        // Parse enchantment ranges (new format: "SHARPNESS:1:5" for level 1-5)
+        val enchantmentRanges = mutableMapOf<Enchantment, io.github.darkstarworks.trialChamberPro.models.EnchantmentRange>()
+        @Suppress("UNCHECKED_CAST")
+        (data["enchantment-ranges"] as? List<String>)?.forEach { enchStr ->
+            val parts = enchStr.split(":")
+            if (parts.size == 3) {
+                val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
+                    .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
+                    .get(org.bukkit.NamespacedKey.minecraft(parts[0].lowercase()))
+                val minLevel = parts[1].toIntOrNull()
+                val maxLevel = parts[2].toIntOrNull()
+                if (enchantment != null && minLevel != null && maxLevel != null) {
+                    enchantmentRanges[enchantment] = io.github.darkstarworks.trialChamberPro.models.EnchantmentRange(enchantment, minLevel, maxLevel)
+                }
+            }
+        }
+
+        // Parse random enchantment pool (pick one random enchantment from this list)
+        val randomEnchantmentPool = mutableListOf<io.github.darkstarworks.trialChamberPro.models.EnchantmentRange>()
+        @Suppress("UNCHECKED_CAST")
+        (data["random-enchantment-pool"] as? List<String>)?.forEach { enchStr ->
+            val parts = enchStr.split(":")
+            if (parts.size == 3) {
+                val enchantment = io.papermc.paper.registry.RegistryAccess.registryAccess()
+                    .getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT)
+                    .get(org.bukkit.NamespacedKey.minecraft(parts[0].lowercase()))
+                val minLevel = parts[1].toIntOrNull()
+                val maxLevel = parts[2].toIntOrNull()
+                if (enchantment != null && minLevel != null && maxLevel != null) {
+                    randomEnchantmentPool.add(io.github.darkstarworks.trialChamberPro.models.EnchantmentRange(enchantment, minLevel, maxLevel))
+                }
+            }
+        }
+
+        // Parse potion type for potions and tipped arrows
+        val potionTypeStr = data["potion-type"] as? String
+        val potionType = potionTypeStr?.let {
+            try {
+                org.bukkit.potion.PotionType.valueOf(it.uppercase())
+            } catch (_: IllegalArgumentException) {
+                plugin.logger.warning("Invalid potion type: $it")
+                null
+            }
+        }
+
+        val potionLevel = (data["potion-level"] as? Number)?.toInt()
+        val isOminousPotion = (data["ominous-potion"] as? Boolean) ?: false
+
+        // Parse variable durability
+        val durabilityMin = (data["durability-min"] as? Number)?.toInt()
+        val durabilityMax = (data["durability-max"] as? Number)?.toInt()
+
         val enabled = (data["enabled"] as? Boolean) ?: true
 
         return LootItem(
@@ -139,6 +246,13 @@ class LootManager(private val plugin: TrialChamberPro) {
             name = name,
             lore = lore,
             enchantments = enchantments.takeIf { it.isNotEmpty() },
+            enchantmentRanges = enchantmentRanges.takeIf { it.isNotEmpty() },
+            randomEnchantmentPool = randomEnchantmentPool.takeIf { it.isNotEmpty() },
+            potionType = potionType,
+            potionLevel = potionLevel,
+            isOminousPotion = isOminousPotion,
+            durabilityMin = durabilityMin,
+            durabilityMax = durabilityMax,
             enabled = enabled
         )
     }
@@ -157,6 +271,7 @@ class LootManager(private val plugin: TrialChamberPro) {
 
     /**
      * Generates loot from a loot table.
+     * Supports both legacy single-pool and new multi-pool formats.
      *
      * @param tableName The loot table name
      * @param player The player receiving the loot (for placeholders)
@@ -171,14 +286,81 @@ class LootManager(private val plugin: TrialChamberPro) {
 
         val items = mutableListOf<ItemStack>()
 
+        // Get all effective pools (handles both legacy and new format)
+        val pools = lootTable.getEffectivePools()
+
+        // Generate loot from each pool independently (like vanilla)
+        pools.forEach { pool ->
+            items.addAll(generateLootFromPool(pool, player))
+        }
+
+        return items
+    }
+
+    /**
+     * Generates loot from a single pool.
+     */
+    private fun generateLootFromPool(pool: LootPool, player: Player): List<ItemStack> {
+        val items = mutableListOf<ItemStack>()
+
         // Add all guaranteed items (respect enabled flag)
-        lootTable.guaranteedItems.filter { it.enabled }.forEach { lootItem ->
+        pool.guaranteedItems.filter { it.enabled }.forEach { lootItem ->
             items.add(createItemStack(lootItem, player))
         }
 
+        // Calculate number of rolls (with optional LUCK bonus)
+        var rolls = Random.nextInt(pool.minRolls, pool.maxRolls + 1)
+
+        // Apply LUCK effect/attribute if enabled
+        if (plugin.config.getBoolean("loot.apply-luck-effect", false)) {
+            var totalLuckBonus = 0
+
+            // Check for LUCK potion effect (temporary from potions, beacons, etc.)
+            val luckEffect = player.getPotionEffect(org.bukkit.potion.PotionEffectType.LUCK)
+            if (luckEffect != null) {
+                // Each level of LUCK adds +1 bonus roll
+                val effectBonus = luckEffect.amplifier + 1
+                totalLuckBonus += effectBonus
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Player ${player.name} has LUCK effect level ${luckEffect.amplifier + 1} (+$effectBonus rolls)")
+                }
+            }
+
+            // Check for LUCK attribute (permanent from items/equipment)
+            // Try to get the LUCK attribute - may not exist in all versions
+            val luckAttribute = try {
+                player.getAttribute(org.bukkit.attribute.Attribute.LUCK)
+            } catch (e: Exception) {
+                null
+            }
+            if (luckAttribute != null) {
+                val baseLuck = luckAttribute.baseValue
+                val totalLuck = luckAttribute.value
+                val attributeLuck = totalLuck - baseLuck // Bonus from items
+
+                if (attributeLuck > 0) {
+                    // Each full point of luck attribute adds +1 bonus roll
+                    val attributeBonus = attributeLuck.toInt()
+                    totalLuckBonus += attributeBonus
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("Player ${player.name} has +${attributeLuck} LUCK attribute from items (+$attributeBonus rolls)")
+                    }
+                }
+            }
+
+            if (totalLuckBonus > 0) {
+                rolls += totalLuckBonus
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Total LUCK bonus for ${player.name} in pool '${pool.name}': +$totalLuckBonus rolls (total: $rolls)")
+                }
+            }
+        }
+
         // Roll for weighted items (respect enabled flag)
-        val enabledWeighted = lootTable.weightedItems.filter { it.enabled }
-        val rolls = Random.nextInt(lootTable.minRolls, lootTable.maxRolls + 1)
+        val enabledWeighted = pool.weightedItems.filter { it.enabled }
         repeat(rolls) {
             // Select a random weighted item
             val selectedItem = selectWeightedItem(enabledWeighted)
@@ -188,7 +370,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         // Process command rewards
-        lootTable.commandRewards.forEach { reward ->
+        pool.commandRewards.forEach { reward ->
             if (Random.nextDouble() * 100.0 < reward.weight) {
                 executeCommandReward(reward, player)
             }
@@ -218,6 +400,7 @@ class LootManager(private val plugin: TrialChamberPro) {
 
     /**
      * Creates an ItemStack from a LootItem.
+     * Applies potions, enchantments, random enchantments, and variable durability.
      */
     private fun createItemStack(lootItem: LootItem, player: Player): ItemStack {
         val amount = Random.nextInt(lootItem.amountMin, lootItem.amountMax + 1)
@@ -235,11 +418,73 @@ class LootManager(private val plugin: TrialChamberPro) {
                     net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(line, player)))
                 })
             }
+
+            // Apply potion effects for POTION, SPLASH_POTION, LINGERING_POTION, TIPPED_ARROW
+            if (lootItem.potionType != null) {
+                if (this is org.bukkit.inventory.meta.PotionMeta) {
+                    basePotionType = lootItem.potionType
+
+                    // Apply custom potion level (amplifier) if specified
+                    if (lootItem.potionLevel != null) {
+                        val effectType = lootItem.potionType.effectType
+                        if (effectType != null) {
+                            val duration = when (lootItem.type) {
+                                Material.POTION -> 3600 // 3 minutes for drinkable potions
+                                Material.SPLASH_POTION -> 2700 // 2:15 for splash
+                                Material.LINGERING_POTION -> 900 // 45 seconds for lingering cloud
+                                Material.TIPPED_ARROW -> 400 // 20 seconds for arrows
+                                else -> 3600
+                            }
+                            addCustomEffect(
+                                org.bukkit.potion.PotionEffect(
+                                    effectType,
+                                    duration,
+                                    lootItem.potionLevel,
+                                    false,
+                                    true,
+                                    true
+                                ),
+                                true // Override base potion effect
+                            )
+                        }
+                    }
+
+                    // Apply ominous potion flag (1.21+ feature)
+                    if (lootItem.isOminousPotion && lootItem.type == Material.POTION) {
+                        // Note: Ominous bottle flag is handled via PotionType in 1.21
+                        // The user needs to use proper PotionType values for ominous variants
+                    }
+                }
+            }
+
+            // Apply variable durability (for tools, armor, etc.)
+            if (lootItem.durabilityMin != null && lootItem.durabilityMax != null) {
+                if (this is org.bukkit.inventory.meta.Damageable) {
+                    val maxDurability = lootItem.type.maxDurability
+                    if (maxDurability > 0) {
+                        val damageValue = Random.nextInt(lootItem.durabilityMin, lootItem.durabilityMax + 1)
+                        damage = damageValue.coerceIn(0, maxDurability.toInt())
+                    }
+                }
+            }
         }
 
-        // Add enchantments
+        // Add fixed enchantments (legacy format)
         lootItem.enchantments?.forEach { (enchantment, level) ->
             itemStack.addUnsafeEnchantment(enchantment, level)
+        }
+
+        // Add enchantment ranges (random level within range)
+        lootItem.enchantmentRanges?.values?.forEach { range ->
+            val randomLevel = Random.nextInt(range.minLevel, range.maxLevel + 1)
+            itemStack.addUnsafeEnchantment(range.enchantment, randomLevel)
+        }
+
+        // Pick one random enchantment from pool
+        if (!lootItem.randomEnchantmentPool.isNullOrEmpty()) {
+            val randomEnch = lootItem.randomEnchantmentPool.random()
+            val randomLevel = Random.nextInt(randomEnch.minLevel, randomEnch.maxLevel + 1)
+            itemStack.addUnsafeEnchantment(randomEnch.enchantment, randomLevel)
         }
 
         return itemStack
@@ -289,53 +534,50 @@ class LootManager(private val plugin: TrialChamberPro) {
             val root = config.createSection("loot-tables")
             lootTables.values.forEach { table ->
                 val sec = root.createSection(table.name)
-                sec.set("min-rolls", table.minRolls)
-                sec.set("max-rolls", table.maxRolls)
 
-                // guaranteed-items
-                val guaranteedList = table.guaranteedItems.map { li ->
-                    val map = mutableMapOf<String, Any>()
-                    map["type"] = li.type.name
-                    map["amount-min"] = li.amountMin
-                    map["amount-max"] = li.amountMax
-                    map["weight"] = li.weight
-                    li.name?.let { map["name"] = it }
-                    li.lore?.let { map["lore"] = it }
-                    li.enchantments?.let { ench ->
-                        map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
-                    }
-                    map["enabled"] = li.enabled
-                    map
-                }
-                sec.set("guaranteed-items", guaranteedList)
+                if (table.isLegacyFormat()) {
+                    // Save as legacy single-pool format
+                    sec.set("min-rolls", table.minRolls)
+                    sec.set("max-rolls", table.maxRolls)
 
-                // weighted-items
-                val weightedList = table.weightedItems.map { li ->
-                    val map = mutableMapOf<String, Any>()
-                    map["type"] = li.type.name
-                    map["amount-min"] = li.amountMin
-                    map["amount-max"] = li.amountMax
-                    map["weight"] = li.weight
-                    li.name?.let { map["name"] = it }
-                    li.lore?.let { map["lore"] = it }
-                    li.enchantments?.let { ench ->
-                        map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
+                    // guaranteed-items
+                    val guaranteedList = table.guaranteedItems.map { li -> serializeLootItem(li) }
+                    if (guaranteedList.isNotEmpty()) {
+                        sec.set("guaranteed-items", guaranteedList)
                     }
-                    map["enabled"] = li.enabled
-                    map
-                }
-                sec.set("weighted-items", weightedList)
 
-                // command-rewards
-                if (table.commandRewards.isNotEmpty()) {
-                    val rewards = table.commandRewards.map { r ->
-                        mapOf(
-                            "weight" to r.weight,
-                            "commands" to r.commands,
-                            "display-name" to r.displayName
-                        )
+                    // weighted-items
+                    val weightedList = table.weightedItems.map { li -> serializeLootItem(li) }
+                    sec.set("weighted-items", weightedList)
+
+                    // command-rewards
+                    if (table.commandRewards.isNotEmpty()) {
+                        val rewards = table.commandRewards.map { r -> serializeCommandReward(r) }
+                        sec.set("command-rewards", rewards)
                     }
-                    sec.set("command-rewards", rewards)
+                } else {
+                    // Save as new multi-pool format
+                    val poolsList = table.pools.map { pool ->
+                        val poolMap = mutableMapOf<String, Any>()
+                        poolMap["name"] = pool.name
+                        poolMap["min-rolls"] = pool.minRolls
+                        poolMap["max-rolls"] = pool.maxRolls
+
+                        if (pool.guaranteedItems.isNotEmpty()) {
+                            poolMap["guaranteed-items"] = pool.guaranteedItems.map { serializeLootItem(it) }
+                        }
+
+                        if (pool.weightedItems.isNotEmpty()) {
+                            poolMap["weighted-items"] = pool.weightedItems.map { serializeLootItem(it) }
+                        }
+
+                        if (pool.commandRewards.isNotEmpty()) {
+                            poolMap["command-rewards"] = pool.commandRewards.map { serializeCommandReward(it) }
+                        }
+
+                        poolMap
+                    }
+                    sec.set("pools", poolsList)
                 }
             }
             config.save(file)
@@ -344,5 +586,34 @@ class LootManager(private val plugin: TrialChamberPro) {
             plugin.logger.severe("Failed to save loot.yml: ${e.message}")
             e.printStackTrace()
         }
+    }
+
+    /**
+     * Serializes a LootItem to a map for saving.
+     */
+    private fun serializeLootItem(li: LootItem): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        map["type"] = li.type.name
+        map["amount-min"] = li.amountMin
+        map["amount-max"] = li.amountMax
+        map["weight"] = li.weight
+        li.name?.let { map["name"] = it }
+        li.lore?.let { map["lore"] = it }
+        li.enchantments?.let { ench ->
+            map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
+        }
+        map["enabled"] = li.enabled
+        return map
+    }
+
+    /**
+     * Serializes a CommandReward to a map for saving.
+     */
+    private fun serializeCommandReward(r: CommandReward): Map<String, Any> {
+        return mapOf(
+            "weight" to r.weight,
+            "commands" to r.commands,
+            "display-name" to r.displayName
+        )
     }
 }

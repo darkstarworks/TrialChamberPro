@@ -21,11 +21,14 @@ import org.bukkit.event.player.PlayerInteractEvent
 class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
     private val listenerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    
+
     private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         plugin.logger.severe("Exception in vault listener: ${exception.message}")
         exception.printStackTrace()
     }
+
+    // Track vaults currently being opened to prevent spam-clicking race condition
+    private val openingVaults = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun onVaultInteract(event: PlayerInteractEvent) {
@@ -35,31 +38,41 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         val player = event.player
         val item = player.inventory.itemInMainHand
 
-        // Check if it's a vault
-        val vaultType = when (block.type) {
-            Material.VAULT -> VaultType.NORMAL
-            else -> {
-                // Check by name for ominous vault
-                if (block.type.name == "OMINOUS_VAULT") {
-                    VaultType.OMINOUS
-                } else {
-                    return
-                }
-            }
+        // Check if it's a vault and determine type from block state
+        if (block.type != Material.VAULT) {
+            return
+        }
+
+        // Determine vault type from block state string (more reliable than property access)
+        val blockStateString = block.blockData.asString
+        val vaultType = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
+            VaultType.OMINOUS
+        } else {
+            VaultType.NORMAL
+        }
+
+        // Debug logging
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Vault interaction: blockData='$blockStateString', detected type=$vaultType")
         }
 
         // Check if key validation is enabled
         if (plugin.config.getBoolean("trial-keys.validate-key-type", true)) {
-            // Validate key type
-            val keyType = when (item.type) {
-                Material.TRIAL_KEY -> KeyType.NORMAL
-                else -> {
-                    if (item.type.name == "OMINOUS_TRIAL_KEY") {
-                        KeyType.OMINOUS
-                    } else {
-                        null
-                    }
-                }
+            // Validate key type by checking material name
+            // Ominous trial keys are a separate item ID: minecraft:ominous_trial_key
+            val keyType = when {
+                item.type == Material.TRIAL_KEY -> KeyType.NORMAL
+                // Check for ominous trial key by material name (not in enum yet)
+                item.type.name.equals("OMINOUS_TRIAL_KEY", ignoreCase = true) -> KeyType.OMINOUS
+                // Also accept variations in naming
+                item.type.name.contains("OMINOUS", ignoreCase = true) &&
+                    item.type.name.contains("KEY", ignoreCase = true) -> KeyType.OMINOUS
+                else -> null
+            }
+
+            // Debug logging
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Key check: item=${item.type.name}, keyType=$keyType")
             }
 
             if (keyType == null) {
@@ -109,29 +122,59 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             return
         }
 
-        // Check permission bypass
-        if (player.hasPermission("tcp.bypass.cooldown")) {
-            openVault(player, vault, vaultType)
+        // Create a unique key for this player-vault combination
+        val lockKey = "${player.uniqueId}:${vault.id}"
+
+        // Check if this vault is already being opened by this player (prevents spam-click race condition)
+        val now = System.currentTimeMillis()
+        val existingOperation = openingVaults[lockKey]
+        if (existingOperation != null && now - existingOperation < 5000) {
+            // Operation still in progress (less than 5 seconds ago)
             return
         }
 
-        // Check cooldown
-        val (canOpen, remainingTime) = plugin.vaultManager.canOpenVault(player.uniqueId, vault)
+        // Mark this vault as being opened
+        openingVaults[lockKey] = now
 
-        if (!canOpen) {
-            // Vault is on cooldown
-            val timeString = MessageUtil.formatTime(remainingTime)
-            player.sendMessage(plugin.getMessage("vault-cooldown",
-                "type" to vaultType.displayName,
-                "time" to timeString
-            ))
+        try {
+            // Check permission bypass
+            if (player.hasPermission("tcp.bypass.cooldown")) {
+                openVault(player, vault, vaultType)
+                return
+            }
 
-            // Show cooldown particles
-            showCooldownParticles(player, location, vaultType)
-            playErrorSound(player)
-        } else {
-            // Can open the vault
-            openVault(player, vault, vaultType)
+            // Check cooldown
+            val (canOpen, remainingTime) = plugin.vaultManager.canOpenVault(player.uniqueId, vault)
+
+            if (!canOpen) {
+                // Vault is locked
+                if (remainingTime == Long.MAX_VALUE) {
+                    // Permanent lock (vanilla behavior)
+                    player.sendMessage(plugin.getMessage("vault-locked",
+                        "type" to vaultType.displayName
+                    ))
+                } else {
+                    // Time-based cooldown
+                    val timeString = MessageUtil.formatTime(remainingTime)
+                    player.sendMessage(plugin.getMessage("vault-cooldown",
+                        "type" to vaultType.displayName,
+                        "time" to timeString
+                    ))
+                }
+
+                // Show cooldown particles
+                showCooldownParticles(player, location, vaultType)
+                playErrorSound(player)
+            } else {
+                // Can open the vault
+                openVault(player, vault, vaultType)
+            }
+        } finally {
+            // Clean up the lock after 5 seconds to prevent memory leaks
+            listenerScope.launch {
+                delay(5000)
+                openingVaults.remove(lockKey)
+            }
         }
     }
 
@@ -144,47 +187,62 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         vault: io.github.darkstarworks.trialChamberPro.models.VaultData,
         vaultType: VaultType
     ) {
-        // Record the opening
+        // Record the opening (for cooldown tracking)
         plugin.vaultManager.recordOpen(player.uniqueId, vault.id)
+
+        // Update statistics (for leaderboards and /tcp stats)
+        plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
 
         // Generate loot (async, player might disconnect during this)
         val loot = plugin.lootManager.generateLoot(vault.lootTable, player)
 
         // MUST switch to main thread for player access
-        withContext(Dispatchers.Main) {
-            // Verify player still online
-            if (!player.isOnline) {
-                plugin.logger.info("Player ${player.name} disconnected during vault open")
-                return@withContext
-            }
-
-            // Give items to player
-            val leftover = player.inventory.addItem(*loot.toTypedArray())
-
-            // Drop leftover items if inventory is full
-            if (leftover.isNotEmpty()) {
-                // Double-check still online
-                if (player.isOnline) {
-                    leftover.values.forEach { item ->
-                        player.world.dropItemNaturally(player.location, item)
+        // Use Bukkit scheduler instead of Dispatchers.Main (which doesn't exist in server environment)
+        kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, Runnable {
+                try {
+                    // Verify player still online
+                    if (!player.isOnline) {
+                        plugin.logger.info("Player ${player.name} disconnected during vault open")
+                        continuation.resume(Unit) {}
+                        return@Runnable
                     }
-                    player.sendMessage("§eYour inventory was full! Some items were dropped.")
+
+                    // Give items to player
+                    val leftover = player.inventory.addItem(*loot.toTypedArray())
+
+                    // Drop leftover items if inventory is full
+                    if (leftover.isNotEmpty()) {
+                        // Double-check still online
+                        if (player.isOnline) {
+                            leftover.values.forEach { item ->
+                                player.world.dropItemNaturally(player.location, item)
+                            }
+                            player.sendMessage("§eYour inventory was full! Some items were dropped.")
+                        }
+                    }
+
+                    player.sendMessage(plugin.getMessage("vault-opened", "type" to vaultType.displayName))
+
+                    // Play success sound and particles
+                    playSuccessSound(player, player.location)
+                    showSuccessParticles(player, player.location, vaultType)
+
+                    // Consume the trial key
+                    val item = player.inventory.itemInMainHand
+                    if (item.amount > 1) {
+                        item.amount -= 1
+                    } else {
+                        player.inventory.setItemInMainHand(null)
+                    }
+
+                    continuation.resume(Unit) {}
+                } catch (e: Exception) {
+                    plugin.logger.severe("Error in vault open: ${e.message}")
+                    e.printStackTrace()
+                    continuation.resumeWith(Result.failure(e))
                 }
-            }
-
-            player.sendMessage(plugin.getMessage("vault-opened", "type" to vaultType.displayName))
-
-            // Play success sound and particles
-            playSuccessSound(player, player.location)
-            showSuccessParticles(player, player.location, vaultType)
-
-            // Consume the trial key
-            val item = player.inventory.itemInMainHand
-            if (item.amount > 1) {
-                item.amount -= 1
-            } else {
-                player.inventory.setItemInMainHand(null)
-            }
+            })
         }
     }
 

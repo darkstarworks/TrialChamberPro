@@ -6,6 +6,7 @@ import com.github.stefvanschie.inventoryframework.pane.OutlinePane
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.Chamber
+import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Material
@@ -27,7 +28,7 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
         page.gap = 1
 
         chambers.take(45).forEach { chamber ->
-            page.addItem(GuiItem(createChamberItem(chamber)) { event ->
+            page.addItem(GuiItem(createChamberItem(chamber, player)) { event ->
                 event.isCancelled = true
                 menu.openLootKindSelect(player, chamber)
             })
@@ -52,7 +53,7 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
         return gui
     }
 
-    private fun createChamberItem(chamber: Chamber): ItemStack {
+    private fun createChamberItem(chamber: Chamber, player: Player): ItemStack {
         val item = ItemStack(Material.LODESTONE)
 
         // Time calculations
@@ -66,6 +67,11 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
         // Vault counts (Normal/Ominous) via lightweight TTL cache (non-blocking)
         val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
 
+        // Get locked vault counts for this player
+        val (normalLocked, ominousLocked) = runBlocking {
+            plugin.vaultManager.getLockedVaultCounts(player.uniqueId, chamber.id)
+        }
+
         item.itemMeta = (item.itemMeta ?: plugin.server.itemFactory.getItemMeta(item.type))?.apply {
             displayName(Component.text(chamber.name, NamedTextColor.AQUA))
             lore(
@@ -74,6 +80,7 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
                     Component.text("Bounds: (${chamber.minX},${chamber.minY},${chamber.minZ}) -> (${chamber.maxX},${chamber.maxY},${chamber.maxZ})", NamedTextColor.GRAY),
                     Component.text("Players inside: $playersInside", NamedTextColor.GRAY),
                     Component.text("Vaults: $normalCount Normal, $ominousCount Ominous", NamedTextColor.GRAY),
+                    Component.text("Locked: $normalLocked Normal, $ominousLocked Ominous", NamedTextColor.RED),
                     Component.text("Time until reset: ${humanizeDuration(timeUntilMs)}", NamedTextColor.YELLOW),
                     Component.text("Since last reset: ${humanizeDuration(sinceLastMs)}", NamedTextColor.YELLOW),
                     Component.text("Click to Manage", NamedTextColor.GREEN)

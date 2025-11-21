@@ -499,8 +499,8 @@ time-seconds: "{seconds}s"
 
 ```yaml
 help-header: "&6=== TrialChamberPro Commands ==="
-help-add: "&e/tcp add <name> &7- Register existing chamber from WorldEdit selection"
 help-scan: "&e/tcp scan <chamber> &7- Scan for vaults/spawners"
+help-generate: "&e/tcp generate <mode> ... &7- Register chamber from various sources"
 # ... (all help entries)
 ```
 
@@ -511,14 +511,14 @@ Customize the entire help menu to match your server's command style!
 Compact:
 ```yaml
 help-header: "&6Commands:"
-help-add: "&e/tcp add <name> &8▸ &7Register chamber"
 help-scan: "&e/tcp scan <chamber> &8▸ &7Scan for blocks"
+help-generate: "&e/tcp generate <mode> &8▸ &7Register chamber"
 ```
 
 Detailed:
 ```yaml
 help-header: "&6╔════════════════════════════╗\n&6║ &fTrialChamberPro Commands\n&6╚════════════════════════════╝"
-help-add: "&e/tcp add <name>\n  &7Adds a chamber from your WorldEdit selection"
+help-generate: "&e/tcp generate wand <name>\n  &7Registers a chamber from your WorldEdit selection"
 ```
 
 ---

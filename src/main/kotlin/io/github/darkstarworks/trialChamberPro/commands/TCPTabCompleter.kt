@@ -8,7 +8,6 @@ import org.bukkit.command.TabCompleter
 
 /**
  * Tab completion for /tcp commands.
- * Note: "add" registers existing Trial Chambers for management.
  */
 class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
 

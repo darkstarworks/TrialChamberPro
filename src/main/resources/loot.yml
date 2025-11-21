@@ -130,3 +130,257 @@ loot-tables:
 #     commands:
 #       - "eco give {player} 1000"
 #     display-name: "&61000 Coins"
+#
+# ============================================
+# MULTI-POOL LOOT SYSTEM (NEW!)
+# ============================================
+# Like vanilla, you can create multiple loot pools that each roll independently.
+# This is OPTIONAL - the single-pool format above still works!
+#
+# Example: Vanilla-like loot with common/rare/unique pools
+#
+#  vanilla-style:
+#    pools:
+#      # Common pool - always gives 2-3 basic items
+#      - name: common
+#        min-rolls: 2
+#        max-rolls: 3
+#        weighted-items:
+#          - type: IRON_INGOT
+#            amount-min: 3
+#            amount-max: 7
+#            weight: 30.0
+#          - type: GOLD_INGOT
+#            amount-min: 2
+#            amount-max: 5
+#            weight: 25.0
+#          - type: ARROW
+#            amount-min: 16
+#            amount-max: 32
+#            weight: 20.0
+#          - type: BREAD
+#            amount-min: 5
+#            amount-max: 10
+#            weight: 25.0
+#
+#      # Rare pool - gives 1-2 valuable items
+#      - name: rare
+#        min-rolls: 1
+#        max-rolls: 2
+#        weighted-items:
+#          - type: DIAMOND
+#            amount-min: 1
+#            amount-max: 3
+#            weight: 15.0
+#          - type: EMERALD
+#            amount-min: 3
+#            amount-max: 8
+#            weight: 20.0
+#          - type: GOLDEN_APPLE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 12.0
+#          - type: ENCHANTED_BOOK
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            enchantments:
+#              - "SHARPNESS:3"
+#
+#      # Unique pool - rare chance at 0-1 special item
+#      - name: unique
+#        min-rolls: 0
+#        max-rolls: 1
+#        weighted-items:
+#          - type: ENCHANTED_GOLDEN_APPLE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 3.0
+#            name: "&6&lRare Treasure"
+#          - type: NETHERITE_INGOT
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 2.0
+#          - type: ELYTRA
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#            name: "&5&lUltra Rare!"
+#
+# Benefits of multi-pool system:
+# - Each pool rolls independently (more predictable loot)
+# - Better control over loot distribution (common vs rare vs unique)
+# - Matches vanilla Trial Chamber behavior
+# - Can have 0-roll pools for bonus/rare items
+#
+# Note: GUI loot editor supports both legacy and multi-pool formats!
+# ============================================
+# ADVANCED LOOT FEATURES (NEW!)
+# ============================================
+# Advanced features to create vanilla-like loot:
+# - Tipped arrows with potion effects
+# - Potions with custom levels (including ominous potions)
+# - Enchantment randomization (random level ranges)
+# - Random enchantment pools (pick one random enchantment)
+# - Variable durability (damaged items)
+#
+# ====== TIPPED ARROWS ======
+# Tipped arrows use the TIPPED_ARROW material + potion-type
+#
+#      - type: TIPPED_ARROW
+#        amount-min: 8
+#        amount-max: 16
+#        weight: 15.0
+#        potion-type: POISON  # Any PotionType: POISON, HEALING, STRENGTH, etc.
+#        potion-level: 1      # 0 = Level I, 1 = Level II, 2 = Level III, etc.
+#
+#      - type: TIPPED_ARROW
+#        amount-min: 8
+#        amount-max: 16
+#        weight: 10.0
+#        potion-type: SLOWNESS
+#        potion-level: 3      # Level IV Slowness!
+#
+# ====== POTIONS WITH LEVELS ======
+# Create potions with specific effect levels
+#
+#      - type: POTION
+#        amount-min: 1
+#        amount-max: 2
+#        weight: 12.0
+#        potion-type: STRENGTH
+#        potion-level: 1      # Strength II
+#
+#      - type: SPLASH_POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 8.0
+#        potion-type: HEALING
+#        potion-level: 1      # Instant Health II
+#
+#      - type: LINGERING_POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 6.0
+#        potion-type: HARMING
+#        potion-level: 1      # Instant Damage II
+#
+# ====== OMINOUS POTIONS (1.21+) ======
+# Ominous potions are special 1.21 feature - very rare!
+#
+#      - type: POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 2.0
+#        potion-type: STRENGTH
+#        potion-level: 3      # Level IV!
+#        ominous-potion: true # Makes it an ominous bottle
+#        name: "&5&lOminous Strength"
+#        lore:
+#          - "&7A powerful ominous concoction"
+#          - "&7Only found in Trial Chambers"
+#
+# ====== ENCHANTMENT RANGES ======
+# Apply enchantments with random levels (like vanilla!)
+#
+#      - type: DIAMOND_SWORD
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 10.0
+#        enchantment-ranges:  # Enchantment will have random level in range
+#          - "SHARPNESS:1:5"  # Sharpness I to V
+#          - "LOOTING:1:3"    # Looting I to III
+#
+#      - type: DIAMOND_PICKAXE
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 8.0
+#        enchantment-ranges:
+#          - "EFFICIENCY:3:5"  # Efficiency III to V
+#          - "FORTUNE:1:3"     # Fortune I to III
+#
+# ====== RANDOM ENCHANTMENT POOL ======
+# Pick ONE random enchantment from a pool (great for variety!)
+#
+#      - type: ENCHANTED_BOOK
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 15.0
+#        random-enchantment-pool:  # Will pick ONE of these enchantments
+#          - "SHARPNESS:3:5"       # Either Sharpness III-V
+#          - "PROTECTION:2:4"      # OR Protection II-IV
+#          - "UNBREAKING:2:3"      # OR Unbreaking II-III
+#          - "EFFICIENCY:3:5"      # OR Efficiency III-V
+#          - "MENDING:1:1"         # OR Mending I
+#
+#      - type: DIAMOND_CHESTPLATE
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 5.0
+#        random-enchantment-pool:  # Armor with ONE random enchantment
+#          - "PROTECTION:3:4"
+#          - "BLAST_PROTECTION:3:4"
+#          - "PROJECTILE_PROTECTION:3:4"
+#          - "FIRE_PROTECTION:3:4"
+#
+# ====== VARIABLE DURABILITY ======
+# Drop items with random damage (like vanilla treasure!)
+#
+#      - type: DIAMOND_SWORD
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 10.0
+#        enchantments:
+#          - "SHARPNESS:4"
+#        durability-min: 200  # Item will have 200-800 damage
+#        durability-max: 800  # (Diamond sword has 1561 max durability)
+#        name: "&bUsed Diamond Sword"
+#        lore:
+#          - "&7Found in a Trial Chamber"
+#          - "&7Slightly worn but still powerful!"
+#
+#      - type: NETHERITE_PICKAXE
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 3.0
+#        enchantment-ranges:
+#          - "EFFICIENCY:4:5"
+#          - "FORTUNE:2:3"
+#        durability-min: 500
+#        durability-max: 1500
+#        name: "&5Veteran's Pickaxe"
+#
+# ====== COMBINING EVERYTHING ======
+# You can mix and match any/all features!
+#
+#      - type: DIAMOND_SWORD
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 5.0
+#        name: "&6&lLegendary Blade"
+#        lore:
+#          - "&7Forged in ancient trials"
+#          - "&7Carries the mark of champions"
+#        enchantment-ranges:      # Fixed enchantment with random level
+#          - "SHARPNESS:4:5"
+#        random-enchantment-pool: # PLUS one random enchantment
+#          - "LOOTING:2:3"
+#          - "SWEEPING_EDGE:2:3"
+#          - "FIRE_ASPECT:1:2"
+#        durability-min: 100      # Slightly used
+#        durability-max: 300
+#
+# ====== AVAILABLE POTION TYPES ======
+# Use these for potion-type field:
+# SPEED, SLOWNESS, STRENGTH, INSTANT_HEAL, INSTANT_DAMAGE, JUMP_BOOST,
+# REGENERATION, RESISTANCE, FIRE_RESISTANCE, WATER_BREATHING, INVISIBILITY,
+# NIGHT_VISION, WEAKNESS, POISON, WITHER, TURTLE_MASTER, SLOW_FALLING
+#
+# ====== NOTES ======
+# - Fixed enchantments use: enchantments: ["ENCHANTMENT:LEVEL"]
+# - Enchantment ranges use: enchantment-ranges: ["ENCHANTMENT:MIN:MAX"]
+# - Random pool uses: random-enchantment-pool: ["ENCHANTMENT:MIN:MAX", ...]
+# - You can combine fixed, ranges, AND random pool on the same item!
+# - Durability values are damage (higher = more damaged)
+# - Ominous potions are 1.21+ exclusive feature
+# - All enchantment names: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html

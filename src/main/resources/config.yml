@@ -25,7 +25,7 @@ global:
 generation:
   # Maximum number of blocks allowed when generating/registering a chamber region
   # Keep this manageable for your server hardware
-  max-volume: 500000
+  max-volume: 750000
   blocks:
     # When using /tcp generate blocks <amount>, we may need to round up to reach minimum viable dimensions.
     # This is the maximum number of extra blocks allowed beyond the requested amount.
@@ -36,8 +36,10 @@ vaults:
   per-player-loot: true
 
   # Separate cooldowns for normal and ominous vaults
-  normal-cooldown-hours: 24
-  ominous-cooldown-hours: 48
+  # Set to -1 for permanent lock (vanilla behavior: once opened, stays locked until chamber reset)
+  # Set to a positive number for time-based cooldowns (e.g., 24 = 24 hours)
+  normal-cooldown-hours: -1
+  ominous-cooldown-hours: -1
 
   # Visual indicators
   show-cooldown-particles: true
@@ -78,7 +80,7 @@ reset:
   remove-non-chamber-mobs: false
   reset-ominous-spawners: true  # Convert ominous back to normal
   clear-trial-omen-effect: true
-  reset-vault-cooldowns: false  # Reset player vault cooldowns on chamber reset
+  reset-vault-cooldowns: true  # Reset player vault cooldowns on chamber reset (REQUIRED for vanilla behavior)
 
 # Performance
 performance:
@@ -95,5 +97,18 @@ statistics:
   leaderboard-update-interval: 3600  # Update leaderboards hourly (seconds)
   top-players-count: 10
 
+# Loot settings
+loot:
+  # Apply LUCK potion effect to loot generation
+  # When enabled, players with the LUCK effect get bonus loot rolls
+  # Each level of LUCK adds +1 extra roll (e.g., LUCK II = +2 rolls)
+  apply-luck-effect: false
+
+  # Maximum number of loot pools per loot table
+  # Each pool rolls independently (like vanilla's common/rare/unique system)
+  # GUI will limit pool editing to this number
+  max-pools-per-table: 5
+
 # Debug mode
-debug: false
+debug:
+  verbose-logging: false

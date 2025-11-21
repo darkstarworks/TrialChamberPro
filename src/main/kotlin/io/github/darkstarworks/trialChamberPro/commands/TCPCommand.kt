@@ -66,7 +66,6 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun sendHelp(sender: CommandSender) {
         sender.sendMessage(plugin.getMessage("help-header"))
-        sender.sendMessage(plugin.getMessage("help-add"))
         sender.sendMessage(plugin.getMessage("help-generate"))
         sender.sendMessage(plugin.getMessage("help-scan"))
         sender.sendMessage(plugin.getMessage("help-setexit"))

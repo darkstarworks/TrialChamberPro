@@ -53,6 +53,106 @@ How many times to randomly pick from `weighted-items`. A random number between m
 
 ---
 
+## 🎱 Multi-Pool Loot System (NEW!)
+
+**Like vanilla Trial Chambers**, you can now create multiple loot pools that each roll independently! This gives you much finer control over loot distribution.
+
+### Why Use Multiple Pools?
+
+Vanilla Minecraft vaults use **3 separate pools**:
+- **Common pool**: Always gives 2-3 basic items (iron, gold, arrows)
+- **Rare pool**: Gives 1-2 valuable items (diamonds, enchanted books)
+- **Unique pool**: 0-1 chance at special items (enchanted golden apples, heavy core)
+
+**Benefits:**
+- ✅ **More predictable loot** - Players always get common items + chance at rare/unique
+- ✅ **Better progression** - Separate rare items from common items
+- ✅ **Matches vanilla** - Feels like the real Trial Chambers
+- ✅ **Flexible design** - Can have pools with `min-rolls: 0` for bonus items
+
+### Multi-Pool Example
+
+```yaml
+loot-tables:
+  vanilla-style:
+    pools:
+      # Common pool - always gives 2-3 basic items
+      - name: common
+        min-rolls: 2
+        max-rolls: 3
+        weighted-items:
+          - type: IRON_INGOT
+            amount-min: 3
+            amount-max: 7
+            weight: 30.0
+          - type: GOLD_INGOT
+            amount-min: 2
+            amount-max: 5
+            weight: 25.0
+          - type: ARROW
+            amount-min: 16
+            amount-max: 32
+            weight: 20.0
+
+      # Rare pool - gives 1-2 valuable items
+      - name: rare
+        min-rolls: 1
+        max-rolls: 2
+        weighted-items:
+          - type: DIAMOND
+            amount-min: 1
+            amount-max: 3
+            weight: 15.0
+          - type: EMERALD
+            amount-min: 3
+            amount-max: 8
+            weight: 20.0
+          - type: GOLDEN_APPLE
+            amount-min: 1
+            amount-max: 1
+            weight: 12.0
+
+      # Unique pool - rare chance at 0-1 special item
+      - name: unique
+        min-rolls: 0
+        max-rolls: 1
+        weighted-items:
+          - type: ENCHANTED_GOLDEN_APPLE
+            amount-min: 1
+            amount-max: 1
+            weight: 3.0
+          - type: NETHERITE_INGOT
+            amount-min: 1
+            amount-max: 1
+            weight: 2.0
+```
+
+**How it works:**
+1. Player opens vault
+2. Common pool rolls 2-3 times → always get basic items
+3. Rare pool rolls 1-2 times → get valuable items
+4. Unique pool rolls 0-1 times → **might** get special item
+5. Total: 3-6 items with good variety!
+
+{% hint style="info" %}
+**Legacy Format Still Works!** The old single-pool format (without `pools:`) is fully supported and will keep working. This is purely optional!
+{% endhint %}
+
+{% hint style="warning" %}
+**GUI Limitation:** The loot editor GUI currently only supports the legacy single-pool format. To use multi-pool, you must edit `loot.yml` directly and reload with `/tcp reload`.
+{% endhint %}
+
+### Config Option
+
+Control the maximum number of pools in `config.yml`:
+
+```yaml
+loot:
+  max-pools-per-table: 5  # Default: 5
+```
+
+---
+
 ## ✨ Item Types
 
 ### Basic Items
@@ -121,6 +221,328 @@ See [Spigot Enchantment enum](https://hub.spigotmc.org/javadocs/spigot/org/bukki
 ```
 
 Pro tip: Give ONLY enchanted books for specific enchants, not enchanted gear. Let players choose what to apply it to!
+
+---
+
+## 🔮 Advanced Loot Features (NEW!)
+
+**Version 1.1.9+** brings vanilla-style loot customization with full Minecraft 1.21+ support! Create dynamic, randomized loot just like vanilla Trial Chambers.
+
+### 🏹 Tipped Arrows
+
+Add potion effects to arrows with custom amplifier levels!
+
+```yaml
+- type: TIPPED_ARROW
+  amount-min: 8
+  amount-max: 16
+  weight: 15.0
+  potion-type: POISON    # Any PotionType
+  potion-level: 1        # 0 = Level I, 1 = Level II, etc.
+  name: "&aPoison Arrows"
+```
+
+**Available potion types:**
+`SPEED`, `SLOWNESS`, `STRENGTH`, `INSTANT_HEAL`, `INSTANT_DAMAGE`, `JUMP_BOOST`, `REGENERATION`, `RESISTANCE`, `FIRE_RESISTANCE`, `WATER_BREATHING`, `INVISIBILITY`, `NIGHT_VISION`, `WEAKNESS`, `POISON`, `WITHER`, `TURTLE_MASTER`, `SLOW_FALLING`
+
+**Examples:**
+```yaml
+# Poison II arrows (great for combat)
+- type: TIPPED_ARROW
+  amount-min: 12
+  amount-max: 24
+  weight: 15.0
+  potion-type: POISON
+  potion-level: 1
+
+# Slowness IV arrows (for PvP)
+- type: TIPPED_ARROW
+  amount-min: 8
+  amount-max: 16
+  weight: 10.0
+  potion-type: SLOWNESS
+  potion-level: 3
+```
+
+### 🧪 Potions with Custom Levels
+
+Create potions with any effect level—perfect for ominous vault rewards!
+
+```yaml
+- type: POTION
+  amount-min: 1
+  amount-max: 2
+  weight: 12.0
+  potion-type: STRENGTH
+  potion-level: 1        # Strength II
+  name: "&cStrength Potion II"
+```
+
+**Works with:**
+- `POTION` - Drinkable potions (3 minute duration)
+- `SPLASH_POTION` - Throwable (2:15 duration)
+- `LINGERING_POTION` - Creates cloud (45 second cloud)
+
+**Examples:**
+```yaml
+# Healing II splash potion
+- type: SPLASH_POTION
+  amount-min: 2
+  amount-max: 4
+  weight: 10.0
+  potion-type: HEALING
+  potion-level: 1
+
+# Regeneration III lingering potion
+- type: LINGERING_POTION
+  amount-min: 1
+  amount-max: 2
+  weight: 8.0
+  potion-type: REGENERATION
+  potion-level: 2
+```
+
+### 🌑 Ominous Potions (1.21+ Exclusive)
+
+**NEW IN 1.21!** Ominous potions are special bottles with extreme effect levels—only available from Trial Chambers in vanilla!
+
+```yaml
+- type: POTION
+  amount-min: 1
+  amount-max: 1
+  weight: 2.0
+  potion-type: STRENGTH
+  potion-level: 3          # Strength IV!
+  ominous-potion: true     # Makes it an ominous bottle
+  name: "&5&lOminous Strength"
+  lore:
+    - "&7A powerful ominous concoction"
+    - "&7Only found in Trial Chambers"
+```
+
+**Perfect for ominous vault loot!** These are the rarest potions in Minecraft.
+
+**Popular ominous potions:**
+```yaml
+# Ominous Strength IV (vanilla: only from ominous vaults)
+- type: POTION
+  potion-type: STRENGTH
+  potion-level: 3
+  ominous-potion: true
+  weight: 3.0
+
+# Ominous Regeneration IV
+- type: POTION
+  potion-type: REGENERATION
+  potion-level: 3
+  ominous-potion: true
+  weight: 2.0
+
+# Ominous Speed IV
+- type: POTION
+  potion-type: SPEED
+  potion-level: 3
+  ominous-potion: true
+  weight: 2.5
+```
+
+{% hint style="info" %}
+**Ominous Potion Note:** The `ominous-potion: true` flag is cosmetic in most 1.21 implementations. The real power is the high `potion-level` (3+ = Level IV+)!
+{% endhint %}
+
+### ✨ Enchantment Randomization
+
+Add dynamic enchantments with random levels—just like vanilla treasure loot!
+
+#### Fixed Level Ranges
+
+Apply enchantments with random levels within a range:
+
+```yaml
+- type: DIAMOND_SWORD
+  amount-min: 1
+  amount-max: 1
+  weight: 10.0
+  enchantment-ranges:
+    - "SHARPNESS:1:5"    # Random Sharpness I to V
+    - "LOOTING:1:3"      # Random Looting I to III
+  name: "&bRandom Enchanted Sword"
+```
+
+**Format:** `ENCHANTMENT:MIN_LEVEL:MAX_LEVEL`
+
+**Examples:**
+```yaml
+# Pickaxe with random Efficiency and Fortune
+- type: DIAMOND_PICKAXE
+  amount-min: 1
+  amount-max: 1
+  weight: 8.0
+  enchantment-ranges:
+    - "EFFICIENCY:3:5"    # Efficiency III-V
+    - "FORTUNE:1:3"       # Fortune I-III
+
+# Bow with random Power level
+- type: BOW
+  amount-min: 1
+  amount-max: 1
+  weight: 12.0
+  enchantment-ranges:
+    - "POWER:3:5"         # Power III-V
+    - "UNBREAKING:2:3"    # Unbreaking II-III
+```
+
+#### Random Enchantment Pool
+
+Pick **ONE** random enchantment from a pool—great for variety!
+
+```yaml
+- type: ENCHANTED_BOOK
+  amount-min: 1
+  amount-max: 1
+  weight: 15.0
+  random-enchantment-pool:    # Will pick ONE of these
+    - "SHARPNESS:3:5"         # Either Sharpness III-V
+    - "PROTECTION:2:4"        # OR Protection II-IV
+    - "UNBREAKING:2:3"        # OR Unbreaking II-III
+    - "EFFICIENCY:3:5"        # OR Efficiency III-V
+    - "MENDING:1:1"           # OR Mending I
+```
+
+**Perfect for enchanted books!** Each player gets a different random enchantment.
+
+**Examples:**
+```yaml
+# Armor with ONE random protection type
+- type: DIAMOND_CHESTPLATE
+  amount-min: 1
+  amount-max: 1
+  weight: 5.0
+  random-enchantment-pool:
+    - "PROTECTION:3:4"
+    - "BLAST_PROTECTION:3:4"
+    - "PROJECTILE_PROTECTION:3:4"
+    - "FIRE_PROTECTION:3:4"
+
+# Book with one random utility enchantment
+- type: ENCHANTED_BOOK
+  weight: 10.0
+  random-enchantment-pool:
+    - "MENDING:1:1"
+    - "SILK_TOUCH:1:1"
+    - "FORTUNE:2:3"
+    - "LOOTING:2:3"
+```
+
+#### Combining Enchantment Features
+
+You can mix fixed enchantments, ranges, and random pools!
+
+```yaml
+- type: DIAMOND_SWORD
+  amount-min: 1
+  amount-max: 1
+  weight: 5.0
+  name: "&6&lLegendary Blade"
+  lore:
+    - "&7Forged in ancient trials"
+  enchantments:
+    - "UNBREAKING:3"          # ALWAYS Unbreaking III
+  enchantment-ranges:
+    - "SHARPNESS:4:5"         # PLUS random Sharpness IV-V
+  random-enchantment-pool:    # PLUS one random bonus
+    - "LOOTING:2:3"
+    - "SWEEPING_EDGE:2:3"
+    - "FIRE_ASPECT:1:2"
+```
+
+### 🔨 Variable Durability
+
+Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
+
+```yaml
+- type: DIAMOND_SWORD
+  amount-min: 1
+  amount-max: 1
+  weight: 10.0
+  enchantments:
+    - "SHARPNESS:4"
+  durability-min: 200        # Minimum damage value
+  durability-max: 800        # Maximum damage value
+  name: "&bUsed Diamond Sword"
+  lore:
+    - "&7Found in a Trial Chamber"
+    - "&7Slightly worn but still powerful!"
+```
+
+**How it works:**
+- `durability-min` and `durability-max` are **damage values** (higher = more damaged)
+- Diamond sword max durability: 1561 (so 200-800 damage = 60-50% durability remaining)
+- Perfect for "treasure" items that feel discovered, not crafted
+
+**Examples:**
+```yaml
+# Heavily worn pickaxe (still useful)
+- type: NETHERITE_PICKAXE
+  amount-min: 1
+  amount-max: 1
+  weight: 3.0
+  enchantment-ranges:
+    - "EFFICIENCY:4:5"
+    - "FORTUNE:2:3"
+  durability-min: 500
+  durability-max: 1500
+  name: "&5Veteran's Pickaxe"
+  lore:
+    - "&7Seen many adventures"
+
+# Lightly damaged armor (great find)
+- type: DIAMOND_HELMET
+  weight: 8.0
+  enchantments:
+    - "PROTECTION:3"
+  durability-min: 50
+  durability-max: 200
+  name: "&bScratched Helmet"
+```
+
+{% hint style="warning" %}
+**Durability values are damage amounts!** Higher values = more damaged. Check the max durability for each material to calibrate your ranges.
+{% endhint %}
+
+### 🎨 Combining Everything
+
+You can mix **all** advanced features on a single item!
+
+```yaml
+- type: DIAMOND_SWORD
+  amount-min: 1
+  amount-max: 1
+  weight: 2.0
+  name: "&5&lUltimate Trial Weapon"
+  lore:
+    - "&7Found in the deepest chamber"
+    - "&7Radiates ancient power"
+  enchantments:
+    - "UNBREAKING:3"          # Fixed: always Unbreaking III
+  enchantment-ranges:
+    - "SHARPNESS:4:5"         # Random Sharpness IV-V
+  random-enchantment-pool:
+    - "LOOTING:2:3"           # One random bonus enchantment
+    - "SWEEPING_EDGE:2:3"
+    - "FIRE_ASPECT:1:2"
+  durability-min: 100         # Pre-damaged (battle-worn)
+  durability-max: 300
+```
+
+This creates an incredible loot item with:
+- Custom name and lore
+- Always has Unbreaking III
+- Random Sharpness IV or V
+- ONE random bonus enchantment (Looting/Sweeping/Fire Aspect)
+- Random damage (100-300), making it feel "discovered"
+
+**Perfect for ominous vault jackpots!**
 
 ---
 

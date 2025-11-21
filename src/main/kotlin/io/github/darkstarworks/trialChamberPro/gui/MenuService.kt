@@ -17,13 +17,14 @@ class MenuService(private val plugin: TrialChamberPro) {
         var screen: Screen = Screen.OVERVIEW,
         var chamberId: Int? = null,
         var lootKind: LootKind? = null,
+        var poolName: String? = null, // NEW: Track current pool being edited
         var itemIndex: Int? = null,
         var isWeighted: Boolean? = null,
-        // Draft editors per loot kind per chamber
+        // Draft editors per loot kind per chamber per pool
         val drafts: MutableMap<String, LootEditorView.Draft> = mutableMapOf()
     )
 
-    enum class Screen { OVERVIEW, LOOT_KIND_SELECT, LOOT_EDITOR, AMOUNT_EDITOR }
+    enum class Screen { OVERVIEW, LOOT_KIND_SELECT, POOL_SELECT, LOOT_EDITOR, AMOUNT_EDITOR }
 
     enum class LootKind { NORMAL, OMINOUS }
 
@@ -39,10 +40,20 @@ class MenuService(private val plugin: TrialChamberPro) {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
                 if (chamber != null) openLootKindSelect(player, chamber) else openOverview(player)
             }
+            Screen.POOL_SELECT -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                val kind = s.lootKind
+                if (chamber != null && kind != null) openPoolSelect(player, chamber, kind) else openOverview(player)
+            }
             Screen.LOOT_EDITOR -> {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
                 val kind = s.lootKind
-                if (chamber != null && kind != null) openLootEditor(player, chamber, kind) else openOverview(player)
+                val poolName = s.poolName
+                if (chamber != null && kind != null) {
+                    openLootEditor(player, chamber, kind, poolName)
+                } else {
+                    openOverview(player)
+                }
             }
             Screen.AMOUNT_EDITOR -> {
                 val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
@@ -60,9 +71,14 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     fun openOverview(player: Player) {
         // Warm vault counts cache to keep UI responsive
+        // Stagger the refresh calls to avoid overwhelming the database connection pool
         try {
-            plugin.chamberManager.getCachedChambers().forEach { chamber ->
-                plugin.vaultManager.refreshVaultCountsAsync(chamber.id)
+            val chambers = plugin.chamberManager.getCachedChambers()
+            chambers.forEachIndexed { index, chamber ->
+                // Stagger requests by 50ms each to prevent connection pool exhaustion
+                plugin.server.scheduler.runTaskLater(plugin, Runnable {
+                    plugin.vaultManager.refreshVaultCountsAsync(chamber.id)
+                }, (index * 1L)) // Delay in ticks (20 ticks = 1 second)
             }
         } catch (_: Exception) { /* ignore */ }
 
@@ -81,32 +97,49 @@ class MenuService(private val plugin: TrialChamberPro) {
         sessions[player.uniqueId]?.apply {
             screen = Screen.LOOT_KIND_SELECT
             chamberId = chamber.id
+            lootKind = null
+            poolName = null
         }
         gui.show(player)
     }
 
-    fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind) {
-        val key = draftKey(chamber.id, kind)
+    fun openPoolSelect(player: Player, chamber: Chamber, kind: LootKind) {
+        val view = PoolSelectorView(plugin, this, chamber, kind)
+        val gui = view.build(player)
+        sessions[player.uniqueId]?.apply {
+            screen = Screen.POOL_SELECT
+            chamberId = chamber.id
+            lootKind = kind
+            poolName = null
+        }
+        gui.show(player)
+    }
+
+    fun openLootEditor(player: Player, chamber: Chamber, kind: LootKind, poolName: String? = null) {
+        val key = draftKey(chamber.id, kind, poolName)
         val draft = sessions[player.uniqueId]?.drafts?.get(key)
-        val view = LootEditorView(plugin, this, chamber, kind, existingDraft = draft)
+        val view = LootEditorView(plugin, this, chamber, kind, poolName, existingDraft = draft)
         val gui = view.build(player)
         sessions[player.uniqueId]?.apply {
             screen = Screen.LOOT_EDITOR
             chamberId = chamber.id
             lootKind = kind
+            this.poolName = poolName
         }
         gui.show(player)
     }
 
     fun openAmountEditor(player: Player, chamber: Chamber, kind: LootKind, itemIndex: Int, isWeighted: Boolean) {
-        val key = draftKey(chamber.id, kind)
-        val draft = sessions[player.uniqueId]?.drafts?.get(key)
+        val session = sessions[player.uniqueId]
+        val poolName = session?.poolName
+        val key = draftKey(chamber.id, kind, poolName)
+        val draft = session?.drafts?.get(key)
         if (draft == null) {
             // No draft found, return to loot editor
-            openLootEditor(player, chamber, kind)
+            openLootEditor(player, chamber, kind, poolName)
             return
         }
-        val view = AmountEditorView(this, chamber, kind, itemIndex, isWeighted, draft)
+        val view = AmountEditorView(this, chamber, kind, poolName, itemIndex, isWeighted, draft)
         val gui = view.build()
         sessions[player.uniqueId]?.apply {
             screen = Screen.AMOUNT_EDITOR
@@ -118,10 +151,16 @@ class MenuService(private val plugin: TrialChamberPro) {
         gui.show(player)
     }
 
-    fun saveDraft(player: Player, chamber: Chamber, kind: LootKind, draft: LootEditorView.Draft) {
-        val key = draftKey(chamber.id, kind)
+    fun saveDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?, draft: LootEditorView.Draft) {
+        val key = draftKey(chamber.id, kind, poolName)
         getOrCreateSession(player.uniqueId).drafts[key] = draft
     }
 
-    private fun draftKey(chamberId: Int, kind: LootKind) = "${chamberId}:${kind.name}"
+    private fun draftKey(chamberId: Int, kind: LootKind, poolName: String? = null): String {
+        return if (poolName != null) {
+            "${chamberId}:${kind.name}:${poolName}"
+        } else {
+            "${chamberId}:${kind.name}"
+        }
+    }
 }

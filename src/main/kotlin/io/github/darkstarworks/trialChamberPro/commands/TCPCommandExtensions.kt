@@ -117,7 +117,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
 
             val keyMaterial = when (keyTypeStr) {
                 "ominous" -> {
-                    // Try to get ominous trial key
+                    // Try to get ominous trial key - it might not be in the Material enum yet
                     try {
                         Material.valueOf("OMINOUS_TRIAL_KEY")
                     } catch (_: IllegalArgumentException) {
@@ -158,7 +158,10 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
                     when (item.type) {
                         Material.TRIAL_KEY -> normalKeys += item.amount
                         else -> {
-                            if (item.type.name == "OMINOUS_TRIAL_KEY") {
+                            val materialName = item.type.name
+                            if (materialName == "OMINOUS_TRIAL_KEY" ||
+                                (materialName.contains("OMINOUS", ignoreCase = true) &&
+                                 materialName.contains("TRIAL_KEY", ignoreCase = true))) {
                                 ominousKeys += item.amount
                             }
                         }

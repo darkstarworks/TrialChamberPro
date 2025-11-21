@@ -52,7 +52,7 @@ That's painful. Get WorldEdit. Moving on!
 With your selection made, register the existing Trial Chamber with the plugin:
 
 ```
-/tcp add MyChamber
+/tcp generate wand MyChamber
 ```
 
 Replace `MyChamber` with whatever name you want. Keep it simple—no spaces!
@@ -68,7 +68,7 @@ You'll see:
 {% endhint %}
 
 {% hint style="info" %}
-**Note:** `/tcp add` registers **existing** Trial Chambers for management. It doesn't create or modify blocks—it just tells the plugin to start managing the selected region.
+**Note:** `/tcp generate wand` registers **existing** Trial Chambers from your WorldEdit selection for management. It doesn't create or modify blocks—it just tells the plugin to start managing the selected region.
 {% endhint %}
 
 ## 🔍 Step 4: Scan for Vaults and Spawners
@@ -192,7 +192,7 @@ Here's everything in one place:
 /wand
 
 # 2. Register chamber
-/tcp add MyChamber
+/tcp generate wand MyChamber
 
 # 3. Scan for vaults/spawners
 /tcp scan MyChamber

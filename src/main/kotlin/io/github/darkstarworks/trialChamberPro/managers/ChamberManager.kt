@@ -371,8 +371,9 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                                 when (block.type) {
                                     Material.VAULT -> {
+                                        // Save vault with its block state (normal or ominous)
                                         plugin.launchAsync {
-                                            saveVault(chamber.id, x, y, z, block.type)
+                                            saveVault(chamber.id, x, y, z, block)
                                         }
                                         vaultCount++
                                     }
@@ -386,13 +387,7 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                                         potCount++
                                     }
                                     else -> {
-                                        // Check for ominous vault by name
-                                        if (block.type.name == "OMINOUS_VAULT") {
-                                            plugin.launchAsync {
-                                                saveVault(chamber.id, x, y, z, block.type)
-                                            }
-                                            vaultCount++
-                                        }
+                                        // No-op for other blocks
                                     }
                                 }
                             }
@@ -410,14 +405,27 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
     /**
      * Saves a vault to the database.
+     * Checks block state to determine if it's ominous or normal.
      */
-    private suspend fun saveVault(chamberId: Int, x: Int, y: Int, z: Int, material: Material) = withContext(Dispatchers.IO) {
-        val type = if (material.name == "OMINOUS_VAULT") VaultType.OMINOUS else VaultType.NORMAL
+    private suspend fun saveVault(chamberId: Int, x: Int, y: Int, z: Int, block: org.bukkit.block.Block) = withContext(Dispatchers.IO) {
+        // Determine vault type from block state string (more reliable than property access)
+        val blockStateString = block.blockData.asString
+        val type = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
+            VaultType.OMINOUS
+        } else {
+            VaultType.NORMAL
+        }
+
         val lootTable = if (type == VaultType.OMINOUS) "ominous-default" else "default"
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("Saving vault at ($x,$y,$z): blockData='$blockStateString', type=$type, lootTable=$lootTable")
+        }
 
         try {
             plugin.databaseManager.connection.use { conn ->
-                // First, check if vault already exists at this location
+                // Check if vault already exists at this location
+                var existingId: Int? = null
                 conn.prepareStatement(
                     "SELECT id FROM vaults WHERE chamber_id = ? AND x = ? AND y = ? AND z = ?"
                 ).use { stmt ->
@@ -427,22 +435,37 @@ class ChamberManager(private val plugin: TrialChamberPro) {
                     stmt.setInt(4, z)
                     val rs = stmt.executeQuery()
                     if (rs.next()) {
-                        // Vault already exists, skip
-                        return@withContext
+                        existingId = rs.getInt("id")
                     }
                 }
 
-                // Insert new vault
-                conn.prepareStatement(
-                    "INSERT INTO vaults (chamber_id, x, y, z, type, loot_table) VALUES (?, ?, ?, ?, ?, ?)"
-                ).use { stmt ->
-                    stmt.setInt(1, chamberId)
-                    stmt.setInt(2, x)
-                    stmt.setInt(3, y)
-                    stmt.setInt(4, z)
-                    stmt.setString(5, type.name)
-                    stmt.setString(6, lootTable)
-                    stmt.executeUpdate()
+                if (existingId != null) {
+                    // Vault already exists - UPDATE it with correct type and loot table
+                    conn.prepareStatement(
+                        "UPDATE vaults SET type = ?, loot_table = ? WHERE id = ?"
+                    ).use { stmt ->
+                        stmt.setString(1, type.name)
+                        stmt.setString(2, lootTable)
+                        stmt.setInt(3, existingId)
+                        stmt.executeUpdate()
+
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("Updated existing vault at ($x,$y,$z): type=$type, lootTable=$lootTable")
+                        }
+                    }
+                } else {
+                    // Insert new vault
+                    conn.prepareStatement(
+                        "INSERT INTO vaults (chamber_id, x, y, z, type, loot_table) VALUES (?, ?, ?, ?, ?, ?)"
+                    ).use { stmt ->
+                        stmt.setInt(1, chamberId)
+                        stmt.setInt(2, x)
+                        stmt.setInt(3, y)
+                        stmt.setInt(4, z)
+                        stmt.setString(5, type.name)
+                        stmt.setString(6, lootTable)
+                        stmt.executeUpdate()
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -544,12 +567,25 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Clears the chamber cache.
+     * Clears the chamber cache and reloads all chambers from database.
      */
     fun clearCache() {
         chamberCache.clear()
         cacheExpiry.clear()
-        plugin.logger.info("Chamber cache cleared")
+        plugin.logger.info("Chamber cache cleared, reloading from database...")
+
+        // Reload all chambers from database asynchronously
+        plugin.launchAsync {
+            try {
+                val chambers = getAllChambers()
+                chambers.forEach { chamber ->
+                    chamberCache[chamber.name] = chamber
+                }
+                plugin.logger.info("Reloaded ${chambers.size} chambers into cache")
+            } catch (e: Exception) {
+                plugin.logger.severe("Failed to reload chambers after cache clear: ${e.message}")
+            }
+        }
     }
 
     /**

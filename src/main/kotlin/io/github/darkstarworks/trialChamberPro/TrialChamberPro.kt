@@ -241,6 +241,16 @@ class TrialChamberPro : JavaPlugin() {
             }
         }
 
+        // Log debug mode status
+        val debugEnabled = config.getBoolean("debug.verbose-logging", false)
+        if (debugEnabled) {
+            logger.warning("═══════════════════════════════════════")
+            logger.warning("   DEBUG MODE ENABLED")
+            logger.warning("   Verbose logging is active")
+            logger.warning("   Expect detailed console output")
+            logger.warning("═══════════════════════════════════════")
+        }
+
         logger.info("TrialChamberPro has been enabled!")
     }
 

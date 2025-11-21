@@ -4,6 +4,159 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.9] - 2025-11-22
+### Added
+- **Advanced Loot Features**: Vanilla-style loot customization with full 1.21+ support
+  - **Tipped Arrows**: Add any potion effect to arrows (POISON, SLOWNESS, etc.) with custom levels
+    - Example: `type: TIPPED_ARROW`, `potion-type: POISON`, `potion-level: 1` for Poison II arrows
+  - **Potions with Custom Levels**: Create potions beyond vanilla limits
+    - Works with POTION, SPLASH_POTION, and LINGERING_POTION types
+    - Set `potion-type` and `potion-level` (0 = Level I, 1 = Level II, etc.)
+    - Supports level IV+ for ominous potions (1.21+ exclusive feature)
+  - **Ominous Potions**: Rare 1.21+ bottles with extreme effect levels
+    - Set `ominous-potion: true` for special ominous bottle appearance
+    - Perfect for rare ominous vault rewards
+  - **Enchantment Randomization**: Dynamic enchantment levels like vanilla
+    - `enchantment-ranges`: Apply enchantments with random levels (e.g., `SHARPNESS:1:5` for I-V)
+    - `random-enchantment-pool`: Pick ONE random enchantment from a list
+    - Combine fixed enchantments, ranges, and random pools on the same item
+  - **Variable Durability**: Drop pre-damaged items with random wear
+    - Set `durability-min` and `durability-max` for random damage values
+    - Great for "used" weapons and tools as loot
+- **Debug Mode Startup Banner**: Visual confirmation when debug mode is enabled
+  - Displays prominent warning banner in console on server startup
+  - Helps verify `debug.verbose-logging: true` is loaded correctly
+  - Shows: "DEBUG MODE ENABLED - Verbose logging is active"
+
+### Fixed
+- **CRITICAL:** Fixed ominous vaults giving normal loot after rescanning
+  - Root cause: `ChamberManager.saveVault()` was skipping existing vaults instead of updating them
+  - Changed logic to UPDATE existing vaults with correct type and loot_table when rescanning
+  - Old vaults in database retained stale `lootTable="default"` even for ominous vaults
+  - Now properly updates vault type and loot table on every scan
+  - **Action Required**: Rescan chambers with `/tcp scan <name>` to apply correct loot tables
+
+### Changed
+- Enhanced `LootItem` model with 7 new optional fields for advanced features
+- Enhanced `LootManager.parseLootItem()` to parse all new YAML fields
+- Enhanced `LootManager.createItemStack()` to apply potions, enchantments, and durability
+- Potion durations automatically adjusted based on type:
+  - POTION: 3 minutes (3600 ticks)
+  - SPLASH_POTION: 2:15 (2700 ticks)
+  - LINGERING_POTION: 45 seconds (900 ticks)
+  - TIPPED_ARROW: 20 seconds (400 ticks)
+
+### Documentation
+- Added 170+ lines of examples to `loot.yml` covering all new advanced features
+- Added comprehensive documentation for potion types, enchantment syntax, and combinations
+- Updated with vanilla-style loot table examples (tipped arrows, ominous potions, etc.)
+
+## [1.1.8] - 2025-11-21
+### Fixed
+- **CRITICAL:** Fixed ominous vault detection using blockstate string parsing instead of `isOminous` property
+  - Changed from `blockData.isOminous` to checking `blockData.asString` for `ominous=true`
+  - Ominous vaults now correctly identified during scanning and interaction
+  - Ominous vault loot tables now properly applied instead of using normal vault loot
+  - Menu now correctly displays ominous vault counts
+  - Updated both `ChamberManager.saveVault()` and `VaultInteractListener` to use string-based detection
+- Fixed chambers disappearing from `/tcp menu` after `/tcp reload`
+  - `ChamberManager.clearCache()` now automatically reloads all chambers from database asynchronously
+  - Chambers are immediately available after reload without needing to run `/tcp info`
+
+### Changed
+- Debug logging now shows full blockstate string for vault detection: `blockData='minecraft:vault[ominous=true,...]'`
+
+### Migration Notes
+- **Action Required:** Rescan existing chambers with `/tcp scan <name>` to update vault types in database
+  - Existing vaults may be stored with incorrect types (all as NORMAL)
+  - Rescanning will correctly identify ominous vs normal vaults using the new detection method
+
+## [1.1.7] - 2025-11-21
+### Added
+- **Multi-Pool Loot System**: Vanilla-style loot pools (common/rare/unique) with independent roll ranges
+  - Support for up to 5 pools per loot table (configurable via `loot.max-pools-per-table`)
+  - Backwards compatible with legacy single-pool format
+  - Each pool has its own min/max rolls, weighted items, and guaranteed items
+  - Loot tables automatically convert from legacy format when needed
+- **GUI Pool Support**: Complete GUI workflow for managing multi-pool loot tables
+  - New `PoolSelectorView` displays all pools in a multi-pool table with visual icons
+  - Pool icons: Iron Ingot (common), Diamond (rare), Nether Star (unique), Chest (other)
+  - `LootTypeSelectView` automatically detects multi-pool vs legacy tables and routes accordingly
+  - `LootEditorView` now supports editing specific pools within multi-pool tables
+  - Navigation flow: Overview → Loot Type → Pool Selector (if multi-pool) → Editor → Amount Editor
+  - Per-pool draft preservation with session-based tracking
+- **LUCK Effect Support**: Optional bonus loot rolls based on player LUCK
+  - Configurable via `loot.apply-luck-effect: false` (default: disabled)
+  - Checks both potion effects (temporary) and item attributes (permanent)
+  - Each LUCK level adds +1 bonus roll to each pool
+  - Works with potions, beacons, suspicious stew, and custom items with LUCK modifiers
+  - Debug logging available with `debug.verbose-logging: true`
+- Increased max chamber volume from 500,000 to 750,000 blocks (`generation.max-volume`)
+
+### Fixed
+- **CRITICAL:** Fixed ominous vault detection - now properly checks block state (`vault[ominous=true]`)
+  - Ominous vaults can now be opened with ominous trial keys
+  - Vault scanning correctly identifies ominous vs normal vaults via `BlockData.isOminous`
+  - Updated both `VaultInteractListener` and `ChamberManager` to use block state checking
+
+### Changed
+- `LootManager` now supports both legacy single-pool and new multi-pool loot table formats
+- `MenuService.Session` now tracks `poolName` for pool-specific navigation
+- Draft key generation includes pool name to isolate edits per pool
+- `AmountEditorView` now accepts `poolName` parameter for proper back navigation
+
+### Internal
+- Added `LootPool` data class with min/max rolls and item lists
+- Updated `LootTable.isLegacyFormat()` to detect format automatically
+- Added `LootTable.getEffectivePools()` to convert legacy tables to pool format on-the-fly
+- MenuService now has 6 GUI views: Overview, LootTypeSelect, PoolSelector, LootEditor, AmountEditor
+- GUI navigation state machine expanded with `POOL_SELECT` screen
+- CLAUDE.md updated with multi-pool architecture and GUI navigation flow
+
+### Documentation
+- Updated `loot.yml` with extensive multi-pool examples and migration guide
+- Updated `config.yml.md` with LUCK effect documentation and balance warnings
+
+## [1.1.6] - 2025-11-20
+### Added
+- Added "Locked: X Normal, X Ominous" display to `/tcp menu` chamber tooltips showing per-player locked vault counts
+- Added `vault-locked` message for permanent vault locks (distinct from time-based cooldowns)
+- Added in-memory lock to prevent vault spam-clicking race condition (5-second window per player-vault)
+- Added `getLockedVaultCounts()` function to query locked vaults per player per chamber
+
+### Fixed
+- **CRITICAL:** Fixed `Dispatchers.Main` error when opening vaults - now uses Bukkit scheduler instead of non-existent Android Main dispatcher
+- **CRITICAL:** Fixed vault statistics never being recorded - `incrementVaultsOpened()` now called when opening vaults
+- **CRITICAL:** Fixed database connection pool exhaustion causing 60s timeouts:
+  - Increased SQLite connection pool from 1 to 5 (WAL mode supports concurrent readers)
+  - Reduced connection timeout from 60s to 30s (fail faster)
+  - Added SQLite `busy_timeout=5000` for better lock handling
+  - Added leak detection threshold (10s) to identify connection leaks
+  - Staggered vault count refreshes in menu to prevent connection stampede
+- Fixed UPSERT race condition in `recordOpen()` - now uses atomic SQL `INSERT ... ON CONFLICT DO UPDATE`
+- Fixed vault spam-clicking allowing multiple opens before database write completed
+- Removed all references to deprecated `/tcp add` command from help, docs, and tab completion
+
+### Changed
+- **BREAKING:** Changed default vault cooldown from 24/48 hours to -1 (permanent lock, vanilla behavior)
+  - Set `normal-cooldown-hours: -1` (permanent until chamber reset)
+  - Set `ominous-cooldown-hours: -1` (permanent until chamber reset)
+  - Set `reset-vault-cooldowns: true` by default (required for vanilla behavior)
+  - Cooldown can still be customized to time-based (e.g., 24 = 24 hours)
+- Updated `canOpenVault()` to interpret negative cooldown as permanent lock
+- Vault opening now shows different messages for permanent lock vs time-based cooldown
+- Replaced `/tcp add` with `/tcp generate wand` in all documentation and examples
+
+### Internal
+- Database schema changes: None (backwards compatible)
+- Config changes: Default cooldown values changed from 24/48 to -1
+- Permission `tcp.bypass.cooldown` now properly documented as separate from `tcp.admin.*`
+
+### Migration Notes
+- Existing vaults opened with old cooldowns will now be permanently locked
+- Run `/tcp reset <chamber>` to unlock all vaults in a chamber
+- Admins: explicitly deny `tcp.bypass.cooldown` permission if you want to test locking behavior
+
 ## [1.1.5] - 2025-10-31
 ### Added
 - Checking for Update from GitHub Releases with a short message, describing what has changed from the previous version.
@@ -179,6 +332,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.1.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.7...v1.1.8
+[1.1.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.6...v1.1.7
+[1.1.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.2...v1.1.3

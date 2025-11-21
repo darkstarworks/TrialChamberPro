@@ -156,42 +156,22 @@ class VaultManager(private val plugin: TrialChamberPro) {
             val now = System.currentTimeMillis()
 
             plugin.databaseManager.connection.use { conn ->
-                // Check if record exists
-                val exists = conn.prepareStatement(
-                    "SELECT times_opened FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                // Use UPSERT (atomic INSERT or UPDATE) to avoid race conditions
+                // This is SQLite 3.24.0+ syntax
+                conn.prepareStatement(
+                    """
+                    INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
+                    VALUES (?, ?, ?, 1)
+                    ON CONFLICT(player_uuid, vault_id)
+                    DO UPDATE SET
+                        last_opened = excluded.last_opened,
+                        times_opened = times_opened + 1
+                    """.trimIndent()
                 ).use { stmt ->
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
-                    stmt.executeQuery().next()
-                }
-
-                if (exists) {
-                    // Update existing record
-                    conn.prepareStatement(
-                        """
-                        UPDATE player_vaults
-                        SET last_opened = ?, times_opened = times_opened + 1
-                        WHERE player_uuid = ? AND vault_id = ?
-                        """.trimIndent()
-                    ).use { stmt ->
-                        stmt.setLong(1, now)
-                        stmt.setString(2, playerUuid.toString())
-                        stmt.setInt(3, vaultId)
-                        stmt.executeUpdate()
-                    }
-                } else {
-                    // Insert new record
-                    conn.prepareStatement(
-                        """
-                        INSERT INTO player_vaults (player_uuid, vault_id, last_opened, times_opened)
-                        VALUES (?, ?, ?, 1)
-                        """.trimIndent()
-                    ).use { stmt ->
-                        stmt.setString(1, playerUuid.toString())
-                        stmt.setInt(2, vaultId)
-                        stmt.setLong(3, now)
-                        stmt.executeUpdate()
-                    }
+                    stmt.setLong(3, now)
+                    stmt.executeUpdate()
                 }
             }
         } catch (e: Exception) {
@@ -216,10 +196,17 @@ class VaultManager(private val plugin: TrialChamberPro) {
 
         // Get cooldown based on vault type
         val cooldownHours = when (vault.type) {
-            VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", 24)
-            VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", 48)
+            VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", -1)
+            VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
         }
 
+        // Check for permanent lock (vanilla behavior)
+        if (cooldownHours < 0) {
+            // -1 or any negative value means permanent lock until chamber reset
+            return Pair(false, Long.MAX_VALUE)
+        }
+
+        // Time-based cooldown
         val cooldownMs = cooldownHours * 3600000 // Convert hours to milliseconds
         val timeSince = System.currentTimeMillis() - lastOpened
         val remaining = cooldownMs - timeSince
@@ -228,6 +215,51 @@ class VaultManager(private val plugin: TrialChamberPro) {
             Pair(true, 0L)
         } else {
             Pair(false, remaining)
+        }
+    }
+
+    /**
+     * Gets the count of locked vaults for a player in a chamber (split by type).
+     *
+     * @param playerUuid Player UUID
+     * @param chamberId Chamber ID
+     * @return Pair of (locked normal count, locked ominous count)
+     */
+    suspend fun getLockedVaultCounts(playerUuid: UUID, chamberId: Int): Pair<Int, Int> = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    """
+                    SELECT v.type, COUNT(*) as count
+                    FROM player_vaults pv
+                    JOIN vaults v ON pv.vault_id = v.id
+                    WHERE pv.player_uuid = ? AND v.chamber_id = ?
+                    GROUP BY v.type
+                    """.trimIndent()
+                ).use { stmt ->
+                    stmt.setString(1, playerUuid.toString())
+                    stmt.setInt(2, chamberId)
+
+                    var normalLocked = 0
+                    var ominousLocked = 0
+
+                    stmt.executeQuery().use { rs ->
+                        while (rs.next()) {
+                            val type = rs.getString("type")
+                            val count = rs.getInt("count")
+                            when (type) {
+                                "NORMAL" -> normalLocked = count
+                                "OMINOUS" -> ominousLocked = count
+                            }
+                        }
+                    }
+
+                    Pair(normalLocked, ominousLocked)
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to get locked vault counts: ${e.message}")
+            Pair(0, 0)
         }
     }
 

@@ -54,14 +54,23 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
         val config = HikariConfig().apply {
             jdbcUrl = "jdbc:sqlite:${dbFile.absolutePath}"
             driverClassName = "org.sqlite.JDBC"
-            maximumPoolSize = 1 // SQLite only supports one writer at a time
-            connectionTimeout = 60000 // Increase timeout to 60 seconds for busy operations
+            // WAL mode allows multiple concurrent readers (but still only 1 writer)
+            // Setting pool size to 5 allows read operations to run concurrently
+            maximumPoolSize = 5
+            minimumIdle = 1
+            connectionTimeout = 30000 // 30 seconds - fail faster if pool is exhausted
+            idleTimeout = 300000 // 5 minutes
+            maxLifetime = 600000 // 10 minutes
             connectionTestQuery = "SELECT 1"
             poolName = "TrialChamberPro-SQLite"
+
+            // Enable leak detection (helps identify connection leaks during development)
+            leakDetectionThreshold = 10000 // 10 seconds
 
             // SQLite optimizations for better concurrent access
             addDataSourceProperty("journal_mode", "WAL") // Write-Ahead Logging for better concurrency
             addDataSourceProperty("synchronous", "NORMAL") // Balance between safety and speed
+            addDataSourceProperty("busy_timeout", "5000") // Wait up to 5s for locks instead of failing immediately
         }
         return HikariDataSource(config)
     }

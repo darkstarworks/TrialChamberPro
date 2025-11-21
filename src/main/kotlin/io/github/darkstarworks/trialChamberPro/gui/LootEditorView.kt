@@ -7,6 +7,7 @@ import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.LootItem
+import io.github.darkstarworks.trialChamberPro.models.LootPool
 import io.github.darkstarworks.trialChamberPro.models.LootTable
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import net.kyori.adventure.text.Component
@@ -21,6 +22,7 @@ class LootEditorView(
     private val menu: MenuService,
     private val chamber: Chamber,
     private val kind: MenuService.LootKind,
+    private val poolName: String? = null,
     private val existingDraft: Draft? = null
 ) {
     data class Draft(
@@ -51,7 +53,7 @@ class LootEditorView(
         // Persist draft on close (unless user discarded)
         gui.setOnClose { _ ->
             if (!discardRequested) {
-                menu.saveDraft(player, chamber, kind, draft)
+                menu.saveDraft(player, chamber, kind, poolName, draft)
             }
         }
 
@@ -73,9 +75,16 @@ class LootEditorView(
         return gui
     }
 
-    private fun title(): String = when (kind) {
-        MenuService.LootKind.NORMAL -> "${chamber.name}: Normal Loot"
-        MenuService.LootKind.OMINOUS -> "${chamber.name}: Ominous Loot"
+    private fun title(): String {
+        val baseTitle = when (kind) {
+            MenuService.LootKind.NORMAL -> "${chamber.name}: Normal Loot"
+            MenuService.LootKind.OMINOUS -> "${chamber.name}: Ominous Loot"
+        }
+        return if (poolName != null) {
+            "$baseTitle - $poolName"
+        } else {
+            baseTitle
+        }
     }
 
     private fun cloneDraft(source: Draft): Draft = Draft(
@@ -96,7 +105,24 @@ class LootEditorView(
             MenuService.LootKind.NORMAL -> "default"
             MenuService.LootKind.OMINOUS -> "ominous-default"
         }
+
         val source = plugin.lootManager.getTable(baseName) ?: plugin.lootManager.getTable(fallback)
+
+        // If editing a specific pool, extract that pool's data
+        if (poolName != null && source != null && !source.isLegacyFormat()) {
+            val pool = source.pools.find { it.name == poolName }
+            if (pool != null) {
+                return Draft(
+                    tableName = baseName,
+                    guaranteed = pool.guaranteedItems.toMutableList(),
+                    weighted = pool.weightedItems.toMutableList(),
+                    minRolls = pool.minRolls,
+                    maxRolls = pool.maxRolls
+                )
+            }
+        }
+
+        // Legacy format or poolName is null - load entire table as before
         val table = source ?: LootTable(baseName, 1, 3, emptyList(), emptyList(), emptyList())
         return Draft(
             tableName = table.name,
@@ -247,8 +273,13 @@ class LootEditorView(
             it.isCancelled = true
             saveDraft(player)
             draft.dirty = false
-            menu.saveDraft(player, chamber, kind, draft)
-            menu.openLootKindSelect(player, chamber)
+            menu.saveDraft(player, chamber, kind, poolName, draft)
+            // Navigate back to pool selector if editing a pool, otherwise to loot kind select
+            if (poolName != null) {
+                menu.openPoolSelect(player, chamber, kind)
+            } else {
+                menu.openLootKindSelect(player, chamber)
+            }
         }, 0, 1)
 
         // Discard button (bottom-right)
@@ -264,7 +295,12 @@ class LootEditorView(
             it.isCancelled = true
             // Mark discard so onClose won't save the cloned draft
             discardRequested = true
-            menu.openLootKindSelect(player, chamber)
+            // Navigate back to pool selector if editing a pool, otherwise to loot kind select
+            if (poolName != null) {
+                menu.openPoolSelect(player, chamber, kind)
+            } else {
+                menu.openLootKindSelect(player, chamber)
+            }
         }, 8, 1)
 
         // Add from hand button
@@ -359,14 +395,40 @@ class LootEditorView(
     }
 
     private fun saveDraft(player: Player) {
-        val table = LootTable(
-            name = draft.tableName,
-            minRolls = draft.minRolls,
-            maxRolls = draft.maxRolls,
-            guaranteedItems = draft.guaranteed.toList(),
-            weightedItems = draft.weighted.toList(),
-            commandRewards = plugin.lootManager.getTable(draft.tableName)?.commandRewards ?: emptyList()
-        )
+        val existingTable = plugin.lootManager.getTable(draft.tableName)
+
+        val table = if (poolName != null && existingTable != null && !existingTable.isLegacyFormat()) {
+            // Update specific pool within multi-pool table
+            val updatedPools = existingTable.pools.map { pool ->
+                if (pool.name == poolName) {
+                    // Replace this pool with draft data
+                    pool.copy(
+                        minRolls = draft.minRolls,
+                        maxRolls = draft.maxRolls,
+                        guaranteedItems = draft.guaranteed.toList(),
+                        weightedItems = draft.weighted.toList()
+                    )
+                } else {
+                    // Keep other pools unchanged
+                    pool
+                }
+            }
+            LootTable(
+                name = draft.tableName,
+                pools = updatedPools
+            )
+        } else {
+            // Legacy format - save entire table as before
+            LootTable(
+                name = draft.tableName,
+                minRolls = draft.minRolls,
+                maxRolls = draft.maxRolls,
+                guaranteedItems = draft.guaranteed.toList(),
+                weightedItems = draft.weighted.toList(),
+                commandRewards = existingTable?.commandRewards ?: emptyList()
+            )
+        }
+
         plugin.lootManager.updateTable(table)
 
         // Persist to loot.yml
@@ -382,6 +444,11 @@ class LootEditorView(
             }
         })
 
-        player.sendMessage(Component.text("✓ Saved loot table '${draft.tableName}'", NamedTextColor.GREEN))
+        val message = if (poolName != null) {
+            "✓ Saved pool '$poolName' in '${draft.tableName}'"
+        } else {
+            "✓ Saved loot table '${draft.tableName}'"
+        }
+        player.sendMessage(Component.text(message, NamedTextColor.GREEN))
     }
 }

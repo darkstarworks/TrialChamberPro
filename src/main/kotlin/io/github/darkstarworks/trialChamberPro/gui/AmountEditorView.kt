@@ -15,6 +15,7 @@ class AmountEditorView(
     private val menu: MenuService,
     private val chamber: Chamber,
     private val kind: MenuService.LootKind,
+    private val poolName: String? = null,
     private val itemIndex: Int,
     private val isWeighted: Boolean,
     private val draft: LootEditorView.Draft
@@ -226,12 +227,12 @@ class AmountEditorView(
         draft.dirty = true
 
         // Save the draft and return to loot editor
-        menu.saveDraft(player, chamber, kind, draft)
-        menu.openLootEditor(player, chamber, kind)
+        menu.saveDraft(player, chamber, kind, poolName, draft)
+        menu.openLootEditor(player, chamber, kind, poolName)
     }
 
     private fun discardAndReturn(player: Player) {
         // Just return to loot editor without saving
-        menu.openLootEditor(player, chamber, kind)
+        menu.openLootEditor(player, chamber, kind, poolName)
     }
 }

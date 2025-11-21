@@ -373,15 +373,84 @@ How many players to show on leaderboards. Increase to 25 or 50 if you want bigge
 
 ---
 
+## 🎁 Loot Settings
+
+```yaml
+loot:
+  apply-luck-effect: false
+```
+
+### `apply-luck-effect`
+**Default:** `false`
+
+Enable LUCK to influence loot generation. When enabled, players receive bonus loot rolls based on their LUCK sources.
+
+**How it works:**
+- Checks **both** potion effects AND item attributes:
+  - **Potion Effect**: Temporary LUCK from potions, beacons, suspicious stew
+  - **Attribute**: Permanent LUCK from armor/items with luck modifiers
+- Each point of LUCK adds +1 bonus roll to each loot pool
+- Applies to weighted items only (guaranteed items are always given)
+- Works with both normal and ominous vaults
+
+**Example:**
+If a loot table has `min-rolls: 3` and `max-rolls: 5`:
+- No LUCK: Player gets 3-5 items
+- LUCK I potion: Player gets 4-6 items (+1 roll)
+- LUCK II potion: Player gets 5-7 items (+2 rolls)
+- LUCK I potion + 2 luck from items: Player gets 6-8 items (+3 rolls)
+
+**Sources of LUCK:**
+- Potion of Luck (temporary)
+- Beacons with Luck effect
+- Suspicious Stew made with dandelions
+- Custom items/armor with `Attribute.GENERIC_LUCK` modifiers
+
+{% hint style="info" %}
+**Tip:** This is great for rewarding players who bring LUCK potions to chambers, or for special events where you want to boost loot!
+{% endhint %}
+
+{% hint style="warning" %}
+**Balance Warning:** LUCK can significantly increase loot output. Test with your loot tables to ensure it doesn't break your economy.
+{% endhint %}
+
+---
+
 ## 🐛 Debug Mode
 
 ```yaml
-debug: false
+debug:
+  verbose-logging: false
 ```
 
+### `verbose-logging`
 **Default:** `false`
 
-Spam console with debugging info. Only enable this when troubleshooting issues or reporting bugs.
+Enable detailed logging for debugging. Logs include:
+- Vault type detection (normal vs ominous)
+- Key validation checks
+- LUCK effect calculations
+- Block state information
+- Vault saving and updates
+- Loot roll calculations
+
+**Version 1.1.9+:** When enabled, displays a prominent startup banner on server start:
+```
+═══════════════════════════════════════
+   DEBUG MODE ENABLED
+   Verbose logging is active
+   Expect detailed console output
+═══════════════════════════════════════
+```
+
+This helps verify that debug mode is actually loaded from your config file.
+
+{% hint style="info" %}
+**Troubleshooting:** If you don't see the startup banner after enabling debug mode:
+1. Make sure you're editing the config in `plugins/TrialChamberPro/config.yml` (not the default in the plugin jar)
+2. Fully restart your server (not just `/tcp reload`)
+3. Check for YAML syntax errors in your config file
+{% endhint %}
 
 {% hint style="warning" %}
 Debug mode generates TONS of console output. Don't leave it on in production!
@@ -507,7 +576,7 @@ These settings control constraints when registering or generating chamber region
 generation:
   # Maximum number of blocks allowed when generating/registering a chamber region
   # Keep this manageable for your server hardware
-  max-volume: 500000
+  max-volume: 750000
   blocks:
     # When using /tcp generate blocks <amount>, we may need to round up to reach
     # minimum viable dimensions (31x15x31). This is the maximum number of extra

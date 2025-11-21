@@ -55,11 +55,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
-#### `tcp.admin.create`
+#### `tcp.admin.generate`
 **Description:** Register and delete chambers
 **Default:** Operators only
 **Allows:**
-- `/tcp add <name>` - Register existing chambers for management
+- `/tcp generate <mode> <args>` - Register chambers from WorldEdit selection, coordinates, or blocks
 - `/tcp delete <chamber>` - Delete chambers
 - `/tcp setexit <chamber>` - Set exit locations
 
