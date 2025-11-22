@@ -1,5 +1,5 @@
-&e[v1.2.0] &fCommand Rewards Update
-&a+ &fNEW: &aCommand Rewards &7(Run console cmds as loot)
-&a+ &fSupports: &7Economy, Ranks, XP, Weights & more
-&a+ &fFeatures: &7{player} placeholders & multi-commands
-&b* &fCheck loot.yml for 100+ lines of new examples!
+&e[v1.2.1] &fOminous Bottles & 1.21 API
+&a+ &fNEW: &dOminous Bottles &7(Bad Omen I-V Support)
+&a+ &fNEW: &7Support for Luck, Glowing & Hero effects
+&c! &fFIXED: &cDuplicate potion effects &fon custom items
+&7* Internal: Full 1.21+ API Modernization (No warnings)
