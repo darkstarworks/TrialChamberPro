@@ -36,6 +36,7 @@ data class LootItem(
     // Potion/Tipped Arrow support
     val potionType: PotionType? = null, // For potions and tipped arrows
     val potionLevel: Int? = null, // Potion effect amplifier (0 = level I, 1 = level II, etc.)
+    val customEffectType: String? = null, // For custom effects like BAD_OMEN (ominous bottles)
     val isOminousPotion: Boolean = false, // For ominous potions (1.21+ feature)
 
     // Variable durability

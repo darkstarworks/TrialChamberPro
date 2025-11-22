@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerInteractEvent
  * Listens for vault interactions and handles per-player loot system.
  * Validates trial keys, checks cooldowns, and provides visual feedback.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
     private val listenerScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -327,9 +328,13 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
         val soundName = plugin.config.getString("vaults.sounds.normal-open", "BLOCK_VAULT_OPEN_SHUTTER")!!
         try {
-            val sound = Sound.valueOf(soundName)
-            player.playSound(location, sound, 1.0f, 1.0f)
-        } catch (_: IllegalArgumentException) {
+            // Convert enum-style name (BLOCK_VAULT_OPEN_SHUTTER) to namespaced key (block.vault.open_shutter)
+            val key = soundName.lowercase().replace('_', '.')
+            val sound = org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
+            if (sound != null) {
+                player.playSound(location, sound, 1.0f, 1.0f)
+            }
+        } catch (_: Exception) {
             // Sound not found, silently fail
         }
     }
@@ -342,9 +347,13 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
         val soundName = plugin.config.getString("vaults.sounds.cooldown", "BLOCK_NOTE_BLOCK_BASS")!!
         try {
-            val sound = Sound.valueOf(soundName)
-            player.playSound(player.location, sound, 1.0f, 0.5f)
-        } catch (_: IllegalArgumentException) {
+            // Convert enum-style name (BLOCK_NOTE_BLOCK_BASS) to namespaced key (block.note_block.bass)
+            val key = soundName.lowercase().replace('_', '.')
+            val sound = org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
+            if (sound != null) {
+                player.playSound(player.location, sound, 1.0f, 0.5f)
+            }
+        } catch (_: Exception) {
             // Sound not found, silently fail
         }
     }

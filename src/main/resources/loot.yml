@@ -267,6 +267,48 @@ loot-tables:
 #          - "&7A powerful ominous concoction"
 #          - "&7Only found in Trial Chambers"
 #
+# ====== OMINOUS BOTTLES (BAD OMEN) ======
+# Ominous Bottles are 1.21 items that give Bad Omen effect
+# Found only in ominous vaults, levels III-V (not I-II)
+# Used to trigger Ominous Trials
+#
+#      - type: POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 8.0
+#        custom-effect-type: BAD_OMEN  # Use custom effect types for special effects
+#        potion-level: 2               # 0=I, 1=II, 2=III, 3=IV, 4=V
+#        name: "&5&lOminous Bottle III"
+#        lore:
+#          - "&7Drink to receive Bad Omen III"
+#          - "&7Triggers an Ominous Trial"
+#
+#      - type: POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 5.0
+#        custom-effect-type: BAD_OMEN
+#        potion-level: 3               # Bad Omen IV
+#        name: "&5&lOminous Bottle IV"
+#        lore:
+#          - "&7Drink to receive Bad Omen IV"
+#          - "&7A more challenging Ominous Trial!"
+#
+#      - type: POTION
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 2.0
+#        custom-effect-type: BAD_OMEN
+#        potion-level: 4               # Bad Omen V (maximum)
+#        name: "&5&lOminous Bottle V"
+#        lore:
+#          - "&7Drink to receive Bad Omen V"
+#          - "&7The ultimate Ominous Trial challenge!"
+#
+# Note: custom-effect-type can be any PotionEffectType:
+# BAD_OMEN, HERO_OF_THE_VILLAGE, LUCK, UNLUCK, GLOWING, etc.
+# This is different from potion-type (which is for standard potions).
+#
 # ====== ENCHANTMENT RANGES ======
 # Apply enchantments with random levels (like vanilla!)
 #

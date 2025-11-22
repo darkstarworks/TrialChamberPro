@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.1] - 2025-11-22
+### Added
+- **Ominous Bottles (1.21+ Bad Omen Potions)**: Custom effect type support for special potions
+  - New `custom-effect-type` field for potion effects not available as PotionType
+  - Full support for BAD_OMEN effect (triggers Ominous Trials)
+  - Create ominous bottles with levels III-V (matching vanilla behavior)
+  - Duration automatically set to 100 minutes for Bad Omen (matching vanilla)
+  - Support for other custom effects: HERO_OF_THE_VILLAGE, LUCK, UNLUCK, GLOWING
+  - Works with POTION, SPLASH_POTION, LINGERING_POTION, and TIPPED_ARROW
+  - Comprehensive documentation in loot.yml and loot.yml.md
+  - Examples for all ominous bottle levels with proper naming and lore
+
+### Fixed
+- **CRITICAL:** Fixed duplicate potion effects on tipped arrows and potions with custom levels
+  - When using `potion-level`, the code was applying BOTH the base potion effect AND a custom effect
+  - Now only applies the custom effect when `potion-level` is specified
+  - Example: `potion-type: SLOWNESS, potion-level: 4` now correctly creates Slowness V (not Slowness I + Slowness V)
+  - Default potion behavior (without custom level) unchanged
+- **Eliminated all deprecation warnings** for Minecraft 1.21.1+ compatibility
+  - Migrated from deprecated `AsyncPlayerChatEvent` to modern `AsyncChatEvent` (Paper 1.19+)
+    - Now uses Adventure component API with PlainTextComponentSerializer
+    - Maintains backward compatibility with confirmation system
+  - Added `@OptIn(ExperimentalCoroutinesApi::class)` for suspendCancellableCoroutine usage
+  - Replaced deprecated `Sound.valueOf()` with registry access API
+    - Uses `Registry.SOUNDS.get()` with NamespacedKey conversion
+    - Automatic conversion from enum-style names (BLOCK_VAULT_OPEN_SHUTTER) to namespaced keys
+  - Replaced deprecated `PotionEffectType.getByName()` with `Registry.POTION_EFFECT_TYPE.get()`
+  - Replaced deprecated `PotionType.effectType` property with `potionEffects.firstOrNull()?.type`
+  - Fixed WorldEdit BlockVector3 coordinate deprecations
+    - Changed from deprecated `getX()/getY()/getZ()` to modern `x()/y()/z()` methods
+    - Compatible with WorldEdit 7.3+ and FastAsyncWorldEdit
+- Zero deprecation warnings when building with Kotlin 2.3.0 and Paper API 1.21.1
+
+### Technical Improvements
+- All code now uses modern Paper/Bukkit registry access APIs
+- Better compatibility with future Minecraft versions
+- Cleaner build output with no deprecation noise
+- Future-proof API usage following Paper best practices
+
 ## [1.2.0] - 2025-11-22
 ### Added
 - **COMMAND Rewards System**: Run console commands when players open vaults

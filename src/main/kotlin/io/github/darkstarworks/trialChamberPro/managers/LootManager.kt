@@ -253,6 +253,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         val potionLevel = (data["potion-level"] as? Number)?.toInt()
+        val customEffectType = data["custom-effect-type"] as? String
         val isOminousPotion = (data["ominous-potion"] as? Boolean) ?: false
 
         // Parse variable durability
@@ -273,6 +274,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             randomEnchantmentPool = randomEnchantmentPool.takeIf { it.isNotEmpty() },
             potionType = potionType,
             potionLevel = potionLevel,
+            customEffectType = customEffectType,
             isOminousPotion = isOminousPotion,
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
@@ -461,13 +463,55 @@ class LootManager(private val plugin: TrialChamberPro) {
             }
 
             // Apply potion effects for POTION, SPLASH_POTION, LINGERING_POTION, TIPPED_ARROW
-            if (lootItem.potionType != null) {
-                if (this is org.bukkit.inventory.meta.PotionMeta) {
-                    basePotionType = lootItem.potionType
+            if (this is org.bukkit.inventory.meta.PotionMeta) {
+                // Handle custom effect types (e.g., BAD_OMEN for ominous bottles)
+                if (lootItem.customEffectType != null) {
+                    val effectType = try {
+                        // Use registry access instead of deprecated getByName
+                        org.bukkit.Registry.POTION_EFFECT_TYPE.get(
+                            org.bukkit.NamespacedKey.minecraft(lootItem.customEffectType.lowercase())
+                        )
+                    } catch (_: Exception) {
+                        null
+                    }
 
+                    if (effectType != null) {
+                        val duration = when (lootItem.type) {
+                            Material.POTION -> 120000 // 100 minutes for Bad Omen (matches vanilla)
+                            Material.SPLASH_POTION -> 2700 // 2:15 for splash
+                            Material.LINGERING_POTION -> 900 // 45 seconds for lingering cloud
+                            Material.TIPPED_ARROW -> 400 // 20 seconds for arrows
+                            else -> 120000
+                        }
+
+                        val amplifier = lootItem.potionLevel ?: 0
+
+                        addCustomEffect(
+                            org.bukkit.potion.PotionEffect(
+                                effectType,
+                                duration,
+                                amplifier,
+                                false, // ambient
+                                true,  // particles
+                                true   // icon
+                            ),
+                            true // overwrite existing effects
+                        )
+
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("Applied custom effect ${lootItem.customEffectType} level ${amplifier + 1} to ${lootItem.type}")
+                        }
+                    } else {
+                        plugin.logger.warning("Invalid custom effect type: ${lootItem.customEffectType}")
+                    }
+                } else if (lootItem.potionType != null) {
+                    // Handle standard potion types
                     // Apply custom potion level (amplifier) if specified
                     if (lootItem.potionLevel != null) {
-                        val effectType = lootItem.potionType.effectType
+                        // When using custom levels, don't set basePotionType to avoid duplicate effects
+                        // Instead, only add the custom effect with the specified level
+                        // Use getPotionEffects() instead of deprecated effectType property
+                        val effectType = lootItem.potionType.potionEffects.firstOrNull()?.type
                         if (effectType != null) {
                             val duration = when (lootItem.type) {
                                 Material.POTION -> 3600 // 3 minutes for drinkable potions
@@ -485,9 +529,12 @@ class LootManager(private val plugin: TrialChamberPro) {
                                     true,
                                     true
                                 ),
-                                true // Override base potion effect
+                                true
                             )
                         }
+                    } else {
+                        // No custom level specified - use default base potion type
+                        basePotionType = lootItem.potionType
                     }
 
                     // Apply ominous potion flag (1.21+ feature)

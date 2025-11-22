@@ -42,8 +42,9 @@ object WorldEditUtil {
 
             val world = BukkitAdapter.adapt(selectionWorld)
 
-            val loc1 = Location(world, minPoint.x.toDouble(), minPoint.y.toDouble(), minPoint.z.toDouble())
-            val loc2 = Location(world, maxPoint.x.toDouble(), maxPoint.y.toDouble(), maxPoint.z.toDouble())
+            // Use x()/y()/z() methods (modern WorldEdit 7.3+)
+            val loc1 = Location(world, minPoint.x().toDouble(), minPoint.y().toDouble(), minPoint.z().toDouble())
+            val loc2 = Location(world, maxPoint.x().toDouble(), maxPoint.y().toDouble(), maxPoint.z().toDouble())
 
             return Pair(loc1, loc2)
 

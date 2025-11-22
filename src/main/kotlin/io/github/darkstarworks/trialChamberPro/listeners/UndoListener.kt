@@ -2,11 +2,12 @@ package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.utils.UndoTracker
+import io.papermc.paper.event.player.AsyncChatEvent
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
-import org.bukkit.event.player.AsyncPlayerChatEvent
 import org.bukkit.event.player.PlayerCommandPreprocessEvent
 
 class UndoListener(private val plugin: TrialChamberPro) : Listener {
@@ -41,10 +42,11 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    fun onAsyncChat(event: AsyncPlayerChatEvent) {
+    fun onAsyncChat(event: AsyncChatEvent) {
         val player = event.player
         val pending = UndoTracker.getPending(player.uniqueId) ?: return
-        val content = event.message.trim().lowercase()
+        // Extract plain text from Adventure component
+        val content = PlainTextComponentSerializer.plainText().serialize(event.message()).trim().lowercase()
 
         when (content) {
             "confirm" -> {
