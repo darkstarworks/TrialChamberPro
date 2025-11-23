@@ -1,5 +1,4 @@
-&e[v1.2.1] &fOminous Bottles & 1.21 API
-&a+ &fNEW: &dOminous Bottles &7(Bad Omen I-V Support)
-&a+ &fNEW: &7Support for Luck, Glowing & Hero effects
-&c! &fFIXED: &cDuplicate potion effects &fon custom items
-&7* Internal: Full 1.21+ API Modernization (No warnings)
+&e[v1.2.2] &fOminous Bottle Hotfix
+&c! &fFIXED: &cOminous Bottles &fitem type logic
+&7(Fixed "Uncraftable Potion" texture bug)
+&a+ &fNow uses correct &dMaterial.OMINOUS_BOTTLE
