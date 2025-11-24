@@ -1,4 +1,5 @@
-&e[v1.2.2] &fOminous Bottle Hotfix
-&c! &fFIXED: &cOminous Bottles &fitem type logic
-&7(Fixed "Uncraftable Potion" texture bug)
-&a+ &fNow uses correct &dMaterial.OMINOUS_BOTTLE
+&e[v1.2.3] &fPotion Durations & Vanilla Parity
+&a+ &fNEW: &aCustom Effect Duration &7(control ticks in config)
+&a+ &fLogic: &7Tipped Arrows now use 1/8 duration (Vanilla)
+&a+ &fLogic: &7Smart multipliers for Splash/Lingering
+&b* &fAuto-calculates vanilla times by default
