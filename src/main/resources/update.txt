@@ -1,5 +1,5 @@
-&e[v1.2.0] &fCommand Rewards Update
-&a+ &fNEW: &aCommand Rewards &7(Run console cmds as loot)
-&a+ &fSupports: &7Economy, Ranks, XP, Weights & more
-&a+ &fFeatures: &7{player} placeholders & multi-commands
-&b* &fCheck loot.yml for 100+ lines of new examples!
+&e[v1.2.3] &fPotion Durations & Vanilla Parity
+&a+ &fNEW: &aCustom Effect Duration &7(control ticks in config)
+&a+ &fLogic: &7Tipped Arrows now use 1/8 duration (Vanilla)
+&a+ &fLogic: &7Smart multipliers for Splash/Lingering
+&b* &fAuto-calculates vanilla times by default
