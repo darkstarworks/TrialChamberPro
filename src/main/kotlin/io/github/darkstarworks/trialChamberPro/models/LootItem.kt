@@ -38,6 +38,7 @@ data class LootItem(
     val potionLevel: Int? = null, // Potion effect amplifier (0 = level I, 1 = level II, etc.)
     val customEffectType: String? = null, // For custom effects like BAD_OMEN (ominous bottles)
     val isOminousPotion: Boolean = false, // For ominous potions (1.21+ feature)
+    val effectDuration: Int? = null, // Custom effect duration in ticks (20 ticks = 1 second). If null, uses defaults.
 
     // Variable durability
     val durabilityMin: Int? = null, // Minimum durability (as damage value)

@@ -262,7 +262,36 @@ Add potion effects to arrows with custom amplifier levels!
   weight: 10.0
   potion-type: SLOWNESS
   potion-level: 3
+
+# Long-lasting poison arrows with custom duration
+- type: TIPPED_ARROW
+  amount-min: 4
+  amount-max: 8
+  weight: 12.0
+  potion-type: POISON
+  potion-level: 1
+  effect-duration: 1200    # 60 seconds (1200 ticks). Default: 400 ticks (20 seconds)
+  name: "&2Long-Lasting Poison Arrow"
 ```
+
+**Custom Effect Duration:**
+
+The `effect-duration` field lets you override how long potion effects last. When **not specified**, durations are **automatically calculated** from the potion type using vanilla Minecraft multipliers:
+
+| Item Type | Auto-Calculated Duration | Multiplier |
+|-----------|-------------------------|-----------|
+| POTION | Base duration from potion type | 1.0× (100%) |
+| SPLASH_POTION | 75% of base potion | 0.75× |
+| LINGERING_POTION | 25% of base potion | 0.25× |
+| TIPPED_ARROW | **1/8 of base potion** | 0.125× (12.5%) |
+
+**Examples with auto-calculation:**
+- **Speed I Potion** (3:00 base) → **Tipped Arrow** = 22.5s (3:00 ÷ 8)
+- **Slowness I Potion** (1:30 base) → **Tipped Arrow** = 11.25s (1:30 ÷ 8)
+- **Regeneration I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
+- **Poison I Potion** (0:45 base) → **Tipped Arrow** = 5.625s (0:45 ÷ 8)
+
+**Manual override:** Specify `effect-duration: <ticks>` to use a custom duration instead of auto-calculation (20 ticks = 1 second)
 
 ### 🧪 Potions with Custom Levels
 
@@ -397,6 +426,7 @@ Use the `custom-effect-type` field to specify custom potion effects like `BAD_OM
   weight: 2.0
   custom-effect-type: BAD_OMEN
   potion-level: 4               # Bad Omen V (maximum)
+  effect-duration: 240000       # Optional: 200 minutes (default is 100 minutes)
   name: "&5&lOminous Bottle V"
   lore:
     - "&7Drink to receive Bad Omen V"
@@ -413,6 +443,8 @@ Use the `custom-effect-type` field to specify custom potion effects like `BAD_OM
 **When to use which:**
 - **Use `potion-type`** for normal potions (Strength, Speed, Healing, etc.)
 - **Use `custom-effect-type`** for special effects not available as PotionType (Bad Omen, Hero of the Village, etc.)
+
+**Note:** The `effect-duration` field works with both `potion-type` and `custom-effect-type`! Use it to customize how long any potion effect lasts.
 
 {% hint style="warning" %}
 **Important:** In vanilla Minecraft, ominous bottles only come in levels **III, IV, and V**—never I or II. Match vanilla behavior by using `potion-level: 2` (III), `potion-level: 3` (IV), or `potion-level: 4` (V).

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.3] - 2025-11-24
+### Added
+- **Configurable Potion Effect Durations**: New `effect-duration` field for complete control over potion/tipped arrow effect duration
+  - Optional field in loot.yml (measured in ticks, where 20 ticks = 1 second)
+  - When not specified, automatically calculates duration using **vanilla Minecraft behavior**
+  - **Tipped arrows now use 1/8 of potion duration** (matching vanilla mechanics)
+  - Smart multipliers: POTION (1.0×), SPLASH_POTION (0.75×), LINGERING_POTION (0.25×), TIPPED_ARROW (0.125×)
+  - Examples: Speed I arrow (22.5s), Slowness I arrow (11.25s), Poison I arrow (5.625s)
+  - Works with both `potion-type` (auto-calculated) and `custom-effect-type` (hardcoded fallbacks)
+  - Fully documented in loot.yml and loot.yml.md with calculation tables and examples
+
+### Technical Improvements
+- Duration calculation now reads base duration from PotionType at runtime
+- Automatic scaling ensures consistency with vanilla Minecraft across all potion types
+- Custom effect types (BAD_OMEN, etc.) use sensible fallback durations
+
+## [1.2.2] - 2025-11-23
+### Fixed
+- **CRITICAL:** Fixed ominous bottles creating "uncraftable potion" items instead of actual OMINOUS_BOTTLE items
+  - When `ominous-potion: true` was set in loot.yml, the plugin was creating a POTION item with custom effects
+  - Now correctly creates Material.OMINOUS_BOTTLE (the 1.21 item type with proper texture and properties)
+  - Ominous bottles now display correctly in inventory and match vanilla behavior
+  - Custom effects (Bad Omen levels, names, lore) still apply correctly via PotionMeta
+
 ## [1.2.1] - 2025-11-22
 ### Added
 - **Ominous Bottles (1.21+ Bad Omen Potions)**: Custom effect type support for special potions
@@ -453,6 +477,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.9...v1.2.0
 [1.1.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.8...v1.1.9
 [1.1.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.1.7...v1.1.8

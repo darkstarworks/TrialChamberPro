@@ -228,6 +228,15 @@ loot-tables:
 #        potion-type: SLOWNESS
 #        potion-level: 3      # Level IV Slowness!
 #
+#      - type: TIPPED_ARROW
+#        amount-min: 4
+#        amount-max: 8
+#        weight: 12.0
+#        potion-type: POISON
+#        potion-level: 1
+#        effect-duration: 1200  # OPTIONAL: Override duration (1200 ticks = 60s). If not specified, auto-calculates as 1/8 of potion duration (vanilla behavior)
+#        name: "&2Long-Lasting Poison Arrow"
+#
 # ====== POTIONS WITH LEVELS ======
 # Create potions with specific effect levels
 #
@@ -304,10 +313,16 @@ loot-tables:
 #        lore:
 #          - "&7Drink to receive Bad Omen V"
 #          - "&7The ultimate Ominous Trial challenge!"
+#        effect-duration: 240000  # OPTIONAL: Override duration (240000 ticks = 200 min). For custom effects, default is 120000 ticks (100 min)
 #
 # Note: custom-effect-type can be any PotionEffectType:
 # BAD_OMEN, HERO_OF_THE_VILLAGE, LUCK, UNLUCK, GLOWING, etc.
 # This is different from potion-type (which is for standard potions).
+#
+# effect-duration behavior:
+# - For potion-type items: Auto-calculates based on potion type (TIPPED_ARROW = 1/8 of potion duration)
+# - For custom-effect-type items: Uses hardcoded defaults (can be overridden)
+# - Always optional: Specify to override the automatic/default duration
 #
 # ====== ENCHANTMENT RANGES ======
 # Apply enchantments with random levels (like vanilla!)

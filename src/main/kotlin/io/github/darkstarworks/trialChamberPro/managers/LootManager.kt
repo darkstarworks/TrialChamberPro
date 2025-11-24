@@ -447,7 +447,15 @@ class LootManager(private val plugin: TrialChamberPro) {
      */
     private fun createItemStack(lootItem: LootItem, player: Player): ItemStack {
         val amount = Random.nextInt(lootItem.amountMin, lootItem.amountMax + 1)
-        val itemStack = ItemStack(lootItem.type, amount)
+
+        // Determine actual material type (handle ominous potions)
+        val actualMaterial = if (lootItem.isOminousPotion && lootItem.type == Material.POTION) {
+            Material.OMINOUS_BOTTLE
+        } else {
+            lootItem.type
+        }
+
+        val itemStack = ItemStack(actualMaterial, amount)
 
         itemStack.itemMeta = itemStack.itemMeta?.apply {
             // Set custom name
@@ -476,7 +484,7 @@ class LootManager(private val plugin: TrialChamberPro) {
                     }
 
                     if (effectType != null) {
-                        val duration = when (lootItem.type) {
+                        val duration = lootItem.effectDuration ?: when (lootItem.type) {
                             Material.POTION -> 120000 // 100 minutes for Bad Omen (matches vanilla)
                             Material.SPLASH_POTION -> 2700 // 2:15 for splash
                             Material.LINGERING_POTION -> 900 // 45 seconds for lingering cloud
@@ -513,12 +521,18 @@ class LootManager(private val plugin: TrialChamberPro) {
                         // Use getPotionEffects() instead of deprecated effectType property
                         val effectType = lootItem.potionType.potionEffects.firstOrNull()?.type
                         if (effectType != null) {
-                            val duration = when (lootItem.type) {
-                                Material.POTION -> 3600 // 3 minutes for drinkable potions
-                                Material.SPLASH_POTION -> 2700 // 2:15 for splash
-                                Material.LINGERING_POTION -> 900 // 45 seconds for lingering cloud
-                                Material.TIPPED_ARROW -> 400 // 20 seconds for arrows
-                                else -> 3600
+                            val duration = lootItem.effectDuration ?: run {
+                                // Get base duration from the potion type (vanilla duration)
+                                val baseDuration = lootItem.potionType.potionEffects.firstOrNull()?.duration ?: 3600
+
+                                // Apply vanilla duration multipliers based on item type
+                                when (lootItem.type) {
+                                    Material.POTION -> baseDuration  // 1.0x (base duration)
+                                    Material.SPLASH_POTION -> (baseDuration * 0.75).toInt()  // 75% of base
+                                    Material.LINGERING_POTION -> (baseDuration * 0.25).toInt()  // 25% of base
+                                    Material.TIPPED_ARROW -> (baseDuration / 8)  // 1/8 of base (12.5%)
+                                    else -> baseDuration
+                                }
                             }
                             addCustomEffect(
                                 org.bukkit.potion.PotionEffect(
@@ -535,12 +549,6 @@ class LootManager(private val plugin: TrialChamberPro) {
                     } else {
                         // No custom level specified - use default base potion type
                         basePotionType = lootItem.potionType
-                    }
-
-                    // Apply ominous potion flag (1.21+ feature)
-                    if (lootItem.isOminousPotion && lootItem.type == Material.POTION) {
-                        // Note: Ominous bottle flag is handled via PotionType in 1.21
-                        // The user needs to use proper PotionType values for ominous variants
                     }
                 }
             }
