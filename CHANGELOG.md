@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.4] - 2025-11-30
+### Fixed
+- **Tipped Arrow Duration Bug**: Fixed tipped arrows showing "00:00" duration when looted from vaults
+  - Root cause: Minimum duration check only triggered when calculated duration was exactly 0
+  - If Paper API returned small duration values (1-99 ticks), integer division produced tiny but non-zero values that bypassed the minimum check
+  - Now uses `maxOf(calculatedDuration, minDuration)` to always enforce minimum durations
+  - Also fixed: `effect-duration: 0` in config now correctly falls back to calculated duration instead of using 0
+
+### Added
+- **Full Folia Support**: Complete rewrite of scheduler system for Folia compatibility
+  - New `SchedulerAdapter` abstraction layer with Paper and Folia implementations
+  - Automatic Folia detection at startup with appropriate scheduler selection
+  - Location-based scheduling (`runAtLocation`) for block operations (snapshots, restoration, scanning)
+  - Entity-based scheduling (`runAtEntity`) for player operations (teleportation, inventory, messages)
+  - Global region scheduling for non-location-specific tasks
+  - Added `folia-supported: true` to plugin.yml
+
+### Changed
+- **17 files updated** to use the new scheduler abstraction:
+  - Core: `TrialChamberPro.kt`, `CoroutineExtensions.kt`
+  - Managers: `ResetManager.kt`, `ChamberManager.kt`, `SnapshotManager.kt`, `LootManager.kt`, `PasteConfirmationManager.kt`
+  - Listeners: `VaultInteractListener.kt`, `PlayerMovementListener.kt`, `UndoListener.kt`
+  - GUI: `MenuService.kt`, `LootTypeSelectView.kt`, `LootEditorView.kt`
+  - Utils: `BlockRestorer.kt`, `ParticleVisualizer.kt`, `UpdateChecker.kt`
+- Player teleportation during chamber resets now uses entity-specific scheduling for thread safety
+- Block restoration batches now schedule to the correct region thread per chunk
+- Chamber scanning uses location-based scheduling for proper Bukkit API access
+
+### Technical Details
+- `SchedulerAdapter` interface provides unified API for both platforms:
+  - `runTask()` / `runTaskAsync()` - Global/async tasks
+  - `runTaskLater()` / `runTaskLaterAsync()` - Delayed tasks (now return `ScheduledTask` for cancellation)
+  - `runTaskTimer()` / `runTaskTimerAsync()` - Repeating tasks
+  - `runAtLocation()` / `runAtLocationLater()` - Region-specific tasks (critical for Folia)
+  - `runAtEntity()` / `runAtEntityLater()` - Entity-specific tasks (critical for Folia)
+- On Paper: All location/entity methods delegate to main thread
+- On Folia: Uses `RegionScheduler`, `EntityScheduler`, `GlobalRegionScheduler`, and `AsyncScheduler`
+
 ## [1.2.3] - 2025-11-24
 ### Added
 - **Configurable Potion Effect Durations**: New `effect-duration` field for complete control over potion/tipped arrow effect duration
@@ -477,6 +515,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.0...v1.2.1

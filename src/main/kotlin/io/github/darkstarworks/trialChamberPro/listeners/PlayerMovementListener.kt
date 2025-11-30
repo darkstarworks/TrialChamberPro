@@ -1,6 +1,7 @@
 package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.scheduler.ScheduledTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,7 +11,6 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.scheduler.BukkitRunnable
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -95,19 +95,22 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
         }
     }
 
+    // Track the timer task so we can cancel it if needed
+    private var timeTrackingTask: ScheduledTask? = null
+
     /**
      * Starts the periodic flush task that saves time data every 5 minutes.
+     * Folia compatible: Uses scheduler adapter for timer tasks.
      */
     private fun startTimeTrackingTask() {
         val interval = plugin.config.getInt("performance.time-tracking-interval", 300) // seconds
+        val intervalTicks = interval * 20L
 
-        object : BukkitRunnable() {
-            override fun run() {
-                movementScope.launch {
-                    flushAllPlayerTimes()
-                }
+        timeTrackingTask = plugin.scheduler.runTaskTimer(Runnable {
+            movementScope.launch {
+                flushAllPlayerTimes()
             }
-        }.runTaskTimer(plugin, (interval * 20L), (interval * 20L)) // Convert to ticks
+        }, intervalTicks, intervalTicks)
     }
 
     /**

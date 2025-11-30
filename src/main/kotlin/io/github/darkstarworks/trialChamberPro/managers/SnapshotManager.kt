@@ -60,10 +60,12 @@ class SnapshotManager(private val plugin: TrialChamberPro) {
         val originY = chamber.minY
         val originZ = chamber.minZ
 
-        // MUST run on main thread to access block entities (vaults, spawners, etc.)
-        // Use Bukkit scheduler instead of Dispatchers.Main (which doesn't exist in server environment)
+        // MUST run on region thread to access block entities (vaults, spawners, etc.)
+        // Use location-based scheduling for Folia compatibility
+        val chamberCenter = Location(world, originX.toDouble(), originY.toDouble(), originZ.toDouble())
+
         kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
-            org.bukkit.Bukkit.getScheduler().runTask(plugin, Runnable {
+            plugin.scheduler.runAtLocation(chamberCenter, Runnable {
                 try {
                     // Iterate through all blocks in chamber bounds
                     for (x in chamber.minX..chamber.maxX) {

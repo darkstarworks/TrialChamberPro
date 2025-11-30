@@ -52,8 +52,8 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
             "confirm" -> {
                 event.isCancelled = true
                 UndoTracker.clearPending(player.uniqueId)
-                // Perform deletion asynchronously, then message on main thread
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
+                // Perform deletion asynchronously, then message on entity's region thread (Folia compatible)
+                plugin.scheduler.runTaskAsync(Runnable {
                     val success = try {
                         // suspend function; call via runBlocking? We'll use blocking bridge
                         kotlinx.coroutines.runBlocking {
@@ -62,7 +62,7 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
                     } catch (_: Exception) {
                         false
                     }
-                    Bukkit.getScheduler().runTask(plugin, Runnable {
+                    plugin.scheduler.runAtEntity(player, Runnable {
                         if (success) {
                             player.sendMessage(plugin.getMessage("undo-deleted", "chamber" to pending.chamberName))
                             UndoTracker.clearLast(player.uniqueId)

@@ -7,6 +7,7 @@ load: POSTWORLD
 authors: [ darkstarworks ]
 description: Advanced Trial Chamber management for multiplayer servers with automatic resets, per-player vault loot, and custom rewards
 website: https://github.com/darkstarworks/TrialChamberPro
+folia-supported: true
 
 softdepend: [Vault, WorldGuard, WorldEdit, PlaceholderAPI]
 

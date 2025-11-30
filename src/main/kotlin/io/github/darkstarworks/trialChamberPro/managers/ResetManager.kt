@@ -159,7 +159,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
             }
 
             // Send completion message
-            Bukkit.getScheduler().runTask(plugin, Runnable {
+            plugin.scheduler.runTask(Runnable {
                 val message = plugin.getMessage("chamber-reset-complete")
                 Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
             })
@@ -176,40 +176,59 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
     /**
      * Teleports all players out of the chamber.
-     * MUST be called from main thread or will wrap in sync call.
+     * Folia compatible: Uses entity-based scheduling for player teleportation.
      * CRITICAL FIX: Added timeout to prevent hanging coroutines.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun teleportPlayersOut(chamber: Chamber) {
         withTimeout(5000) {  // 5 second timeout
-            // Player access MUST happen on main thread
+            // Get players list on global/main thread first
             suspendCancellableCoroutine<Unit> { continuation ->
-            Bukkit.getScheduler().runTask(plugin, Runnable {
-                try {
-                    val players = chamber.getPlayersInside()
-                    if (players.isEmpty()) {
-                        continuation.resume(Unit) {}
-                        return@Runnable
-                    }
-
-                    val teleportMode = plugin.config.getString("global.teleport-location", "EXIT_POINT")
-
-                    players.forEach { player ->
-                        val destination = when (teleportMode) {
-                            "EXIT_POINT" -> chamber.getExitLocation() ?: getOutsideLocation(chamber, player.location)
-                            "OUTSIDE_BOUNDS" -> getOutsideLocation(chamber, player.location)
-                            "WORLD_SPAWN" -> player.world.spawnLocation
-                            else -> chamber.getExitLocation() ?: player.world.spawnLocation
+                plugin.scheduler.runTask(Runnable {
+                    try {
+                        val players = chamber.getPlayersInside()
+                        if (players.isEmpty()) {
+                            continuation.resume(Unit) {}
+                            return@Runnable
                         }
 
-                        player.teleport(destination)
-                        player.sendMessage(plugin.getMessage("teleported-to-exit", "chamber" to chamber.name))
+                        val teleportMode = plugin.config.getString("global.teleport-location", "EXIT_POINT")
+                        var remaining = players.size
+
+                        // Teleport each player on their own region thread (Folia compatible)
+                        players.forEach { player ->
+                            plugin.scheduler.runAtEntity(player, Runnable {
+                                val destination = when (teleportMode) {
+                                    "EXIT_POINT" -> chamber.getExitLocation() ?: getOutsideLocation(chamber, player.location)
+                                    "OUTSIDE_BOUNDS" -> getOutsideLocation(chamber, player.location)
+                                    "WORLD_SPAWN" -> player.world.spawnLocation
+                                    else -> chamber.getExitLocation() ?: player.world.spawnLocation
+                                }
+
+                                player.teleport(destination)
+                                player.sendMessage(plugin.getMessage("teleported-to-exit", "chamber" to chamber.name))
+
+                                // Track completion (thread-safe decrement)
+                                synchronized(this) {
+                                    remaining--
+                                    if (remaining == 0) {
+                                        continuation.resume(Unit) {}
+                                    }
+                                }
+                            }, Runnable {
+                                // Player retired/removed - still count as done
+                                synchronized(this) {
+                                    remaining--
+                                    if (remaining == 0) {
+                                        continuation.resume(Unit) {}
+                                    }
+                                }
+                            })
+                        }
+                    } catch (e: Exception) {
+                        continuation.resumeWith(Result.failure(e))
                     }
-                    continuation.resume(Unit) {}
-                } catch (e: Exception) {
-                    continuation.resumeWith(Result.failure(e))
-                }
-            })
+                })
             }
         }
     }
@@ -258,44 +277,51 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
     /**
      * Clears entities from the chamber.
-     * MUST be called from main thread or will wrap in sync call.
+     * Folia compatible: Uses location-based scheduling for entity removal.
      * CRITICAL FIX: Added timeout to prevent hanging coroutines.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun clearEntities(chamber: Chamber) {
         withTimeout(5000) {  // 5 second timeout
-            // Entity access MUST happen on main thread
+            // Use a representative location in the chamber for region scheduling
+            val chamberCenter = Location(
+                chamber.getWorld(),
+                (chamber.minX + chamber.maxX) / 2.0,
+                (chamber.minY + chamber.maxY) / 2.0,
+                (chamber.minZ + chamber.maxZ) / 2.0
+            )
+
             suspendCancellableCoroutine<Unit> { continuation ->
-            Bukkit.getScheduler().runTask(plugin, Runnable {
-                try {
-                    val entities = chamber.getEntitiesInside()
+                plugin.scheduler.runAtLocation(chamberCenter, Runnable {
+                    try {
+                        val entities = chamber.getEntitiesInside()
 
-                    entities.forEach { entity ->
-                        when {
-                            entity is Item && plugin.config.getBoolean("reset.clear-ground-items", true) -> {
-                                entity.remove()
-                            }
-                            entity is LivingEntity && entity !is Player -> {
-                                val shouldRemove = when {
-                                    plugin.config.getBoolean("reset.remove-spawner-mobs", true) -> {
-                                        // Check if mob is from a spawner (simplified check)
-                                        true
-                                    }
-                                    plugin.config.getBoolean("reset.remove-non-chamber-mobs", false) -> true
-                                    else -> false
-                                }
-
-                                if (shouldRemove) {
+                        entities.forEach { entity ->
+                            when {
+                                entity is Item && plugin.config.getBoolean("reset.clear-ground-items", true) -> {
                                     entity.remove()
+                                }
+                                entity is LivingEntity && entity !is Player -> {
+                                    val shouldRemove = when {
+                                        plugin.config.getBoolean("reset.remove-spawner-mobs", true) -> {
+                                            // Check if mob is from a spawner (simplified check)
+                                            true
+                                        }
+                                        plugin.config.getBoolean("reset.remove-non-chamber-mobs", false) -> true
+                                        else -> false
+                                    }
+
+                                    if (shouldRemove) {
+                                        entity.remove()
+                                    }
                                 }
                             }
                         }
+                        continuation.resume(Unit) {}
+                    } catch (e: Exception) {
+                        continuation.resumeWith(Result.failure(e))
                     }
-                    continuation.resume(Unit) {}
-                } catch (e: Exception) {
-                    continuation.resumeWith(Result.failure(e))
-                }
-            })
+                })
             }
         }
     }

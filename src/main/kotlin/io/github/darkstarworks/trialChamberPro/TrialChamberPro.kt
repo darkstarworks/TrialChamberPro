@@ -6,6 +6,7 @@ import io.github.darkstarworks.trialChamberPro.database.DatabaseManager
 import io.github.darkstarworks.trialChamberPro.gui.MenuService
 import io.github.darkstarworks.trialChamberPro.listeners.*
 import io.github.darkstarworks.trialChamberPro.managers.*
+import io.github.darkstarworks.trialChamberPro.scheduler.SchedulerAdapter
 import io.github.darkstarworks.trialChamberPro.utils.UpdateChecker
 import kotlinx.coroutines.*
 import org.bukkit.plugin.java.JavaPlugin
@@ -21,6 +22,10 @@ class TrialChamberPro : JavaPlugin() {
     // Indicates when the plugin finished async initialization and is safe to use
     @Volatile
     var isReady: Boolean = false
+        private set
+
+    // Scheduler adapter (Paper/Folia compatible)
+    lateinit var scheduler: SchedulerAdapter
         private set
 
     // Database manager
@@ -90,6 +95,14 @@ class TrialChamberPro : JavaPlugin() {
         logger.info("║   Advanced Trial Chamber Manager   ║")
         logger.info("╚════════════════════════════════════╝")
 
+        // Initialize scheduler adapter (Paper/Folia compatible) - must be first!
+        scheduler = SchedulerAdapter.create(this)
+        if (scheduler.isFolia) {
+            logger.info("Folia detected - using regionized scheduling")
+        } else {
+            logger.info("Paper/Spigot detected - using standard scheduling")
+        }
+
         // Initialize update checker
         updateChecker = UpdateChecker(
             this,
@@ -99,7 +112,7 @@ class TrialChamberPro : JavaPlugin() {
         updateChecker.checkForUpdates()
 
         // Schedule periodic update checks (every 6 hours = 432000 ticks)
-        server.scheduler.runTaskTimerAsynchronously(this, Runnable {
+        scheduler.runTaskTimerAsync(Runnable {
             updateChecker.checkForUpdates(notifyConsole = false)
         }, 432000L, 432000L)
 
@@ -150,7 +163,7 @@ class TrialChamberPro : JavaPlugin() {
                 resetManager.startResetScheduler()
 
                 // Register command, tab completer, listeners and log readiness on main thread
-                org.bukkit.Bukkit.getScheduler().runTask(this@TrialChamberPro, Runnable {
+                scheduler.runTask(Runnable {
                     // Register command executor and tab completer
                     val tcpCommand = TCPCommand(this@TrialChamberPro)
                     val tabCompleter = TCPTabCompleter(this@TrialChamberPro)
@@ -235,7 +248,7 @@ class TrialChamberPro : JavaPlugin() {
             } catch (e: Exception) {
                 logger.severe("Failed to initialize plugin: ${e.message}")
                 e.printStackTrace()
-                org.bukkit.Bukkit.getScheduler().runTask(this@TrialChamberPro, Runnable {
+                scheduler.runTask(Runnable {
                     server.pluginManager.disablePlugin(this@TrialChamberPro)
                 })
             }
@@ -259,6 +272,11 @@ class TrialChamberPro : JavaPlugin() {
 
         // Cancel all coroutines
         pluginScope.cancel()
+
+        // Cancel all scheduled tasks
+        if (::scheduler.isInitialized) {
+            scheduler.cancelAllTasks()
+        }
 
         // Stop reset scheduler
         if (::resetManager.isInitialized) {

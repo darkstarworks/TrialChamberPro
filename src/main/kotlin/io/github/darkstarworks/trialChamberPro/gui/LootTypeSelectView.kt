@@ -168,17 +168,17 @@ class LootTypeSelectView(
     private fun handleResetChamberClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         when {
             shift && right -> {
-                // Force reset immediately (async), then notify on main thread
+                // Force reset immediately (async), then notify on player's region thread (Folia compatible)
                 player.sendMessage(Component.text("Forcing reset for '${chamber.name}'...", NamedTextColor.YELLOW))
                 plugin.launchAsync {
                     try {
                         plugin.resetManager.resetChamber(chamber)
-                        Bukkit.getScheduler().runTask(plugin, Runnable {
+                        plugin.scheduler.runAtEntity(player, Runnable {
                             player.sendMessage(Component.text("Chamber '${chamber.name}' has been reset!", NamedTextColor.GREEN))
                             player.closeInventory()
                         })
                     } catch (e: Exception) {
-                        Bukkit.getScheduler().runTask(plugin, Runnable {
+                        plugin.scheduler.runAtEntity(player, Runnable {
                             player.sendMessage(Component.text("Failed to reset chamber: ${e.message}", NamedTextColor.RED))
                         })
                     }
@@ -224,15 +224,15 @@ class LootTypeSelectView(
     private fun scheduleReset(player: Player, seconds: Int) {
         player.sendMessage(Component.text("Chamber '${chamber.name}' will reset in $seconds seconds.", NamedTextColor.YELLOW))
 
-        plugin.server.scheduler.runTaskLater(plugin, Runnable {
+        plugin.scheduler.runTaskLater(Runnable {
             plugin.launchAsync {
                 try {
                     plugin.resetManager.resetChamber(chamber)
-                    Bukkit.getScheduler().runTask(plugin, Runnable {
+                    plugin.scheduler.runAtEntity(player, Runnable {
                         player.sendMessage(Component.text("Chamber '${chamber.name}' has been reset!", NamedTextColor.GREEN))
                     })
                 } catch (e: Exception) {
-                    Bukkit.getScheduler().runTask(plugin, Runnable {
+                    plugin.scheduler.runAtEntity(player, Runnable {
                         player.sendMessage(Component.text("Failed to reset chamber: ${e.message}", NamedTextColor.RED))
                     })
                 }
@@ -243,14 +243,18 @@ class LootTypeSelectView(
     private fun scheduleExit(player: Player, playersToExit: List<Player>, seconds: Int) {
         player.sendMessage(Component.text("Players will be ejected from '${chamber.name}' in $seconds seconds.", NamedTextColor.YELLOW))
 
-        // Warn players inside
+        // Warn players inside - use entity scheduling for each player (Folia compatible)
         playersToExit.forEach { p ->
-            p.sendMessage(Component.text("You will be ejected from this chamber in $seconds seconds!", NamedTextColor.RED))
+            plugin.scheduler.runAtEntity(p, Runnable {
+                p.sendMessage(Component.text("You will be ejected from this chamber in $seconds seconds!", NamedTextColor.RED))
+            })
         }
 
-        plugin.server.scheduler.runTaskLater(plugin, Runnable {
+        plugin.scheduler.runTaskLater(Runnable {
             exitPlayers(playersToExit)
-            player.sendMessage(Component.text("Ejected ${playersToExit.size} player(s) from '${chamber.name}'!", NamedTextColor.GREEN))
+            plugin.scheduler.runAtEntity(player, Runnable {
+                player.sendMessage(Component.text("Ejected ${playersToExit.size} player(s) from '${chamber.name}'!", NamedTextColor.GREEN))
+            })
         }, seconds * 20L)
     }
 

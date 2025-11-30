@@ -350,8 +350,16 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun scanChamber(chamber: Chamber): Triple<Int, Int, Int> {
+        // Use location-based scheduling for Folia compatibility
+        val chamberCenter = Location(
+            chamber.getWorld(),
+            (chamber.minX + chamber.maxX) / 2.0,
+            (chamber.minY + chamber.maxY) / 2.0,
+            (chamber.minZ + chamber.maxZ) / 2.0
+        )
+
         return suspendCancellableCoroutine { continuation ->
-            Bukkit.getScheduler().runTask(plugin, Runnable {
+            plugin.scheduler.runAtLocation(chamberCenter, Runnable {
                 try {
                     var vaultCount = 0
                     var spawnerCount = 0

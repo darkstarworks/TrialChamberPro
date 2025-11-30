@@ -1,26 +1,26 @@
 package io.github.darkstarworks.trialChamberPro.utils
 
 import com.google.gson.JsonParser
-import org.bukkit.Bukkit
-import org.bukkit.plugin.java.JavaPlugin
+import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import java.net.URI
 
 /**
  * Checks for plugin updates from GitHub releases.
+ * Folia compatible: Uses scheduler adapter for async operations.
  */
 class UpdateChecker(
-    private val plugin: JavaPlugin,
+    private val plugin: TrialChamberPro,
     private val githubRepo: String,
     private val updateDescriptionUrl: String? = null
 ) {
     private val currentVersion = plugin.pluginMeta.version
 
     fun checkForUpdates(notifyConsole: Boolean = true) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, Runnable {
+        plugin.scheduler.runTaskAsync(Runnable {
             try {
                 val latestVersion = fetchLatestVersion()
                 if (isNewerVersion(latestVersion)) {
-                    val updateInfo = updateDescriptionUrl?.let { fetchUpdateDescription(it) } 
+                    val updateInfo = updateDescriptionUrl?.let { fetchUpdateDescription(it) }
                         ?: "Check GitHub for details"
                     val message = "[${plugin.name}] Update available: $latestVersion (current: $currentVersion) - $updateInfo"
                     if (notifyConsole) plugin.logger.info(message)
@@ -43,7 +43,7 @@ class UpdateChecker(
     private fun isNewerVersion(latest: String): Boolean {
         val current = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
         val remote = latest.split(".").map { it.toIntOrNull() ?: 0 }
-        
+
         for (i in 0 until maxOf(current.size, remote.size)) {
             val c = current.getOrNull(i) ?: 0
             val r = remote.getOrNull(i) ?: 0

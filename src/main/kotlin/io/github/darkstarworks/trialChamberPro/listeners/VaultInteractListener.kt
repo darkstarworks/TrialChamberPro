@@ -202,10 +202,10 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         // Generate loot (async, player might disconnect during this)
         val loot = plugin.lootManager.generateLoot(vault.lootTable, player)
 
-        // MUST switch to main thread for player access
-        // Use Bukkit scheduler instead of Dispatchers.Main (which doesn't exist in server environment)
+        // MUST switch to entity's region thread for player access (Folia compatible)
+        // Use scheduler adapter instead of Dispatchers.Main (which doesn't exist in server environment)
         kotlinx.coroutines.suspendCancellableCoroutine<Unit> { continuation ->
-            org.bukkit.Bukkit.getScheduler().runTask(plugin, Runnable {
+            plugin.scheduler.runAtEntity(player, Runnable {
                 try {
                     // Verify player still online
                     if (!player.isOnline) {

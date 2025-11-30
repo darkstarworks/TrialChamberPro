@@ -255,6 +255,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         val potionLevel = (data["potion-level"] as? Number)?.toInt()
         val customEffectType = data["custom-effect-type"] as? String
         val isOminousPotion = (data["ominous-potion"] as? Boolean) ?: false
+        val effectDuration = (data["effect-duration"] as? Number)?.toInt()
 
         // Parse variable durability
         val durabilityMin = (data["durability-min"] as? Number)?.toInt()
@@ -276,6 +277,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             potionLevel = potionLevel,
             customEffectType = customEffectType,
             isOminousPotion = isOminousPotion,
+            effectDuration = effectDuration,
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
             enabled = enabled
@@ -457,6 +459,11 @@ class LootManager(private val plugin: TrialChamberPro) {
 
         val itemStack = ItemStack(actualMaterial, amount)
 
+        if (plugin.config.getBoolean("debug.verbose-logging", false) && lootItem.isOminousPotion) {
+            plugin.logger.info("Creating OMINOUS_BOTTLE: potionLevel=${lootItem.potionLevel}, customEffectType=${lootItem.customEffectType}, effectDuration=${lootItem.effectDuration}")
+            plugin.logger.info("ItemMeta type: ${itemStack.itemMeta?.javaClass?.simpleName}, is PotionMeta: ${itemStack.itemMeta is org.bukkit.inventory.meta.PotionMeta}")
+        }
+
         itemStack.itemMeta = itemStack.itemMeta?.apply {
             // Set custom name
             lootItem.name?.let {
@@ -470,10 +477,25 @@ class LootManager(private val plugin: TrialChamberPro) {
                 })
             }
 
+            // Handle OMINOUS_BOTTLE separately (uses OminousBottleMeta, not PotionMeta)
+            if (this is org.bukkit.inventory.meta.OminousBottleMeta) {
+                // Set Bad Omen amplifier for ominous bottles
+                val amplifier = lootItem.potionLevel ?: 0
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Setting ominous bottle amplifier: $amplifier (Bad Omen ${amplifier + 1})")
+                }
+
+                this.amplifier = amplifier
+            }
             // Apply potion effects for POTION, SPLASH_POTION, LINGERING_POTION, TIPPED_ARROW
-            if (this is org.bukkit.inventory.meta.PotionMeta) {
+            else if (this is org.bukkit.inventory.meta.PotionMeta) {
                 // Handle custom effect types (e.g., BAD_OMEN for ominous bottles)
                 if (lootItem.customEffectType != null) {
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("Processing custom effect type: ${lootItem.customEffectType}, potionLevel from config: ${lootItem.potionLevel}")
+                    }
+
                     val effectType = try {
                         // Use registry access instead of deprecated getByName
                         org.bukkit.Registry.POTION_EFFECT_TYPE.get(
@@ -493,6 +515,10 @@ class LootManager(private val plugin: TrialChamberPro) {
                         }
 
                         val amplifier = lootItem.potionLevel ?: 0
+
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("Adding custom effect: type=${lootItem.customEffectType}, duration=$duration ticks (${duration/20}s), amplifier=$amplifier (level ${amplifier + 1})")
+                        }
 
                         addCustomEffect(
                             org.bukkit.potion.PotionEffect(
@@ -521,9 +547,14 @@ class LootManager(private val plugin: TrialChamberPro) {
                         // Use getPotionEffects() instead of deprecated effectType property
                         val effectType = lootItem.potionType.potionEffects.firstOrNull()?.type
                         if (effectType != null) {
-                            val duration = lootItem.effectDuration ?: run {
+                            // Calculate duration - use explicit value if positive, otherwise calculate
+                            val calculatedDuration = if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
+                                lootItem.effectDuration
+                            } else {
                                 // Get base duration from the potion type (vanilla duration)
-                                val baseDuration = lootItem.potionType.potionEffects.firstOrNull()?.duration ?: 3600
+                                // Note: Some PotionTypes return 0 duration, so we check for both null and <= 0
+                                val rawDuration = lootItem.potionType.potionEffects.firstOrNull()?.duration
+                                val baseDuration = if (rawDuration != null && rawDuration > 0) rawDuration else 3600
 
                                 // Apply vanilla duration multipliers based on item type
                                 when (lootItem.type) {
@@ -534,6 +565,15 @@ class LootManager(private val plugin: TrialChamberPro) {
                                     else -> baseDuration
                                 }
                             }
+
+                            // Always enforce minimum duration (fixes 00:00 duration bug)
+                            // Vanilla tipped arrows are typically 100-400 ticks (5-20 seconds)
+                            val minDuration = when (lootItem.type) {
+                                Material.TIPPED_ARROW -> 100  // 5 seconds minimum
+                                Material.LINGERING_POTION -> 200  // 10 seconds minimum
+                                else -> 600  // 30 seconds minimum for other potions
+                            }
+                            val duration = maxOf(calculatedDuration, minDuration)
                             addCustomEffect(
                                 org.bukkit.potion.PotionEffect(
                                     effectType,
@@ -588,11 +628,12 @@ class LootManager(private val plugin: TrialChamberPro) {
 
     /**
      * Executes command rewards.
+     * Folia compatible: Uses global scheduler for console command execution.
      */
     private fun executeCommandReward(reward: CommandReward, player: Player) {
         reward.commands.forEach { command ->
             val processedCommand = replacePlaceholders(command, player)
-            Bukkit.getScheduler().runTask(plugin, Runnable {
+            plugin.scheduler.runTask(Runnable {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), processedCommand)
             })
         }

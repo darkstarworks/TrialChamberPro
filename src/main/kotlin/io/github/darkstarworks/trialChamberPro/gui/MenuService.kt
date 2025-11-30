@@ -76,7 +76,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             val chambers = plugin.chamberManager.getCachedChambers()
             chambers.forEachIndexed { index, chamber ->
                 // Stagger requests by 50ms each to prevent connection pool exhaustion
-                plugin.server.scheduler.runTaskLater(plugin, Runnable {
+                plugin.scheduler.runTaskLater(Runnable {
                     plugin.vaultManager.refreshVaultCountsAsync(chamber.id)
                 }, (index * 1L)) // Delay in ticks (20 ticks = 1 second)
             }

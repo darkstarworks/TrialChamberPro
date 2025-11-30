@@ -434,9 +434,9 @@ class LootEditorView(
         // Persist to loot.yml
         plugin.lootManager.saveAllToFile()
 
-        // Update DB vaults for this chamber/type to use this table name
+        // Update DB vaults for this chamber/type to use this table name (Folia compatible)
         val type = if (kind == MenuService.LootKind.OMINOUS) VaultType.OMINOUS else VaultType.NORMAL
-        plugin.server.scheduler.runTaskAsynchronously(plugin, Runnable {
+        plugin.scheduler.runTaskAsync(Runnable {
             try {
                 plugin.vaultManager.setLootTableForChamber(chamber.id, type, draft.tableName)
             } catch (e: Exception) {

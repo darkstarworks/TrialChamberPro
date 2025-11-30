@@ -10,6 +10,9 @@ import org.bukkit.Location
 /**
  * Utility class for asynchronously restoring blocks from snapshots.
  * Uses batching and delays to prevent server lag during large restorations.
+ *
+ * Folia compatible: Uses location-based scheduling to ensure blocks are
+ * modified on the correct region thread.
  */
 class BlockRestorer(private val plugin: TrialChamberPro) {
 
@@ -43,22 +46,27 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
 
             // Process blocks in batches
             blockEntries.chunked(blocksPerTick).forEach { batch ->
-                // Schedule on main thread
-                Bukkit.getScheduler().runTask(plugin, Runnable {
-                    batch.forEach { (location, blockSnapshot) ->
-                        try {
-                            restoreBlock(location, blockSnapshot)
-                            processedBlocks++
-                        } catch (e: Exception) {
-                            plugin.logger.warning(
-                                "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
-                            )
-                        }
-                    }
+                // Get a representative location for this batch (for Folia region scheduling)
+                val representativeLocation = batch.firstOrNull()?.key
 
-                    // Call progress callback
-                    onProgress?.invoke(processedBlocks, totalBlocks)
-                })
+                if (representativeLocation != null) {
+                    // Schedule on the region thread that owns this location
+                    plugin.scheduler.runAtLocation(representativeLocation, Runnable {
+                        batch.forEach { (location, blockSnapshot) ->
+                            try {
+                                restoreBlock(location, blockSnapshot)
+                                processedBlocks++
+                            } catch (e: Exception) {
+                                plugin.logger.warning(
+                                    "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
+                                )
+                            }
+                        }
+
+                        // Call progress callback
+                        onProgress?.invoke(processedBlocks, totalBlocks)
+                    })
+                }
 
                 // Small delay between batches to prevent lag (1 tick = 50ms)
                 delay(50)
@@ -67,14 +75,16 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
 
         plugin.logger.info("Block restoration complete: $processedBlocks/$totalBlocks blocks restored")
 
-        // Call completion callback on main thread
-        Bukkit.getScheduler().runTask(plugin, Runnable {
+        // Call completion callback on main/global thread
+        plugin.scheduler.runTask(Runnable {
             onComplete?.invoke()
         })
     }
 
     /**
      * Restores a single block from a snapshot.
+     * MUST be called from the region thread owning this location (Folia)
+     * or the main thread (Paper).
      *
      * @param location The block location
      * @param snapshot The block snapshot data
@@ -104,13 +114,17 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
 
     /**
      * Ensures a chunk is loaded before restoring blocks.
+     * On Folia, chunk loading is handled differently - we schedule to the chunk's region.
      *
      * @param chunk The chunk to load
      */
     private suspend fun ensureChunkLoaded(chunk: Chunk) {
         if (!chunk.isLoaded) {
-            // Load chunk on main thread
-            Bukkit.getScheduler().runTask(plugin, Runnable {
+            // Get a location in this chunk for region scheduling
+            val chunkLocation = Location(chunk.world, chunk.x * 16.0, 64.0, chunk.z * 16.0)
+
+            // Load chunk on the appropriate thread
+            plugin.scheduler.runAtLocation(chunkLocation, Runnable {
                 chunk.load()
             })
             // Wait for chunk to load
@@ -120,6 +134,7 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
 
     /**
      * Restores blocks synchronously (use with caution - may cause lag).
+     * On Folia, this should only be called from the correct region thread.
      *
      * @param snapshot Map of locations to block snapshots
      * @return Number of blocks successfully restored
