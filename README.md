@@ -40,6 +40,9 @@ Yeah, we fixed all of that.
 - **Griefing protection** (blocks, spawners, containers, mob griefing)
 - **Statistics tracking** with leaderboards
 - **In-game admin GUI** for zero-config management
+- **Trial Spawner Wave Tracking** with boss bar progress display
+- **Spectator Mode** for players who die in chambers
+- **PlaceholderAPI integration** for scoreboards and displays
 
 ### Advanced Loot
 - **Tipped arrows** with custom potion effects and levels
@@ -50,6 +53,7 @@ Yeah, we fixed all of that.
 - **COMMAND rewards** (economy, permissions, XP, any console command)
 
 ### Technical
+- **Full Folia support** with regionized scheduling
 - **SQLite or MySQL** with connection pooling
 - **Async-first** design with Kotlin coroutines
 - **Gzip-compressed snapshots** for efficient storage
@@ -165,11 +169,12 @@ debug:
 
 ## Requirements
 
-- **Paper 1.21.1+** (or Folia, Purpur, Pufferfish)
+- **Paper 1.21.1+** or **Folia** (also works with Purpur, Pufferfish)
 - **Java 21** or newer
 - **Optional**: WorldEdit/FAWE for easier chamber creation
 - **Optional**: Vault plugin for economy rewards
 - **Optional**: LuckPerms for permission rewards
+- **Optional**: PlaceholderAPI for custom placeholders
 
 ## Support & Links
 
@@ -187,9 +192,9 @@ We fixed that. You're welcome. 😎
 ---
 
 **License**: CC-BY-NC-ND 4.0
-**Platform**: Paper 1.21.1+
+**Platform**: Paper/Folia 1.21.1+
 **Language**: Kotlin
-**Version**: 1.2.1
+**Version**: 1.2.5
 
 
 ## Who's This For?

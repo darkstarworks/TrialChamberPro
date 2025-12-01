@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.5] - 2025-11-30
+### Added
+- **PlaceholderAPI Integration**: Full support for PlaceholderAPI placeholders
+  - Player statistics: `%tcp_vaults_opened%`, `%tcp_vaults_normal%`, `%tcp_vaults_ominous%`
+  - Progress tracking: `%tcp_chambers_completed%`, `%tcp_mobs_killed%`, `%tcp_deaths%`
+  - Time tracking: `%tcp_time_spent%` (formatted), `%tcp_time_spent_raw%` (seconds)
+  - Current state: `%tcp_current_chamber%`, `%tcp_in_chamber%`
+  - Leaderboard positions: `%tcp_leaderboard_vaults%`, `%tcp_leaderboard_chambers%`, `%tcp_leaderboard_time%`
+  - Top players: `%tcp_top_vaults_1_name%` through `%tcp_top_vaults_10_name%` (and `_value`)
+  - Same pattern for `%tcp_top_chambers_X_name%` and `%tcp_top_time_X_name%`
+  - Built-in 60-second cache for leaderboard data to reduce database load
+
+- **Trial Spawner Wave System**: Real-time wave progress tracking with boss bar display
+  - Boss bar shows wave progress (mobs killed / total mobs)
+  - Ominous spawners display purple boss bar, normal shows yellow
+  - Automatic mob tracking from trial spawner spawn events
+  - Wave completion message with kill count and duration
+  - Configurable options: `spawner-waves.enabled`, `spawner-waves.show-boss-bar`
+  - Detection radius for adding nearby players to boss bar display
+  - Integration with existing statistics system
+
+- **Spectator Mode**: Players can spectate chambers after death
+  - Offer spectator mode to players who die in a chamber
+  - Chat-based confirmation: type "spectate" to watch, "no" to decline
+  - Spectators put in GameMode.SPECTATOR and teleported to chamber center
+  - Boundary restriction keeps spectators within chamber bounds (configurable buffer)
+  - Exit by typing "exit" in chat or when chamber resets
+  - Automatic cleanup on player disconnect or chamber reset
+  - New permission: `tcp.spectate` (default: true)
+  - Configurable timeout, boundary buffer, and solo spectate option
+
+### Changed
+- Plugin now initializes through 12 phases (added Spawner Wave System and Spectator Mode phases)
+- Startup logging shows status of new features (PlaceholderAPI, Boss Bar, Death Spectate)
+
 ## [1.2.4] - 2025-11-30
 ### Fixed
 - **Tipped Arrow Duration Bug**: Fixed tipped arrows showing "00:00" duration when looted from vaults
@@ -515,6 +550,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.1...v1.2.2

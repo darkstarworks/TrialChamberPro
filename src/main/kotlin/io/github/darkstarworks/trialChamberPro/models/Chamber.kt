@@ -113,6 +113,27 @@ data class Chamber(
     }
 
     /**
+     * Gets the center location of this chamber.
+     */
+    fun getCenter(): Location {
+        val bukkitWorld = getWorld() ?: Bukkit.getWorlds().first()
+        return Location(
+            bukkitWorld,
+            (minX + maxX) / 2.0,
+            (minY + maxY) / 2.0,
+            (minZ + maxZ) / 2.0
+        )
+    }
+
+    /**
+     * Gets all players currently inside this chamber using provided server.
+     */
+    fun getPlayersInside(server: org.bukkit.Server): List<Player> {
+        val bukkitWorld = server.getWorld(world) ?: return emptyList()
+        return bukkitWorld.players.filter { contains(it.location) }
+    }
+
+    /**
      * Gets the snapshot file if it exists.
      */
     fun getSnapshotFile(): File? {

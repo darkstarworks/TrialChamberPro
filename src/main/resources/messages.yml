@@ -167,3 +167,18 @@ paste-failed: "&cFailed to paste schematic. Check console for errors."
 paste-cancelled: "&ePaste cancelled."
 paste-timeout: "&cPaste request timed out. Run the command again to paste."
 paste-undo-hint: "&7Use &e//undo &7to undo this paste"
+
+# Spawner Waves
+spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
+
+# Spectator Mode
+spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
+spectate-hint: "&7Type &aspectate &7to watch or &cno &7to respawn normally."
+spectate-offer-expired: "&7Spectate offer expired."
+spectate-started: "&aYou are now spectating &e{chamber}&a!"
+spectate-exit-hint: "&7Type &eexit &7to leave spectator mode."
+spectate-exited: "&7You have left spectator mode."
+spectate-declined: "&7Spectator mode declined."
+spectate-boundary-warning: "&cYou cannot leave the chamber while spectating!"
+spectate-no-players: "&7No other players are in the chamber to spectate."
+spectate-chamber-not-found: "&cThe chamber no longer exists."

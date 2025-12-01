@@ -109,6 +109,24 @@ loot:
   # GUI will limit pool editing to this number
   max-pools-per-table: 5
 
+# Spawner Wave System
+# Tracks trial spawner waves with boss bar progress display
+spawner-waves:
+  enabled: true
+  show-boss-bar: true           # Show boss bar with wave progress
+  detection-radius: 20          # Radius to detect players for boss bar display
+  award-stats: true             # Track wave kills in player statistics
+  completion-message: true      # Send message when wave is complete
+
+# Spectator Mode
+# Allows players to spectate chambers after death
+spectator-mode:
+  enabled: true
+  offer-timeout: 30             # Seconds before spectate offer expires
+  restrict-to-chamber: true     # Keep spectators within chamber bounds
+  boundary-buffer: 10           # Extra blocks allowed outside chamber
+  allow-solo-spectate: false    # Allow spectating empty chambers
+
 # Debug mode
 debug:
   verbose-logging: false

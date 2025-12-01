@@ -178,6 +178,28 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.spectate`
+**Description:** Use spectator mode after death in chambers
+**Default:** **All players** (true)
+**Allows:**
+- Spectate a chamber after dying inside it
+- Type "spectate" in chat to accept spectator mode offer
+- Type "exit" to leave spectator mode
+
+**Effect:**
+- Switched to GameMode.SPECTATOR on acceptance
+- Teleported to chamber center
+- Confined to chamber boundaries (with configurable buffer)
+- Restored to previous game mode on exit
+
+**Typical usage:** Default permission for all players (enhances multiplayer experience)
+
+{% hint style="info" %}
+**Spectator Mode Feature:** When a player dies in a chamber, they're offered the chance to spectate instead of immediately respawning. This lets them watch teammates complete the challenge.
+{% endhint %}
+
+---
+
 ### Bypass Permissions
 
 #### `tcp.bypass.cooldown`
@@ -372,6 +394,7 @@ tcp.admin                  (View chambers - NOT a wildcard!)
 
 tcp.stats                  (View own stats)
 tcp.leaderboard            (View leaderboards)
+tcp.spectate               (Spectate after death)
 
 tcp.bypass.cooldown        (No vault cooldowns)
 tcp.bypass.protection      (Build in protected chambers)
@@ -519,7 +542,7 @@ Protection settings and their interaction with bypass permissions.
 
 | Role | Permissions | Why |
 |------|-------------|-----|
-| **Player** | `tcp.stats`, `tcp.leaderboard` | View stats, compete |
+| **Player** | `tcp.stats`, `tcp.leaderboard`, `tcp.spectate` | View stats, compete, spectate |
 | **VIP** | Same + `tcp.bypass.cooldown` | Faster loot (optional) |
 | **Helper** | `tcp.admin.key`, `tcp.admin.vault`, `tcp.admin.reset` | Help players, manage events |
 | **Mod** | Helper + `tcp.admin.stats` | Monitor players |

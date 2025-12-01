@@ -416,6 +416,94 @@ If a loot table has `min-rolls: 3` and `max-rolls: 5`:
 
 ---
 
+## 🎯 Spawner Wave System
+
+```yaml
+spawner-waves:
+  enabled: true
+  show-boss-bar: true
+  detection-radius: 20
+  award-stats: true
+  completion-message: true
+```
+
+### `enabled`
+**Default:** `true`
+
+Enable wave progress tracking for trial spawners. Shows boss bar and sends completion messages.
+
+### `show-boss-bar`
+**Default:** `true`
+
+Display a boss bar showing wave progress (mobs killed / total mobs) to nearby players. Ominous spawners show purple, normal spawners show yellow.
+
+### `detection-radius`
+**Default:** `20` blocks
+
+How far from a trial spawner players can be and still see the boss bar / be considered participants.
+
+### `award-stats`
+**Default:** `true`
+
+Track mob kills from waves in player statistics. Used for leaderboards.
+
+### `completion-message`
+**Default:** `true`
+
+Send a chat message when a wave is complete showing kill count and duration.
+
+{% hint style="info" %}
+**How it works:** When mobs spawn from a trial spawner, the plugin tracks them. As players kill mobs, the boss bar updates. When all mobs are dead, players get a completion message.
+{% endhint %}
+
+---
+
+## 👀 Spectator Mode
+
+```yaml
+spectator-mode:
+  enabled: true
+  offer-timeout: 30
+  restrict-to-chamber: true
+  boundary-buffer: 10
+  allow-solo-spectate: false
+```
+
+### `enabled`
+**Default:** `true`
+
+Enable spectator mode. When players die in a chamber, they're offered the chance to spectate teammates.
+
+### `offer-timeout`
+**Default:** `30` seconds
+
+How long the spectate offer lasts before expiring. Players type "spectate" or "no" in chat to respond.
+
+### `restrict-to-chamber`
+**Default:** `true`
+
+Keep spectators within chamber bounds. They can fly around but not leave the area.
+
+### `boundary-buffer`
+**Default:** `10` blocks
+
+Extra space outside the chamber boundary where spectators can still fly. Allows viewing from slightly outside.
+
+### `allow-solo-spectate`
+**Default:** `false`
+
+Allow spectating empty chambers (when no other players are inside). Usually `false`—spectating is for watching teammates.
+
+{% hint style="info" %}
+**Spectator Mode Flow:**
+1. Player dies in chamber
+2. After respawn, offered to spectate (if other players are inside)
+3. Type "spectate" to accept → GameMode.SPECTATOR, teleport to center
+4. Type "exit" to leave → restored to previous game mode, teleported to exit
+{% endhint %}
+
+---
+
 ## 🐛 Debug Mode
 
 ```yaml

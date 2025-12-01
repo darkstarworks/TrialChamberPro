@@ -45,6 +45,15 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
                         )
                     )
                 }
+
+                // Offer spectator mode after respawn
+                if (plugin.config.getBoolean("spectator-mode.enabled", true)) {
+                    plugin.scheduler.runTaskLater(Runnable {
+                        if (player.isOnline && !player.isDead) {
+                            plugin.spectatorManager.offerSpectatorMode(player, chamber, location)
+                        }
+                    }, 20L) // 1 second delay after respawn
+                }
             }
         }
     }

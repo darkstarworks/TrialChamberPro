@@ -71,3 +71,6 @@ permissions:
   tcp.bypass.protection:
     description: Bypass chamber protection
     default: op
+  tcp.spectate:
+    description: Use spectator mode after death in chambers
+    default: true

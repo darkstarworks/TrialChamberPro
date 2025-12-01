@@ -72,6 +72,14 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var pasteConfirmationManager: PasteConfirmationManager
         private set
 
+    // Spawner wave manager
+    lateinit var spawnerWaveManager: SpawnerWaveManager
+        private set
+
+    // Spectator manager
+    lateinit var spectatorManager: SpectatorManager
+        private set
+
     // Update checker
     private lateinit var updateChecker: UpdateChecker
 
@@ -152,6 +160,8 @@ class TrialChamberPro : JavaPlugin() {
                 schematicManager.initialize()
                 particleVisualizer = io.github.darkstarworks.trialChamberPro.utils.ParticleVisualizer(this@TrialChamberPro)
                 pasteConfirmationManager = PasteConfirmationManager(this@TrialChamberPro)
+                spawnerWaveManager = SpawnerWaveManager(this@TrialChamberPro)
+                spectatorManager = SpectatorManager(this@TrialChamberPro)
 
                 // Load loot tables
                 lootManager.loadLootTables()
@@ -193,6 +203,14 @@ class TrialChamberPro : JavaPlugin() {
                     )
                     server.pluginManager.registerEvents(
                         PasteConfirmListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        SpawnerWaveListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        SpectatorListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
 
@@ -240,6 +258,29 @@ class TrialChamberPro : JavaPlugin() {
                     logger.info("  - Schematic Manager: Initialized")
                     logger.info("  - Available Schematics: ${schematicManager.listSchematics().size}")
                     logger.info("  - WorldEdit/FAWE: ${if (schematicManager.isAvailable()) "Available" else "Not Found"}")
+
+                    // Register PlaceholderAPI expansion if available
+                    val placeholderAPIStatus = if (server.pluginManager.getPlugin("PlaceholderAPI") != null) {
+                        try {
+                            io.github.darkstarworks.trialChamberPro.integrations.PlaceholderAPIExpansion(this@TrialChamberPro).register()
+                            "Registered"
+                        } catch (e: Exception) {
+                            logger.warning("Failed to register PlaceholderAPI expansion: ${e.message}")
+                            "Failed"
+                        }
+                    } else {
+                        "Not Found"
+                    }
+                    logger.info("✓ Phase 10 Integrations: Ready")
+                    logger.info("  - PlaceholderAPI: $placeholderAPIStatus")
+                    logger.info("✓ Phase 11 Spawner Wave System: Ready")
+                    logger.info("  - Wave Manager: Initialized")
+                    logger.info("  - Wave Listener: Registered")
+                    logger.info("  - Boss Bar: ${if (config.getBoolean("spawner-waves.show-boss-bar", true)) "Enabled" else "Disabled"}")
+                    logger.info("✓ Phase 12 Spectator Mode: Ready")
+                    logger.info("  - Spectator Manager: Initialized")
+                    logger.info("  - Spectator Listener: Registered")
+                    logger.info("  - Death Spectate: ${if (config.getBoolean("spectator-mode.enabled", true)) "Enabled" else "Disabled"}")
 
                     // Mark plugin as fully ready after all sync registrations are done
                     this@TrialChamberPro.isReady = true
@@ -289,6 +330,12 @@ class TrialChamberPro : JavaPlugin() {
         }
         if (::particleVisualizer.isInitialized) {
             particleVisualizer.stopAll()
+        }
+        if (::spawnerWaveManager.isInitialized) {
+            spawnerWaveManager.shutdown()
+        }
+        if (::spectatorManager.isInitialized) {
+            spectatorManager.shutdown()
         }
 
         // Close database connections

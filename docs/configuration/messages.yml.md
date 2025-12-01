@@ -495,6 +495,66 @@ time-seconds: "{seconds}s"
 
 ---
 
+### Spawner Waves
+
+```yaml
+spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
+```
+
+**Placeholders:**
+- `{type}` - Spawner type: "Trial" or "Ominous"
+- `{killed}` - Number of mobs killed
+- `{duration}` - Time to complete (e.g., "1m 30s")
+
+**Examples:**
+
+Celebratory:
+```yaml
+spawner-wave-complete: "&6🎉 &e{type} Wave Cleared! &7{killed} mobs defeated in {duration}!"
+```
+
+Competitive:
+```yaml
+spawner-wave-complete: "&a[WAVE COMPLETE] &7{killed} kills in &f{duration}"
+```
+
+---
+
+### Spectator Mode
+
+```yaml
+spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
+spectate-hint: "&7Type &aspectate &7to watch or &cno &7to respawn normally."
+spectate-offer-expired: "&7Spectate offer expired."
+spectate-started: "&aYou are now spectating &e{chamber}&a!"
+spectate-exit-hint: "&7Type &eexit &7to leave spectator mode."
+spectate-exited: "&7You have left spectator mode."
+spectate-declined: "&7Spectator mode declined."
+spectate-boundary-warning: "&cYou cannot leave the chamber while spectating!"
+spectate-no-players: "&7No other players are in the chamber to spectate."
+spectate-chamber-not-found: "&cThe chamber no longer exists."
+```
+
+**Placeholders:**
+- `{chamber}` - Chamber name
+
+**Examples:**
+
+Encouraging:
+```yaml
+spectate-offer: "&7Tough luck! Want to watch your teammates in &e{chamber}&7?"
+spectate-started: "&a👀 Spectating &e{chamber}&a - Cheer them on!"
+```
+
+Roleplay:
+```yaml
+spectate-offer: "&7Your spirit lingers near &e{chamber}&7... Watch from beyond?"
+spectate-started: "&d✦ &7Your spirit observes the trial of &e{chamber}&7..."
+spectate-exited: "&7Your spirit returns to the mortal plane."
+```
+
+---
+
 ### Help Messages
 
 ```yaml
