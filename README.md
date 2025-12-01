@@ -1,200 +1,276 @@
-<img width="723" height="133" alt="trialchamberpro-min" src="https://github.com/user-attachments/assets/7be34fce-1bfc-4639-bd34-5fe417e43610" />
+<img width="723" height="133" alt="TrialChamberPro Banner" src="https://github.com/user-attachments/assets/7be34fce-1bfc-4639-bd34-5fe417e43610" />
 
-> Because Trial Chambers deserve better than being a "one and done" dungeon.
+# TrialChamberPro
 
-Transform Minecraft 1.21's Trial Chambers from dusty, abandoned structures into thriving endgame content that players actually want to revisit. No more disappointed players finding empty vaults. No more manually resetting chambers. Just renewable, multiplayer-friendly dungeon content that actually works.
+**The definitive Trial Chamber management plugin for multiplayer servers.**
 
-## The Problem
+Transform Minecraft 1.21's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content.<br>
+Automatic resets, per-player loot, custom rewards, griefing protection & many more features.
 
-Vanilla Trial Chambers? Great for single-player. Terrible for servers.
+---
 
-- **First player gets everything** → Everyone else gets nothing
-- **No resets** → Chamber sits there, looted and useless
-- **Griefing central** → Players break spawners and steal loot blocks
-- **Keys are buggy** → Paper has known issues with trial key mechanics
+## Why TrialChamberPro?
 
-Yeah, we fixed all of that.
+Vanilla Trial Chambers weren't designed for multiplayer.<br>
+The first player takes everything, vaults stay locked forever, and griefers destroy spawners. **TrialChamberPro fixes all of this.**
 
-## What This Thing Does
+| Problem | Solution |
+|---------|----------|
+| First player gets all loot | Per-player vault system with individual cooldowns |
+| No way to reset chambers | Automatic scheduled resets with player warnings |
+| Griefers break spawners | Full protection system with WorldGuard support |
+| Paper trial key bugs | Built-in fixes for known Paper issues |
+| No progression tracking | Statistics, leaderboards, and PlaceholderAPI support |
 
-**Automatic Resets** — Set it and forget it. Chambers restore themselves on your schedule (with warnings so nobody gets teleported mid-fight).
+---
 
-**Per-Player Loot** — Everyone gets their own vault rewards. No more racing to loot first. Each player has separate 24h/48h cooldowns for normal and ominous vaults.
-
-**Custom Loot Tables** — Drop whatever you want. Economy rewards? Custom items? Ominous bottles with Bad Omen V? Tipped arrows? Go wild.
-
-**Protection System** — Blocks, spawners, and vaults are protected. Optional WorldGuard integration for extra security.
-
-**Statistics & Leaderboards** — Track completions, deaths, and vault openings. Perfect for competitive servers.
-
-**Admin GUI** — Manage everything with `/tcp menu`. Edit loot tables in-game, view stats, configure chambers without touching YAML.
-
-**WorldEdit Support** — Use your wand to select regions. Or use coordinates. Or paste from schematics. Your choice.
-
-## Key Features
+## Features
 
 ### Core Systems
-- **Automatic chamber resets** with configurable intervals
-- **Per-player vault cooldowns** (separate for normal/ominous)
-- **Custom loot tables** with multi-pool system (common/rare/unique)
-- **Griefing protection** (blocks, spawners, containers, mob griefing)
-- **Statistics tracking** with leaderboards
-- **In-game admin GUI** for zero-config management
+- **Automatic Resets** — Chambers restore on schedule with configurable warnings
+- **Per-Player Vaults** — Everyone gets their own loot with separate cooldowns
+- **Full Protection** — Block break/place, container access, mob griefing prevention
+- **Statistics & Leaderboards** — Track vaults opened, mobs killed, time spent
+- **Admin GUI** — Manage everything with `/tcp menu`—no YAML editing required
 
-### Advanced Loot
-- **Tipped arrows** with custom potion effects and levels
-- **Custom potions** (including Level IV+ ominous potions)
-- **Ominous bottles** (Bad Omen III-V for triggering Ominous Trials)
-- **Enchantment randomization** (level ranges + random pools)
-- **Variable durability** (pre-damaged items as loot)
-- **COMMAND rewards** (economy, permissions, XP, any console command)
+### Advanced Loot System
+- **Multi-Pool Tables** — Common, rare, and unique pools like vanilla
+- **Custom Items** — Tipped arrows, enchanted gear, ominous bottles (Bad Omen III-V)
+- **Command Rewards** — Economy deposits, permission grants, XP, custom commands
+- **LUCK Integration** — Potion effects and attributes affect loot rolls
 
-### Technical
-- **SQLite or MySQL** with connection pooling
-- **Async-first** design with Kotlin coroutines
-- **Gzip-compressed snapshots** for efficient storage
-- **Multi-pool loot tables** matching vanilla Trial Chamber structure
-- **WorldEdit/FAWE integration** for schematic support
-- **Key management** fixes for Paper bugs
+### Multiplayer Enhancements
+- **Spawner Wave Tracking** — Boss bar shows wave progress as players fight
+- **Spectator Mode** — Dead players can watch teammates complete the challenge
+- **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, and more
+
+### Technical Excellence
+- **Folia Native** — Full support for regionized multithreading
+- **Paper/Purpur/Pufferfish** — Works on all major Paper forks
+- **Async Architecture** — Kotlin coroutines for zero main-thread blocking
+- **Dual Database** — SQLite (default) or MySQL with connection pooling
+- **WorldEdit/FAWE** — Create chambers from selections or schematics
+
+---
+
+## Quick Start
+
+```
+1. Drop the JAR in your plugins folder
+2. Start your server
+3. Select a Trial Chamber with WorldEdit (//wand)
+4. Run: /tcp generate wand MyChamber
+5. Run: /tcp scan MyChamber
+6. Run: /tcp snapshot create MyChamber
+7. Done! Your chamber now auto-resets and has per-player loot.
+```
+
+---
 
 ## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/tcp menu` | Open the admin GUI |
+| `/tcp generate wand <name>` | Register chamber from WorldEdit selection |
+| `/tcp scan <chamber>` | Detect vaults and spawners |
+| `/tcp snapshot create <chamber>` | Enable automatic resets |
+| `/tcp reset <chamber>` | Force immediate reset |
+| `/tcp stats [player]` | View statistics |
+| `/tcp leaderboard <type>` | View top players |
+
+<details>
+<summary>View all commands</summary>
 
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/tcp menu` | Open admin GUI | `tcp.admin` |
-| `/tcp info <chamber>` | View chamber details | `tcp.admin` |
-| `/tcp generate wand <name>` | Create chamber from WorldEdit selection | `tcp.admin` |
-| `/tcp generate coords <name> <x1> <y1> <z1> <x2> <y2> <z2>` | Create chamber from coordinates | `tcp.admin` |
-| `/tcp scan <chamber>` | Scan for vaults in chamber | `tcp.admin` |
+| `/tcp generate wand <name>` | Create from WorldEdit selection | `tcp.admin` |
+| `/tcp generate coords <name> <coords>` | Create from coordinates | `tcp.admin` |
+| `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin` |
 | `/tcp snapshot create <chamber>` | Create restoration snapshot | `tcp.admin` |
+| `/tcp snapshot restore <chamber>` | Restore from snapshot | `tcp.admin` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin` |
-| `/tcp delete <chamber>` | Delete chamber (with confirmation) | `tcp.admin` |
+| `/tcp delete <chamber>` | Delete chamber | `tcp.admin` |
+| `/tcp setexit <chamber>` | Set exit location | `tcp.admin` |
 | `/tcp list` | List all chambers | `tcp.admin` |
-| `/tcp reload` | Reload configuration | `tcp.admin` |
-| `/tcp stats [player]` | View player statistics | `tcp.stats` |
-| `/tcp leaderboard` | View top players | `tcp.stats` |
+| `/tcp info <chamber>` | View chamber details | `tcp.admin` |
 | `/tcp tp <chamber>` | Teleport to chamber | `tcp.admin` |
+| `/tcp stats [player]` | View statistics | `tcp.stats` |
+| `/tcp leaderboard <type>` | View leaderboards | `tcp.stats` |
+| `/tcp reload` | Reload configuration | `tcp.admin` |
+
+</details>
+
+---
 
 ## Permissions
 
 | Permission | Description | Default |
 |------------|-------------|---------|
-| `tcp.admin` | Access all admin commands and GUI | `op` |
-| `tcp.stats` | View statistics and leaderboards | `true` |
-| `tcp.bypass.protection` | Bypass chamber protection (for admins) | `op` |
-| `tcp.use` | Basic plugin usage | `true` |
-
-## Configuration
-
-### config.yml Highlights
-
-**Database Settings**
-```yaml
-database:
-  type: sqlite  # or mysql
-  # MySQL settings (if using mysql)
-  mysql:
-    host: localhost
-    port: 3306
-    database: trialchamberpro
-    username: root
-    password: changeme
-```
-
-**Vault Cooldowns**
-```yaml
-vaults:
-  normal-cooldown-hours: 24    # 24 hours for normal vaults
-  ominous-cooldown-hours: 48   # 48 hours for ominous vaults
-  show-cooldown-particles: true
-  play-sound-on-open: true
-```
-
-**Automatic Resets**
-```yaml
-reset:
-  enabled: true
-  warning-times: [300, 60, 30, 10]  # Seconds before reset
-  teleport-players: true
-  # Per-chamber reset intervals (in seconds)
-  intervals:
-    my_chamber: 86400  # 24 hours
-    hard_chamber: 172800  # 48 hours
-```
-
-**Protection**
-```yaml
-protection:
-  block-break: true
-  block-place: true
-  container-access: true
-  mob-griefing: true
-  worldguard-integration: true
-```
-
-**Performance**
-```yaml
-performance:
-  blocks-per-tick: 500  # Balance between speed and TPS
-  cache-duration-seconds: 300  # 5 minutes
-  time-tracking-interval: 300  # Batch player time updates
-```
-
-**Loot System**
-```yaml
-loot:
-  apply-luck-effect: false  # LUCK potion/attribute affects rolls
-  max-pools-per-table: 5
-```
-
-**Debug**
-```yaml
-debug:
-  verbose-logging: false  # Enable for troubleshooting
-```
-
-## Getting Started
-
-1. **Install** — Drop the JAR in your `plugins/` folder
-2. **Start server** — Plugin creates default configs
-3. **Create a chamber** — Use `/tcp generate wand <name>` with WorldEdit selection
-4. **Scan for vaults** — `/tcp scan <name>` finds all trial vaults
-5. **Create snapshot** — `/tcp snapshot create <name>` enables automatic resets
-6. **Configure loot** — Edit `loot.yml` or use `/tcp menu` GUI
-7. **Done!** — Chamber auto-resets on schedule
-
-## Requirements
-
-- **Paper 1.21.1+** (or Folia, Purpur, Pufferfish)
-- **Java 21** or newer
-- **Optional**: WorldEdit/FAWE for easier chamber creation
-- **Optional**: Vault plugin for economy rewards
-- **Optional**: LuckPerms for permission rewards
-
-## Support & Links
-
-- **[Full Documentation](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation)**
-- **[Report Issues](https://github.com/darkstarworks/TrialChamberPro/issues)**
-- **[Discord Support](https://discord.gg/aWMU2JNXex)**
-- **[GitHub](https://github.com/darkstarworks/TrialChamberPro)**
-
-## Fun Fact
-
-Did you know Trial Chambers were designed for single-player? Mojang never expected hundreds of players to visit the same chamber. That's why vault loot is "first come, first served" in vanilla.
-
-We fixed that. You're welcome. 😎
+| `tcp.admin` | Full admin access | OP |
+| `tcp.stats` | View own statistics | Everyone |
+| `tcp.leaderboard` | View leaderboards | Everyone |
+| `tcp.spectate` | Use spectator mode after death | Everyone |
+| `tcp.bypass.cooldown` | Ignore vault cooldowns | OP |
+| `tcp.bypass.protection` | Build in protected chambers | OP |
 
 ---
 
-**License**: CC-BY-NC-ND 4.0
-**Platform**: Paper 1.21.1+
-**Language**: Kotlin
-**Version**: 1.2.1
+## PlaceholderAPI
 
+<details>
+<summary>View all placeholders</summary>
 
-## Who's This For?
+**Player Statistics**
+- `%tcp_vaults_opened%` — Total vaults opened
+- `%tcp_vaults_normal%` — Normal vaults opened
+- `%tcp_vaults_ominous%` — Ominous vaults opened
+- `%tcp_chambers_completed%` — Chambers completed
+- `%tcp_mobs_killed%` — Mobs killed in chambers
+- `%tcp_deaths%` — Deaths in chambers
+- `%tcp_time_spent%` — Time spent (formatted)
+- `%tcp_time_spent_raw%` — Time spent (seconds)
 
-- **Server Owners** who want engaging, replayable PvE content
-- **Admins** tired of manually resetting Trial Chambers
-- **Network Operators** running hub servers with minigame-style chambers
-- **Players** who love the challenge but hate the "one and done" limitation
+**Current State**
+- `%tcp_current_chamber%` — Chamber player is in
+- `%tcp_in_chamber%` — Whether player is in a chamber
+
+**Leaderboards**
+- `%tcp_leaderboard_vaults%` — Player's vault rank
+- `%tcp_leaderboard_chambers%` — Player's chamber rank
+- `%tcp_leaderboard_time%` — Player's time rank
+- `%tcp_top_vaults_1_name%` — #1 player by vaults
+- `%tcp_top_vaults_1_value%` — #1 player's vault count
+- *(1-10 available for vaults, chambers, and time)*
+
+</details>
+
+---
+
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| **Minecraft** | 1.21.1+ |
+| **Server** | Paper, Folia, Purpur, or Pufferfish |
+| **Java** | 21+ |
+
+### Optional Dependencies
+- **WorldEdit** or **FastAsyncWorldEdit** — Easier chamber creation
+- **WorldGuard** — Additional region protection
+- **PlaceholderAPI** — Scoreboard/hologram placeholders
+- **Vault** — Economy command rewards
+- **LuckPerms** — Permission command rewards
+
+---
+
+## Configuration
+
+All configuration is optional—sensible defaults work out of the box.
+
+<details>
+<summary>config.yml highlights</summary>
+
+```yaml
+# Vault cooldowns
+vaults:
+  normal-cooldown-hours: -1    # -1 = until reset (vanilla behavior)
+  ominous-cooldown-hours: -1
+  per-player-loot: true
+
+# Automatic resets
+global:
+  default-reset-interval: 172800  # 48 hours
+  reset-warning-times: [300, 60, 30]
+  teleport-players-on-reset: true
+
+# Protection
+protection:
+  prevent-block-break: true
+  prevent-block-place: true
+  prevent-mob-griefing: true
+  worldguard-integration: true
+
+# New in 1.2.5
+spawner-waves:
+  enabled: true
+  show-boss-bar: true
+
+spectator-mode:
+  enabled: true
+  offer-timeout: 30
+```
+
+</details>
+
+<details>
+<summary>Example loot table</summary>
+
+```yaml
+default:
+  pools:
+    common:
+      min-rolls: 2
+      max-rolls: 4
+      items:
+        - material: ARROW
+          amount: 8-16
+          weight: 100
+        - material: TIPPED_ARROW
+          potion-type: SLOWNESS
+          amount: 4-8
+          weight: 50
+    rare:
+      min-rolls: 1
+      max-rolls: 2
+      guaranteed: true
+      items:
+        - material: DIAMOND
+          amount: 1-3
+          weight: 30
+        - material: EMERALD
+          amount: 2-5
+          weight: 70
+    unique:
+      min-rolls: 0
+      max-rolls: 1
+      items:
+        - material: OMINOUS_BOTTLE
+          custom-effect-type: BAD_OMEN
+          potion-level: 3
+          weight: 10
+        - type: COMMAND
+          command: "eco give {player} 500"
+          weight: 20
+```
+
+</details>
+
+---
+
+## Support
+
+- **[Documentation](https://darkstarworks.gitbook.io/darkstarworks-docs/tcp-documentation)** — Full setup guides and reference
+- **[Discord](https://discord.gg/aWMU2JNXex)** — Community support and announcements
+- **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — Bug reports and feature requests
+- **[Source Code](https://github.com/darkstarworks/TrialChamberPro)** — Open source under CC-BY-NC-ND 4.0
+
+---
+
+## Target Audience
+
+- **Survival Servers** — Renewable endgame content that keeps players engaged
+- **SMP Networks** — Fair loot distribution across your playerbase
+- **Minigame Servers** — Competitive Trial Chamber runs with leaderboards
+- **Adventure Servers** — Protected dungeons with custom rewards
+
+---
+
+<div align="center">
+
+**Paper 1.21.1+** · **Folia Native** · **Java 21+**
+
+Made with Kotlin by [darkstarworks](https://github.com/darkstarworks)
+
+</div>
