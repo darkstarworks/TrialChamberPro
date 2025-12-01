@@ -1,5 +1,5 @@
-&e[v1.2.3] &fPotion Durations & Vanilla Parity
-&a+ &fNEW: &aCustom Effect Duration &7(control ticks in config)
-&a+ &fLogic: &7Tipped Arrows now use 1/8 duration (Vanilla)
-&a+ &fLogic: &7Smart multipliers for Splash/Lingering
-&b* &fAuto-calculates vanilla times by default
+&e[v1.2.5] &fStatistics & Spectator Update
+&b* &fPrevious Folia support is &astable &f(Multi-threaded)
+&a+ &fNEW: &aPlaceholderAPI &7(Stats, Leaderboards, Time)
+&a+ &fNEW: &aTrial Spawner Wave System &7(Boss Bar tracking)
+&a+ &fNEW: &aSpectator Mode &7(Watch chambers after death)
