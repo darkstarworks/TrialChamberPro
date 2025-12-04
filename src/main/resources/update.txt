@@ -1,5 +1,5 @@
-&e[v1.2.6] &fCritical Key Drop Fix
-&c! &fCRITICAL FIX: &cTrial Spawners &fnow drop keys after reset!
-&7(Spawners remembered players and didn't reset properly)
-&a+ &fNEW: &areset.reset-trial-spawners &fconfig option
-&a+ &fNow clears &7tracked players & entities on reset
+&e[v1.2.7] &fPer-Chamber Loot Tables
+&a+ &fNEW: &aPer-Chamber Loot Tables!
+&7(Set different loot for each chamber you register)
+&a+ &fNEW: &a/tcp loot &fcommands for management
+&b* &fPriority: &7Chamber > Vault > Global Default
