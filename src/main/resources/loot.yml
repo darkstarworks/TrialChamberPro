@@ -394,6 +394,39 @@ loot-tables:
 #        durability-max: 1500
 #        name: "&5Veteran's Pickaxe"
 #
+# ====== GOAT HORNS (8 VARIANTS) ======
+# Goat Horns have 8 different instrument variants, each playing a unique sound.
+# Use the "instrument" field to specify which variant to drop.
+#
+#      - type: GOAT_HORN
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 8.0
+#        instrument: PONDER  # The "Ponder" goat horn sound
+#        name: "&6Horn of Contemplation"
+#
+#      - type: GOAT_HORN
+#        amount-min: 1
+#        amount-max: 1
+#        weight: 5.0
+#        instrument: DREAM   # The rarest "Dream" goat horn sound
+#        name: "&5&lDreamer's Horn"
+#        lore:
+#          - "&7A rare horn that echoes"
+#          - "&7through the chambers"
+#
+# Available instruments (8 variants):
+#   PONDER  - Found naturally in regular goats
+#   SING    - Found naturally in regular goats
+#   SEEK    - Found naturally in regular goats
+#   FEEL    - Found naturally in regular goats
+#   ADMIRE  - Found only in screaming goats (rare!)
+#   CALL    - Found only in screaming goats (rare!)
+#   YEARN   - Found only in screaming goats (rare!)
+#   DREAM   - Found only in screaming goats (rare!)
+#
+# Note: You can use full names like "PONDER_GOAT_HORN" or short names like "PONDER"
+#
 # ====== COMBINING EVERYTHING ======
 # You can mix and match any/all features!
 #

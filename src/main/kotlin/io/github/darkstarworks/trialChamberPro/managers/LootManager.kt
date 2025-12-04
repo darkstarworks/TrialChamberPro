@@ -261,6 +261,9 @@ class LootManager(private val plugin: TrialChamberPro) {
         val durabilityMin = (data["durability-min"] as? Number)?.toInt()
         val durabilityMax = (data["durability-max"] as? Number)?.toInt()
 
+        // Parse goat horn instrument (8 variants: PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM)
+        val instrument = data["instrument"] as? String
+
         val enabled = (data["enabled"] as? Boolean) ?: true
 
         return LootItem(
@@ -280,6 +283,7 @@ class LootManager(private val plugin: TrialChamberPro) {
             effectDuration = effectDuration,
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
+            instrument = instrument,
             enabled = enabled
         )
     }
@@ -540,12 +544,16 @@ class LootManager(private val plugin: TrialChamberPro) {
                     }
                 } else if (lootItem.potionType != null) {
                     // Handle standard potion types
-                    // Apply custom potion level (amplifier) if specified
-                    if (lootItem.potionLevel != null) {
-                        // When using custom levels, don't set basePotionType to avoid duplicate effects
-                        // Instead, only add the custom effect with the specified level
+                    // Use custom effect when: potion-level is specified OR effect-duration is specified
+                    // This ensures effect-duration is not ignored when specified without potion-level
+                    val useCustomEffect = lootItem.potionLevel != null ||
+                        (lootItem.effectDuration != null && lootItem.effectDuration > 0)
+
+                    if (useCustomEffect) {
+                        // Get the effect type from the potion type
                         // Use getPotionEffects() instead of deprecated effectType property
                         val effectType = lootItem.potionType.potionEffects.firstOrNull()?.type
+
                         if (effectType != null) {
                             // Calculate duration - use explicit value if positive, otherwise calculate
                             val calculatedDuration = if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
@@ -574,20 +582,34 @@ class LootManager(private val plugin: TrialChamberPro) {
                                 else -> 600  // 30 seconds minimum for other potions
                             }
                             val duration = maxOf(calculatedDuration, minDuration)
+
+                            // Use specified potion level or default to 0 (Level I)
+                            val amplifier = lootItem.potionLevel ?: 0
+
                             addCustomEffect(
                                 org.bukkit.potion.PotionEffect(
                                     effectType,
                                     duration,
-                                    lootItem.potionLevel,
+                                    amplifier,
                                     false,
                                     true,
                                     true
                                 ),
                                 true
                             )
+                        } else {
+                            // effectType is null (e.g., AWKWARD, MUNDANE, THICK potions)
+                            // Fall back to base potion type, but log a warning if duration was specified
+                            if (lootItem.effectDuration != null && lootItem.effectDuration > 0) {
+                                plugin.logger.warning(
+                                    "Potion type ${lootItem.potionType} has no effect - effect-duration will be ignored. " +
+                                    "Use custom-effect-type for potions without standard effects."
+                                )
+                            }
+                            basePotionType = lootItem.potionType
                         }
                     } else {
-                        // No custom level specified - use default base potion type
+                        // No custom level or duration specified - use default base potion type
                         basePotionType = lootItem.potionType
                     }
                 }
@@ -600,6 +622,37 @@ class LootManager(private val plugin: TrialChamberPro) {
                     if (maxDurability > 0) {
                         val damageValue = Random.nextInt(lootItem.durabilityMin, lootItem.durabilityMax + 1)
                         damage = damageValue.coerceIn(0, maxDurability.toInt())
+                    }
+                }
+            }
+
+            // Apply goat horn instrument (8 variants)
+            if (lootItem.instrument != null && lootItem.type == Material.GOAT_HORN) {
+                if (this is org.bukkit.inventory.meta.MusicInstrumentMeta) {
+                    // Build the full instrument name (e.g., PONDER -> PONDER_GOAT_HORN)
+                    val instrumentName = if (lootItem.instrument.endsWith("_GOAT_HORN", ignoreCase = true)) {
+                        lootItem.instrument.uppercase()
+                    } else {
+                        "${lootItem.instrument.uppercase()}_GOAT_HORN"
+                    }
+
+                    try {
+                        // Get the MusicInstrument using reflection to support both field access patterns
+                        val instrumentField = org.bukkit.MusicInstrument::class.java.getField(instrumentName)
+                        val instrument = instrumentField.get(null) as? org.bukkit.MusicInstrument
+                        if (instrument != null) {
+                            setInstrument(instrument)
+                            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                                plugin.logger.info("Applied goat horn instrument: $instrumentName")
+                            }
+                        } else {
+                            plugin.logger.warning("Invalid goat horn instrument: $instrumentName (field exists but value is null)")
+                        }
+                    } catch (e: NoSuchFieldException) {
+                        plugin.logger.warning("Invalid goat horn instrument: ${lootItem.instrument}. " +
+                            "Valid options: PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM")
+                    } catch (e: Exception) {
+                        plugin.logger.warning("Failed to set goat horn instrument: ${e.message}")
                     }
                 }
             }

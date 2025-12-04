@@ -264,9 +264,10 @@ reset:
   clear-ground-items: true
   remove-spawner-mobs: true
   remove-non-chamber-mobs: false
+  reset-trial-spawners: true
   reset-ominous-spawners: true
   clear-trial-omen-effect: true
-  reset-vault-cooldowns: false
+  reset-vault-cooldowns: true
 ```
 
 ### `clear-ground-items`
@@ -284,6 +285,22 @@ Kill mobs spawned by trial spawners during reset. Keeps chambers clean.
 
 Kill ALL mobs in the chamber, even those not from spawners (like player pets). Usually `false` to avoid accidents.
 
+### `reset-trial-spawners`
+**Default:** `true`
+
+**CRITICAL for trial key drops!** Reset trial spawner state when the chamber resets. This clears the spawner's internal tracking of which players have completed it.
+
+{% hint style="warning" %}
+**Why this matters:** Trial spawners store which players have "completed" them. Without clearing this data, spawners won't spawn mobs or drop keys for returning players. This setting ensures spawners work like vanilla after each reset.
+{% endhint %}
+
+**Vanilla behavior when enabled:**
+- Spawners forget which players completed them
+- Players can reactivate spawners after chamber reset
+- Spawners drop trial keys (50% chance per player) when all mobs are defeated
+
+Set to `false` if you want spawners to permanently remember who completed them (not recommended).
+
 ### `reset-ominous-spawners`
 **Default:** `true`
 
@@ -295,11 +312,11 @@ Convert ominous trial spawners back to normal during reset. Set to `false` if yo
 Remove Trial Omen effects from players during reset. Prevents unintended difficulty spikes.
 
 ### `reset-vault-cooldowns`
-**Default:** `false`
+**Default:** `true`
 
-Reset all player vault cooldowns when the chamber resets. Usually `false`—cooldowns are personal and independent of chamber state.
+Reset all player vault cooldowns when the chamber resets. This is the vanilla behavior—vaults reset when the chamber resets.
 
-Set to `true` if you want players to always have fresh vaults after each chamber reset.
+Set to `false` if you want personal cooldowns independent of chamber state (players must wait their individual cooldown time even after chamber resets).
 
 ---
 

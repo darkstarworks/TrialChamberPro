@@ -5,12 +5,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import org.bukkit.Location
 import org.bukkit.entity.Monster
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.PlayerRespawnEvent
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Tracks player deaths and mob kills within Trial Chambers.
@@ -18,6 +22,10 @@ import org.bukkit.event.entity.PlayerDeathEvent
 class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
 
     private val deathScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    // Track pending spectator offers keyed by player UUID
+    private data class PendingOffer(val chamberId: Int, val chamberName: String, val deathLocation: Location)
+    private val pendingOffers = ConcurrentHashMap<UUID, PendingOffer>()
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerDeath(event: PlayerDeathEvent) {
@@ -46,16 +54,34 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
                     )
                 }
 
-                // Offer spectator mode after respawn
+                // Queue spectator offer for when player respawns (more reliable than fixed delay)
                 if (plugin.config.getBoolean("spectator-mode.enabled", true)) {
-                    plugin.scheduler.runTaskLater(Runnable {
-                        if (player.isOnline && !player.isDead) {
-                            plugin.spectatorManager.offerSpectatorMode(player, chamber, location)
-                        }
-                    }, 20L) // 1 second delay after respawn
+                    pendingOffers[player.uniqueId] = PendingOffer(chamber.id, chamber.name, location.clone())
                 }
             }
         }
+    }
+
+    /**
+     * Offers spectator mode after player respawns (fixes race condition with fixed delay).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        val player = event.player
+        val pending = pendingOffers.remove(player.uniqueId) ?: return
+
+        if (!plugin.config.getBoolean("spectator-mode.enabled", true)) return
+
+        // Get the chamber (might have been deleted since death)
+        val chamber = plugin.chamberManager.getCachedChamberById(pending.chamberId)
+        if (chamber == null) return
+
+        // Small delay after respawn to ensure player is fully ready
+        plugin.scheduler.runAtEntity(player, Runnable {
+            if (player.isOnline && !player.isDead) {
+                plugin.spectatorManager.offerSpectatorMode(player, chamber, pending.deathLocation)
+            }
+        })
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

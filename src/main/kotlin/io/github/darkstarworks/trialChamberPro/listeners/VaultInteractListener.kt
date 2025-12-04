@@ -327,16 +327,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.config.getBoolean("vaults.play-sound-on-open", true)) return
 
         val soundName = plugin.config.getString("vaults.sounds.normal-open", "BLOCK_VAULT_OPEN_SHUTTER")!!
-        try {
-            // Convert enum-style name (BLOCK_VAULT_OPEN_SHUTTER) to namespaced key (block.vault.open_shutter)
-            val key = soundName.lowercase().replace('_', '.')
-            val sound = org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
-            if (sound != null) {
-                player.playSound(location, sound, 1.0f, 1.0f)
-            }
-        } catch (_: Exception) {
-            // Sound not found, silently fail
-        }
+        val sound = resolveSound(soundName) ?: return
+        player.playSound(location, sound, 1.0f, 1.0f)
     }
 
     /**
@@ -346,15 +338,73 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         if (!plugin.config.getBoolean("vaults.play-sound-on-open", true)) return
 
         val soundName = plugin.config.getString("vaults.sounds.cooldown", "BLOCK_NOTE_BLOCK_BASS")!!
-        try {
-            // Convert enum-style name (BLOCK_NOTE_BLOCK_BASS) to namespaced key (block.note_block.bass)
-            val key = soundName.lowercase().replace('_', '.')
-            val sound = org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
-            if (sound != null) {
-                player.playSound(player.location, sound, 1.0f, 0.5f)
-            }
+        val sound = resolveSound(soundName) ?: return
+        player.playSound(player.location, sound, 1.0f, 0.5f)
+    }
+
+    /**
+     * Resolves a sound from either enum name (BLOCK_VAULT_OPEN_SHUTTER) or namespaced key (block.vault.open_shutter).
+     * Properly handles compound names like NOTE_BLOCK that should stay as note_block.
+     */
+    private fun resolveSound(soundName: String): org.bukkit.Sound? {
+        return try {
+            // First try: direct enum lookup (works if user specifies BLOCK_VAULT_OPEN_SHUTTER)
+            org.bukkit.Sound.valueOf(soundName.uppercase())
         } catch (_: Exception) {
-            // Sound not found, silently fail
+            try {
+                // Second try: if already a namespaced key format (block.vault.open_shutter)
+                val key = if (soundName.contains('.')) {
+                    soundName.lowercase()
+                } else {
+                    // Convert enum-style to namespaced: BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
+                    // Split by underscore, then intelligently join:
+                    // - Use dots between major categories (BLOCK, ENTITY, ITEM, etc.)
+                    // - Keep underscores within names (NOTE_BLOCK -> note_block)
+                    convertEnumToNamespacedKey(soundName)
+                }
+                org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
+            } catch (_: Exception) {
+                null
+            }
         }
+    }
+
+    /**
+     * Converts Bukkit Sound enum name to Minecraft namespaced key.
+     * Examples:
+     * - BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
+     * - BLOCK_NOTE_BLOCK_BASS -> block.note_block.bass
+     * - ENTITY_PLAYER_HURT -> entity.player.hurt
+     */
+    private fun convertEnumToNamespacedKey(enumName: String): String {
+        val lower = enumName.lowercase()
+
+        // Known compound words that should keep their underscores
+        val compoundWords = listOf(
+            "note_block", "trial_spawner", "ender_dragon", "wither_skeleton",
+            "elder_guardian", "iron_golem", "snow_golem", "magma_cube",
+            "slime_block", "honey_block", "soul_sand", "soul_soil",
+            "copper_bulb", "copper_door", "copper_trapdoor", "copper_grate",
+            "heavy_core", "wind_charge", "trial_key", "ominous_trial_key",
+            "cave_vines", "glow_lichen", "pointed_dripstone", "sculk_sensor",
+            "sculk_shrieker", "sculk_catalyst", "big_dripleaf", "small_dripleaf",
+            "mangrove_roots", "chorus_flower", "chorus_plant", "end_portal",
+            "end_gateway", "nether_portal", "dragon_egg", "turtle_egg",
+            "frog_spawn", "sniffer_egg", "decorated_pot", "enchanting_table",
+            "brewing_stand", "ender_chest", "shulker_box", "respawn_anchor",
+            "lodestone_compass", "item_frame", "armor_stand", "end_crystal",
+            "minecart_inside", "chest_locked", "wet_grass"
+        )
+
+        // Replace underscores with dots, but preserve compound words
+        var result = lower
+        for (compound in compoundWords) {
+            val placeholder = compound.replace('_', '\u0000')
+            result = result.replace(compound, placeholder)
+        }
+        result = result.replace('_', '.')
+        result = result.replace('\u0000', '_')
+
+        return result
     }
 }

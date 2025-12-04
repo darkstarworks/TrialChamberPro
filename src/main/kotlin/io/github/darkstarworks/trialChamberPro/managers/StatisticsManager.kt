@@ -36,10 +36,11 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      * Uses cache with 5-minute expiry.
      */
     suspend fun getStats(playerUuid: UUID): PlayerStats = withContext(Dispatchers.IO) {
-        // Check cache first
+        // Check cache first (thread-safe: get both values atomically)
         val expiry = cacheExpiry[playerUuid]
-        if (expiry != null && System.currentTimeMillis() < expiry) {
-            return@withContext statsCache[playerUuid]!!
+        val cachedStats = statsCache[playerUuid]
+        if (expiry != null && cachedStats != null && System.currentTimeMillis() < expiry) {
+            return@withContext cachedStats
         }
 
         // Load from database

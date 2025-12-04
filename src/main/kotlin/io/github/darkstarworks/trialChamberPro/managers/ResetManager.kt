@@ -141,17 +141,17 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
             }
 
-            // Step 4: Reset ominous spawners
-            if (plugin.config.getBoolean("reset.reset-ominous-spawners", true)) {
-                // TODO: Convert ominous spawners back to normal
+            // Step 4: Reset trial spawners (clear tracked players so they drop keys again)
+            if (plugin.config.getBoolean("reset.reset-trial-spawners", true)) {
+                resetTrialSpawners(chamber)
             }
 
             // Step 5: Update last reset time
             val now = System.currentTimeMillis()
             plugin.chamberManager.updateLastReset(chamber.id, now)
 
-            // Step 6: Optionally reset vault cooldowns
-            if (plugin.config.getBoolean("reset.reset-vault-cooldowns", false)) {
+            // Step 6: Optionally reset vault cooldowns (defaults to true for vanilla behavior)
+            if (plugin.config.getBoolean("reset.reset-vault-cooldowns", true)) {
                 val vaults = plugin.vaultManager.getVaultsForChamber(chamber.id)
                 vaults.forEach { vault ->
                     plugin.vaultManager.resetAllCooldowns(vault.id)
@@ -320,6 +320,80 @@ class ResetManager(private val plugin: TrialChamberPro) {
                         continuation.resume(Unit) {}
                     } catch (e: Exception) {
                         continuation.resumeWith(Result.failure(e))
+                    }
+                })
+            }
+        }
+    }
+
+    /**
+     * Resets all trial spawners in a chamber.
+     * CRITICAL: This clears tracked players so spawners can be reactivated
+     * and will drop trial keys again (50% chance per player per vanilla behavior).
+     *
+     * Folia compatible: Uses location-based scheduling.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun resetTrialSpawners(chamber: Chamber) {
+        withTimeout(10000) {  // 10 second timeout for larger chambers
+            val chamberCenter = Location(
+                chamber.getWorld(),
+                (chamber.minX + chamber.maxX) / 2.0,
+                (chamber.minY + chamber.maxY) / 2.0,
+                (chamber.minZ + chamber.maxZ) / 2.0
+            )
+
+            suspendCancellableCoroutine<Unit> { continuation ->
+                plugin.scheduler.runAtLocation(chamberCenter, Runnable {
+                    try {
+                        val world = chamber.getWorld() ?: run {
+                            continuation.resume(Unit) {}
+                            return@Runnable
+                        }
+
+                        var resetCount = 0
+                        val resetOminous = plugin.config.getBoolean("reset.reset-ominous-spawners", true)
+
+                        // Scan chamber for trial spawners
+                        for (x in chamber.minX..chamber.maxX) {
+                            for (y in chamber.minY..chamber.maxY) {
+                                for (z in chamber.minZ..chamber.maxZ) {
+                                    val block = world.getBlockAt(x, y, z)
+                                    if (block.type == Material.TRIAL_SPAWNER) {
+                                        val state = block.state
+                                        if (state is org.bukkit.block.TrialSpawner) {
+                                            // Clear tracked players - KEY fix for trial key drops!
+                                            state.trackedPlayers.forEach { player ->
+                                                state.stopTrackingPlayer(player)
+                                            }
+
+                                            // Clear tracked entities (spawned mobs)
+                                            state.trackedEntities.forEach { entity ->
+                                                state.stopTrackingEntity(entity)
+                                            }
+
+                                            // Optionally reset ominous spawners back to normal
+                                            if (resetOminous && state.isOminous) {
+                                                state.isOminous = false
+                                            }
+
+                                            // Commit changes
+                                            state.update(true, false)
+                                            resetCount++
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (resetCount > 0) {
+                            plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name}")
+                        }
+
+                        continuation.resume(Unit) {}
+                    } catch (e: Exception) {
+                        plugin.logger.warning("Error resetting trial spawners: ${e.message}")
+                        continuation.resume(Unit) {}  // Don't fail the whole reset
                     }
                 })
             }

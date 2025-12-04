@@ -25,9 +25,56 @@ class VaultManager(private val plugin: TrialChamberPro) {
         if (cached != null && now - cached.updatedAt < ttlMs) {
             return cached.normal to cached.ominous
         }
-        // Trigger async refresh and return last known or defaults
-        refreshVaultCountsAsync(chamberId)
-        return cached?.let { it.normal to it.ominous } ?: (0 to 0)
+
+        // If we have stale cached data, trigger async refresh and return stale data
+        if (cached != null) {
+            refreshVaultCountsAsync(chamberId)
+            return cached.normal to cached.ominous
+        }
+
+        // No cached data at all - do synchronous fetch to avoid returning (0, 0)
+        // This only happens once per chamber until cache is populated
+        return getVaultCountsSync(chamberId)
+    }
+
+    /**
+     * Synchronously fetches vault counts from the database.
+     * Used when cache is completely empty to avoid returning (0, 0).
+     */
+    private fun getVaultCountsSync(chamberId: Int): Pair<Int, Int> {
+        return try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    """
+                    SELECT type, COUNT(*) as count
+                    FROM vaults
+                    WHERE chamber_id = ?
+                    GROUP BY type
+                    """.trimIndent()
+                ).use { stmt ->
+                    stmt.setInt(1, chamberId)
+                    val rs = stmt.executeQuery()
+
+                    var normal = 0
+                    var ominous = 0
+
+                    while (rs.next()) {
+                        when (rs.getString("type")) {
+                            "NORMAL" -> normal = rs.getInt("count")
+                            "OMINOUS" -> ominous = rs.getInt("count")
+                        }
+                    }
+
+                    // Cache the result
+                    countsCache[chamberId] = VaultCounts(normal, ominous, System.currentTimeMillis())
+
+                    normal to ominous
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to get vault counts for chamber $chamberId: ${e.message}")
+            0 to 0
+        }
     }
 
     fun refreshVaultCountsAsync(chamberId: Int) {

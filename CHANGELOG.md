@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.6] - 2025-12-04
+### Fixed
+- **CRITICAL: Trial Spawners Not Dropping Keys**: Fixed trial spawners not dropping trial keys after chamber resets
+  - Root cause: `NBTUtil.kt` had empty implementations for trial spawner capture/restore
+  - Trial spawners store `registered_players` (UUIDs of players who've used them)
+  - Without clearing this data, spawners "remembered" they were already completed
+  - Now properly clears tracked players using Paper API's `TrialSpawner.stopTrackingPlayer()`
+  - Spawners will now drop keys (50% chance per player) after mobs are defeated per vanilla behavior
+- **NBTUtil Trial Spawner Capture**: Now captures ominous state, cooldown length, and required player range
+- **NBTUtil Trial Spawner Restore**: Now clears all tracked players/entities and restores proper state
+- **ResetManager Trial Spawner Reset**: Implemented the TODO for resetting trial spawners during chamber reset
+  - Scans chamber for all TRIAL_SPAWNER blocks
+  - Clears tracked players (the key fix for key drops)
+  - Clears tracked entities (spawned mobs)
+  - Optionally resets ominous spawners back to normal
+
+### Added
+- New config option `reset.reset-trial-spawners: true` to control trial spawner state reset
+  - When enabled (default), trial spawners clear their tracked players on chamber reset
+  - This allows spawners to be reactivated and drop keys again
+  - Documented with explanation of vanilla 50% key drop chance
+
+### Changed
+- Config option `reset.reset-ominous-spawners` now properly implemented (was a TODO)
+- Trial spawner reset is now a separate step in chamber reset sequence (Step 4)
+
+### Technical Details
+- Uses Paper API 1.21+ `TrialSpawner` interface methods:
+  - `getTrackedPlayers()` / `stopTrackingPlayer()` - Player tracking
+  - `getTrackedEntities()` / `stopTrackingEntity()` - Entity tracking
+  - `isOminous()` / `setOminous()` - Ominous state management
+- Folia compatible: Uses location-based scheduling for spawner operations
+- 10-second timeout for spawner reset to handle larger chambers
+
 ## [1.2.5] - 2025-11-30
 ### Added
 - **PlaceholderAPI Integration**: Full support for PlaceholderAPI placeholders
@@ -550,6 +584,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.2...v1.2.3

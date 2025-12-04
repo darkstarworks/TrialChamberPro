@@ -44,6 +44,9 @@ data class LootItem(
     val durabilityMin: Int? = null, // Minimum durability (as damage value)
     val durabilityMax: Int? = null, // Maximum durability (as damage value)
 
+    // Goat Horn instrument support (8 variants)
+    val instrument: String? = null, // PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM
+
     val enabled: Boolean = true
 )
 

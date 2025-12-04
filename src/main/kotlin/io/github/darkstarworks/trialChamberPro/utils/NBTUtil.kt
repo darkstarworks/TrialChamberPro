@@ -28,14 +28,20 @@ object NBTUtil {
 
     /**
      * Captures Trial Spawner NBT data.
-     * Stores cooldown settings and ominous state.
+     * Stores cooldown settings and ominous state for proper restoration.
      */
     private fun captureTrialSpawner(spawner: TrialSpawner): Map<String, Any> {
-        return mapOf(
-            "type" to "TRIAL_SPAWNER"
-            // Note: TrialSpawner-specific data depends on Paper API version
-            // BlockData will handle the basic spawner state
-        )
+        return try {
+            mapOf(
+                "type" to "TRIAL_SPAWNER",
+                "ominous" to spawner.isOminous,
+                "cooldownLength" to spawner.cooldownLength,
+                "requiredPlayerRange" to spawner.requiredPlayerRange
+            )
+        } catch (_: Exception) {
+            // Fallback if API methods not available
+            mapOf("type" to "TRIAL_SPAWNER")
+        }
     }
 
     /**
@@ -87,12 +93,47 @@ object NBTUtil {
     }
 
     /**
-     * Restores Trial Spawner data.
+     * Restores Trial Spawner data and resets its state.
+     * CRITICAL: This clears tracked players so the spawner can be reactivated
+     * and will drop trial keys again when completed.
      */
     private fun restoreTrialSpawner(spawner: TrialSpawner, data: Map<String, Any>): Boolean {
-        // TrialSpawner restoration is handled via BlockData
-        // Specific spawner properties depend on Paper API version
-        return true
+        return try {
+            // Clear all tracked players - this is the KEY fix for trial key drops!
+            // Without this, the spawner "remembers" players who already completed it
+            // and won't spawn mobs or drop keys for them.
+            spawner.trackedPlayers.forEach { player ->
+                spawner.stopTrackingPlayer(player)
+            }
+
+            // Clear all tracked entities (spawned mobs that haven't been killed)
+            spawner.trackedEntities.forEach { entity ->
+                spawner.stopTrackingEntity(entity)
+            }
+
+            // Restore ominous state from snapshot
+            val wasOminous = data["ominous"] as? Boolean ?: false
+            spawner.isOminous = wasOminous
+
+            // Restore cooldown length if captured
+            val cooldownLength = data["cooldownLength"] as? Int
+            if (cooldownLength != null && cooldownLength > 0) {
+                spawner.cooldownLength = cooldownLength
+            }
+
+            // Restore required player range if captured
+            val requiredRange = data["requiredPlayerRange"] as? Int
+            if (requiredRange != null && requiredRange > 0) {
+                spawner.requiredPlayerRange = requiredRange
+            }
+
+            // Commit the changes
+            spawner.update(true, false)
+            true
+        } catch (e: Exception) {
+            // Log but don't fail - BlockData restoration still works
+            false
+        }
     }
 
     /**

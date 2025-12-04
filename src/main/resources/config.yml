@@ -78,7 +78,12 @@ reset:
   clear-ground-items: true
   remove-spawner-mobs: true
   remove-non-chamber-mobs: false
-  reset-ominous-spawners: true  # Convert ominous back to normal
+  # CRITICAL: Reset trial spawner state (clears tracked players).
+  # When enabled, trial spawners will drop keys again after chamber reset.
+  # Without this, spawners "remember" players who already completed them and won't give keys.
+  # Vanilla behavior: 50% chance to drop a trial key for each player after all mobs are defeated.
+  reset-trial-spawners: true
+  reset-ominous-spawners: true  # Convert ominous spawners back to normal on reset
   clear-trial-omen-effect: true
   reset-vault-cooldowns: true  # Reset player vault cooldowns on chamber reset (REQUIRED for vanilla behavior)
 
