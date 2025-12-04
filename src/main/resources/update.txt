@@ -1,5 +1,5 @@
-&e[v1.2.7] &fPer-Chamber Loot Tables
-&a+ &fNEW: &aPer-Chamber Loot Tables!
-&7(Set different loot for each chamber you register)
-&a+ &fNEW: &a/tcp loot &fcommands for management
-&b* &fPriority: &7Chamber > Vault > Global Default
+&e[v1.2.8] &fGUI Overhaul & Stability
+&a+ &fNEW: &aComplete GUI Overhaul &7(14 New Views!)
+&a+ &fNEW: &aRuntime Config Editing &7(13 toggles in-game)
+&c! &fFIXED: &cMySQL &fDatabase Compatibility & Stability
+&c! &fFIXED: &cFolia &fSafety for player ejection & cleanup
