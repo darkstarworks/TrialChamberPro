@@ -1,5 +1,5 @@
-&e[v1.2.5] &fStatistics & Spectator Update
-&b* &fPrevious Folia support is &astable &f(Multi-threaded)
-&a+ &fNEW: &aPlaceholderAPI &7(Stats, Leaderboards, Time)
-&a+ &fNEW: &aTrial Spawner Wave System &7(Boss Bar tracking)
-&a+ &fNEW: &aSpectator Mode &7(Watch chambers after death)
+&e[v1.2.7] &fPer-Chamber Loot Tables
+&a+ &fNEW: &aPer-Chamber Loot Tables!
+&7(Set different loot for each chamber you register)
+&a+ &fNEW: &a/tcp loot &fcommands for management
+&b* &fPriority: &7Chamber > Vault > Global Default
