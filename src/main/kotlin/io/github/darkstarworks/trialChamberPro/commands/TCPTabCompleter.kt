@@ -14,11 +14,13 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val subcommands = listOf(
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
-        "stats", "leaderboard", "lb", "top", "reset", "menu"
+        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot"
     )
 
     private val snapshotActions = listOf("create", "restore")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
+    private val lootActions = listOf("set", "clear", "info", "list")
+    private val vaultTypes = listOf("normal", "ominous")
 
     override fun onTabComplete(
         sender: CommandSender,
@@ -56,6 +58,10 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         // Stat types for leaderboard
                         statTypes.filter { it.startsWith(args[1].lowercase()) }
                     }
+                    "loot" -> {
+                        // Loot subcommands
+                        lootActions.filter { it.startsWith(args[1].lowercase()) }
+                    }
                     else -> emptyList()
                 }
             }
@@ -73,6 +79,13 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                                 val names = try { WEVarStore.list(plugin.dataFolder).map { it.first } } catch (_: Exception) { emptyList() }
                                 (ops + names).filter { it.startsWith(args[2].lowercase()) }
                             }
+                            else -> emptyList()
+                        }
+                    }
+                    "loot" -> {
+                        // Chamber names for set/clear/info
+                        when (args[1].lowercase()) {
+                            "set", "clear", "info" -> getChamberNames().filter { it.startsWith(args[2].lowercase()) }
                             else -> emptyList()
                         }
                     }
@@ -95,6 +108,27 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             else -> emptyList()
                         }
                     }
+                    "loot" -> {
+                        when (args[1].lowercase()) {
+                            "set" -> vaultTypes.filter { it.startsWith(args[3].lowercase()) }
+                            "clear" -> (vaultTypes + "all").filter { it.startsWith(args[3].lowercase()) }
+                            else -> emptyList()
+                        }
+                    }
+                    else -> emptyList()
+                }
+            }
+            5 -> {
+                when (args[0].lowercase()) {
+                    "loot" -> {
+                        when (args[1].lowercase()) {
+                            "set" -> {
+                                // Loot table names
+                                getLootTableNames().filter { it.startsWith(args[4].lowercase()) }
+                            }
+                            else -> emptyList()
+                        }
+                    }
                     else -> emptyList()
                 }
             }
@@ -106,6 +140,14 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         return try {
             val names = plugin.chamberManager.getCachedChamberNames()
             names.ifEmpty { emptyList() }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun getLootTableNames(): List<String> {
+        return try {
+            plugin.lootManager.getLootTableNames().toList()
         } catch (_: Exception) {
             emptyList()
         }

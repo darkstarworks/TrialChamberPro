@@ -2,10 +2,6 @@ package io.github.darkstarworks.trialChamberPro.commands
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.VaultType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.command.CommandSender
@@ -14,8 +10,6 @@ import org.bukkit.inventory.ItemStack
 /**
  * Extension functions for TCPCommand to handle vault and key commands.
  */
-
-private val commandScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
 fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out String>) {
     if (!sender.hasPermission("tcp.admin.vault")) {
@@ -39,11 +33,11 @@ fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
             val playerName = args[3]
             val vaultTypeStr = args.getOrNull(4)?.uppercase()
 
-            commandScope.launch {
+            plugin.launchAsync {
                 val chamber = plugin.chamberManager.getChamber(chamberName)
                 if (chamber == null) {
                     sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
-                    return@launch
+                    return@launchAsync
                 }
 
                 val targetPlayer = Bukkit.getOfflinePlayer(playerName)

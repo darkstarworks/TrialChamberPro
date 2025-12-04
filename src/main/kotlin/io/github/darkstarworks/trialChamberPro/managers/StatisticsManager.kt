@@ -121,7 +121,11 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         plugin.databaseManager.connection.use { conn ->
             conn.autoCommit = false
             try {
-                val stmt = conn.prepareStatement(
+                // Use database-specific upsert syntax
+                val isSQLite = plugin.databaseManager.databaseType ==
+                    io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
+
+                val sql = if (isSQLite) {
                     """
                     INSERT INTO player_stats (player_uuid, time_spent, last_updated)
                     VALUES (?, ?, ?)
@@ -129,7 +133,17 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                         time_spent = time_spent + excluded.time_spent,
                         last_updated = excluded.last_updated
                     """.trimIndent()
-                )
+                } else {
+                    """
+                    INSERT INTO player_stats (player_uuid, time_spent, last_updated)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        time_spent = time_spent + VALUES(time_spent),
+                        last_updated = VALUES(last_updated)
+                    """.trimIndent()
+                }
+
+                val stmt = conn.prepareStatement(sql)
 
                 updates.forEach { (uuid, seconds) ->
                     stmt.setString(1, uuid.toString())
@@ -238,14 +252,35 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      */
     private fun saveStats(stats: PlayerStats) {
         plugin.databaseManager.connection.use { conn ->
-            val stmt = conn.prepareStatement(
+            // Use database-specific upsert syntax
+            val isSQLite = plugin.databaseManager.databaseType ==
+                io.github.darkstarworks.trialChamberPro.database.DatabaseManager.DatabaseType.SQLITE
+
+            val sql = if (isSQLite) {
                 """
                 INSERT OR REPLACE INTO player_stats
                 (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
                  mobs_killed, deaths, time_spent, last_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """
-            )
+            } else {
+                """
+                INSERT INTO player_stats
+                (player_uuid, chambers_completed, normal_vaults_opened, ominous_vaults_opened,
+                 mobs_killed, deaths, time_spent, last_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    chambers_completed = VALUES(chambers_completed),
+                    normal_vaults_opened = VALUES(normal_vaults_opened),
+                    ominous_vaults_opened = VALUES(ominous_vaults_opened),
+                    mobs_killed = VALUES(mobs_killed),
+                    deaths = VALUES(deaths),
+                    time_spent = VALUES(time_spent),
+                    last_updated = VALUES(last_updated)
+                """
+            }
+
+            val stmt = conn.prepareStatement(sql)
             stmt.setString(1, stats.playerUuid.toString())
             stmt.setInt(2, stats.chambersCompleted)
             stmt.setInt(3, stats.normalVaultsOpened)

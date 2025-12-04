@@ -31,7 +31,7 @@ The first player takes everything, vaults stay locked forever, and griefers dest
 - **Per-Player Vaults** — Everyone gets their own loot with separate cooldowns
 - **Full Protection** — Block break/place, container access, mob griefing prevention
 - **Statistics & Leaderboards** — Track vaults opened, mobs killed, time spent
-- **Admin GUI** — Manage everything with `/tcp menu`—no YAML editing required
+- **Admin GUI** — Complete management with 14 views—configure everything without YAML editing
 
 ### Advanced Loot System
 - **Multi-Pool Tables** — Common, rare, and unique pools like vanilla
@@ -43,6 +43,13 @@ The first player takes everything, vaults stay locked forever, and griefers dest
 - **Spawner Wave Tracking** — Boss bar shows wave progress as players fight
 - **Spectator Mode** — Dead players can watch teammates complete the challenge
 - **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, and more
+
+### Admin GUI (New in 1.2.8)
+- **Runtime Config Editing** — Toggle settings in-game without editing YAML files
+- **Chamber Management** — Per-chamber reset intervals, exit locations, loot overrides
+- **Vault Cooldowns** — View and reset player cooldowns for any vault
+- **Protection Toggles** — Enable/disable protection features instantly
+- **Statistics Dashboard** — View leaderboards and player stats in-game
 
 ### Technical Excellence
 - **Folia Native** — Full support for regionized multithreading

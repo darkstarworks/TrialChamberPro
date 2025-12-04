@@ -194,13 +194,22 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         // Update statistics (for leaderboards and /tcp stats)
         plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
 
+        // Resolve the effective loot table (chamber override > vault default)
+        val chamber = plugin.chamberManager.getChamberById(vault.chamberId)
+        val effectiveLootTable = plugin.chamberManager.getEffectiveLootTable(
+            chamber, vaultType, vault.lootTable
+        )
+
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("Opening vault ID ${vault.id}: type=${vault.type}, lootTable='${vault.lootTable}'")
+            val chamberOverride = chamber?.getLootTable(vaultType)
+            plugin.logger.info("Opening vault ID ${vault.id}: type=${vault.type}, " +
+                "vaultDefault='${vault.lootTable}', chamberOverride='$chamberOverride', " +
+                "effective='$effectiveLootTable'")
         }
 
         // Generate loot (async, player might disconnect during this)
-        val loot = plugin.lootManager.generateLoot(vault.lootTable, player)
+        val loot = plugin.lootManager.generateLoot(effectiveLootTable, player)
 
         // MUST switch to entity's region thread for player access (Folia compatible)
         // Use scheduler adapter instead of Dispatchers.Main (which doesn't exist in server environment)

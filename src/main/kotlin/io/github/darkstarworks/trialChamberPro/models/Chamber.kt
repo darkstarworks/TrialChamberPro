@@ -28,6 +28,8 @@ import java.io.File
  * @property resetInterval Reset interval in seconds
  * @property lastReset Last reset timestamp in milliseconds (nullable)
  * @property createdAt Creation timestamp in milliseconds
+ * @property normalLootTable Per-chamber loot table override for normal vaults (nullable)
+ * @property ominousLootTable Per-chamber loot table override for ominous vaults (nullable)
  */
 data class Chamber(
     val id: Int,
@@ -47,8 +49,19 @@ data class Chamber(
     val snapshotFile: String? = null,
     val resetInterval: Long,
     val lastReset: Long? = null,
-    val createdAt: Long
+    val createdAt: Long,
+    val normalLootTable: String? = null,
+    val ominousLootTable: String? = null
 ) {
+    /**
+     * Gets the loot table override for a specific vault type.
+     * Returns null if no override is set (use default).
+     */
+    fun getLootTable(vaultType: VaultType): String? = when (vaultType) {
+        VaultType.NORMAL -> normalLootTable
+        VaultType.OMINOUS -> ominousLootTable
+    }
+
     /**
      * Gets the Bukkit world instance.
      */

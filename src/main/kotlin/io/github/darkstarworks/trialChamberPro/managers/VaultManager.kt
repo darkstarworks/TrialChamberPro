@@ -426,6 +426,33 @@ class VaultManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Gets the count of players who have a lock on a specific vault.
+     *
+     * @param vaultId Vault ID
+     * @return Number of players with a lock on this vault
+     */
+    suspend fun getVaultLockCount(vaultId: Int): Int = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "SELECT COUNT(*) as count FROM player_vaults WHERE vault_id = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, vaultId)
+                    val rs = stmt.executeQuery()
+                    if (rs.next()) {
+                        rs.getInt("count")
+                    } else {
+                        0
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to get vault lock count: ${e.message}")
+            0
+        }
+    }
+
+    /**
      * Parses vault data from a result set.
      */
     private fun parseVault(rs: ResultSet): VaultData {

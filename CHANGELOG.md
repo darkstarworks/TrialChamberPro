@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.8] - 2025-12-04
+### Added
+- **Complete GUI Overhaul**: 14 new views replacing the old 6-view system
+  - **MainMenuView**: New central hub with 6 category buttons (Chambers, Loot Tables, Statistics, Settings, Protection, Help)
+  - **ChamberListView**: Paginated chamber list (36 per page) replacing ChambersOverviewView
+  - **ChamberDetailView**: Enhanced chamber management hub with quick actions
+  - **ChamberSettingsView**: Per-chamber settings (reset interval, exit location, loot overrides)
+  - **VaultManagementView**: Vault cooldown management with player lock display
+  - **SettingsMenuView**: Settings category hub with config reload
+  - **GlobalSettingsView**: Runtime-toggleable settings (13 config options, instant save)
+  - **ProtectionMenuView**: Protection toggle switches without YAML editing
+  - **StatsMenuView**: Statistics category menu with leaderboard shortcuts
+  - **LeaderboardView**: Top 10 players by category with player heads
+  - **PlayerStatsView**: Individual player stats with K/D ratio and averages
+  - **LootTableListView**: Direct loot table browser
+  - **HelpMenuView**: Command reference, permissions, and plugin info
+- **Runtime Config Editing**: Toggle 13 config options directly in the GUI
+  - Reset settings: clear-ground-items, remove-spawner-mobs, reset-trial-spawners, reset-vault-cooldowns
+  - Feature settings: spawner-waves, boss-bar, spectator-mode, statistics tracking
+  - Loot settings: apply-luck-effect, per-player-loot
+  - Protection settings: All 6 protection toggles
+  - Changes save immediately to config.yml
+- **Pagination Support**: Handle unlimited chambers with 36 items per page
+- **Session Restoration**: Return to previous screens with proper state preservation
+
+### Fixed
+- **MySQL Database Compatibility**: Fixed SQL syntax errors when using MySQL database
+  - `StatisticsManager.batchAddTimeSpent()` now uses `ON DUPLICATE KEY UPDATE` for MySQL (was SQLite-only `ON CONFLICT`)
+  - `StatisticsManager.saveStats()` now uses `ON DUPLICATE KEY UPDATE` for MySQL (was SQLite-only `INSERT OR REPLACE`)
+  - Exposed `DatabaseManager.databaseType` property for runtime database type detection
+- **Folia Compatibility in ChamberDetailView**: Fixed player ejection not using Folia-safe scheduling
+  - `exitPlayers()` now uses `scheduler.runAtEntity()` for each player (required for Folia where players may be in different regions)
+  - Added `player.isOnline` check before teleporting to prevent errors with disconnected players
+- **Coroutine Scope Leak in Commands**: Fixed orphaned coroutine scope causing resource leaks
+  - Removed standalone `commandScope` from `TCPCommand.kt` and `TCPCommandExtensions.kt`
+  - Commands now use `plugin.launchAsync {}` which is properly cancelled on plugin disable
+  - Ensures all async command operations are tied to plugin lifecycle
+- **SpawnerWaveManager Async Thread Safety**: Fixed boss bar cleanup running on wrong thread
+  - Changed `runTaskLaterAsync` to `runTaskLater` for boss bar removal
+  - `removeBossBar()` calls `server.getPlayer()` which requires main thread access
+- **GlobalSettingsView Code Cleanup**: Removed unused parameters from extension function
+  - Removed redundant `pane` and `player` parameters from `StaticPane.addItem()` extension
+  - Cleaned up all 10 call sites
+
+### Changed
+- **MenuService**: Rewritten with 16 screen enums and unified navigation methods
+- **Legacy Compatibility**: Old GUI methods deprecated but still functional
+- **/tcp menu**: Now opens MainMenuView instead of ChambersOverviewView
+
+### Technical Details
+- New helper methods in ChamberManager: `updateResetInterval()`, `updateExitLocation()`
+- New helper method in VaultManager: `getVaultLockCount()`
+- GUI system uses consistent back/close navigation pattern
+- All views use StaticPane and OutlinePane for layout
+- `DatabaseManager.databaseType` now publicly accessible for database-specific SQL queries
+
+## [1.2.7] - 2025-12-04
+### Added
+- **Per-Chamber Loot Tables**: Override global loot tables on a per-chamber basis
+  - Set chamber-specific loot tables for normal and/or ominous vaults
+  - Priority hierarchy: Chamber override > Vault's stored table > Global default
+  - Fully backwards compatible - existing chambers use defaults automatically
+
+### New Commands
+- `/tcp loot set <chamber> <normal|ominous> <table>` - Set loot table override for a chamber
+- `/tcp loot clear <chamber> [normal|ominous|all]` - Clear loot table override(s)
+- `/tcp loot info <chamber>` - Show current loot table settings for a chamber
+- `/tcp loot list` - List all available loot tables from loot.yml
+
+### Technical Details
+- New database columns: `normal_loot_table` and `ominous_loot_table` in `chambers` table
+- Automatic database migration on startup (safe to run multiple times)
+- New permission: `tcp.admin.loot` for loot table management
+- Full tab completion support for all loot subcommands
+- Chamber model extended with `getLootTable(VaultType)` helper method
+- ChamberManager provides `getEffectiveLootTable()` for priority resolution
+
 ## [1.2.6] - 2025-12-04
 ### Fixed
 - **CRITICAL: Trial Spawners Not Dropping Keys**: Fixed trial spawners not dropping trial keys after chamber resets
@@ -584,6 +661,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.7...v1.2.8
+[1.2.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.6...v1.2.7
 [1.2.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.3...v1.2.4

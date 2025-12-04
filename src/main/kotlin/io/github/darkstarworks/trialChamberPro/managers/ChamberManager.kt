@@ -547,7 +547,9 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             snapshotFile = rs.getString("snapshot_file"),
             resetInterval = rs.getLong("reset_interval"),
             lastReset = rs.getLong("last_reset").takeIf { !rs.wasNull() },
-            createdAt = rs.getLong("created_at")
+            createdAt = rs.getLong("created_at"),
+            normalLootTable = rs.getString("normal_loot_table"),
+            ominousLootTable = rs.getString("ominous_loot_table")
         )
     }
 
@@ -608,5 +610,147 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      */
     fun getCachedChamberAt(location: Location): Chamber? {
         return chamberCache.values.firstOrNull { it.contains(location) }
+    }
+
+    /**
+     * Sets the loot table override for a chamber.
+     *
+     * @param chamberName The chamber name
+     * @param vaultType The vault type (NORMAL or OMINOUS)
+     * @param tableName The loot table name, or null to clear the override
+     * @return True if successful
+     */
+    suspend fun setLootTable(chamberName: String, vaultType: VaultType, tableName: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val column = when (vaultType) {
+                VaultType.NORMAL -> "normal_loot_table"
+                VaultType.OMINOUS -> "ominous_loot_table"
+            }
+
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET $column = ? WHERE name = ?").use { stmt ->
+                    if (tableName == null) {
+                        stmt.setNull(1, java.sql.Types.VARCHAR)
+                    } else {
+                        stmt.setString(1, tableName)
+                    }
+                    stmt.setString(2, chamberName)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        // Refresh cache with updated data
+                        val refreshed = loadChamberFromDb(chamberName)
+                        if (refreshed != null) {
+                            chamberCache[chamberName] = refreshed
+                            updateCacheExpiry(chamberName)
+                        } else {
+                            chamberCache.remove(chamberName)
+                            cacheExpiry.remove(chamberName)
+                        }
+                        plugin.logger.info("Set ${vaultType.displayName} loot table for chamber $chamberName to: ${tableName ?: "(default)"}")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set loot table: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Gets the effective loot table for a vault, using the priority hierarchy:
+     * 1. Chamber override (if set)
+     * 2. Vault's stored loot table (fallback)
+     *
+     * @param chamber The chamber (may be null)
+     * @param vaultType The vault type
+     * @param vaultStoredTable The vault's stored loot table name
+     * @return The effective loot table name to use
+     */
+    fun getEffectiveLootTable(chamber: Chamber?, vaultType: VaultType, vaultStoredTable: String): String {
+        return chamber?.getLootTable(vaultType) ?: vaultStoredTable
+    }
+
+    /**
+     * Updates the reset interval for a chamber.
+     *
+     * @param chamberId The chamber ID
+     * @param intervalSeconds The new reset interval in seconds
+     * @return True if successful
+     */
+    suspend fun updateResetInterval(chamberId: Int, intervalSeconds: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET reset_interval = ? WHERE id = ?").use { stmt ->
+                    stmt.setLong(1, intervalSeconds)
+                    stmt.setInt(2, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        // Refresh cache
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        plugin.logger.info("Updated reset interval for chamber $chamberId to $intervalSeconds seconds")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update reset interval: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Updates the exit location for a chamber.
+     *
+     * @param chamberId The chamber ID
+     * @param x Exit X coordinate
+     * @param y Exit Y coordinate
+     * @param z Exit Z coordinate
+     * @param yaw Exit yaw rotation
+     * @param pitch Exit pitch rotation
+     * @return True if successful
+     */
+    suspend fun updateExitLocation(chamberId: Int, x: Double, y: Double, z: Double, yaw: Float, pitch: Float): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "UPDATE chambers SET exit_x = ?, exit_y = ?, exit_z = ?, exit_yaw = ?, exit_pitch = ? WHERE id = ?"
+                ).use { stmt ->
+                    stmt.setDouble(1, x)
+                    stmt.setDouble(2, y)
+                    stmt.setDouble(3, z)
+                    stmt.setFloat(4, yaw)
+                    stmt.setFloat(5, pitch)
+                    stmt.setInt(6, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        // Refresh cache
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        plugin.logger.info("Updated exit location for chamber $chamberId")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update exit location: ${e.message}")
+            false
+        }
     }
 }

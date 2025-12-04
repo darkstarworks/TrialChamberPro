@@ -17,7 +17,11 @@ import java.sql.SQLException
 class DatabaseManager(private val plugin: TrialChamberPro) {
 
     private lateinit var dataSource: HikariDataSource
-    private var databaseType: DatabaseType = DatabaseType.SQLITE
+    private var _databaseType: DatabaseType = DatabaseType.SQLITE
+
+    /** The type of database being used (SQLITE or MYSQL) */
+    val databaseType: DatabaseType
+        get() = _databaseType
 
     enum class DatabaseType {
         SQLITE, MYSQL
@@ -28,22 +32,25 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
      */
     suspend fun initialize() = withContext(Dispatchers.IO) {
         val config = plugin.config
-        databaseType = try {
+        _databaseType = try {
             DatabaseType.valueOf(config.getString("database.type", "SQLITE")!!.uppercase())
         } catch (_: IllegalArgumentException) {
             plugin.logger.warning("Invalid database type, defaulting to SQLITE")
             DatabaseType.SQLITE
         }
 
-        dataSource = when (databaseType) {
+        dataSource = when (_databaseType) {
             DatabaseType.SQLITE -> createSQLiteDataSource()
             DatabaseType.MYSQL -> createMySQLDataSource(config)
         }
 
-        plugin.logger.info("Database connection pool initialized (${databaseType.name})")
+        plugin.logger.info("Database connection pool initialized (${_databaseType.name})")
 
         // Create tables
         createTables()
+
+        // Run schema migrations for new features
+        runMigrations()
     }
 
     /**
@@ -216,6 +223,29 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
             }
         }
         plugin.logger.info("Database tables created/verified successfully")
+    }
+
+    /**
+     * Runs schema migrations for new features.
+     * Each migration is idempotent (safe to run multiple times).
+     */
+    private suspend fun runMigrations() = withContext(Dispatchers.IO) {
+        connection.use { conn ->
+            conn.createStatement().use { stmt ->
+                // v1.2.7: Per-chamber loot tables
+                listOf(
+                    "ALTER TABLE chambers ADD COLUMN normal_loot_table VARCHAR(64)",
+                    "ALTER TABLE chambers ADD COLUMN ominous_loot_table VARCHAR(64)"
+                ).forEach { sql ->
+                    try {
+                        stmt.execute(sql)
+                        plugin.logger.info("Migration executed: $sql")
+                    } catch (_: SQLException) {
+                        // Column already exists - this is expected on subsequent runs
+                    }
+                }
+            }
+        }
     }
 
     /**

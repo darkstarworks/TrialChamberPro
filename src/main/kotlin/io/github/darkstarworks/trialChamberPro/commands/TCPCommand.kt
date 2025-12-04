@@ -5,10 +5,6 @@ import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
 import io.github.darkstarworks.trialChamberPro.utils.RegionUtil
 import io.github.darkstarworks.trialChamberPro.utils.WEVarStore
 import io.github.darkstarworks.trialChamberPro.utils.WorldEditUtil
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import org.bukkit.Location
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
@@ -20,8 +16,6 @@ import kotlin.math.ceil
  * Main command handler for /tcp commands.
  */
 class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
-
-    private val commandScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     // Minimum Trial Chamber dimensions (hardcoded baseline)
     private val MIN_XZ = 31
@@ -58,6 +52,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "generate" -> handleGenerate(sender, args)
             "paste" -> handlePaste(sender, args)
             "menu" -> handleMenu(sender)
+            "loot" -> handleLoot(sender, args)
             else -> sender.sendMessage(plugin.getMessage("unknown-command"))
         }
 
@@ -80,6 +75,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessage("help-vault"))
         sender.sendMessage("§e/tcp paste §7- Paste Trial Chamber schematics")
         sender.sendMessage("§e/tcp menu §7- Open the admin GUI")
+        sender.sendMessage(plugin.getMessage("help-loot"))
         sender.sendMessage(plugin.getMessage("help-reload"))
     }
 
@@ -110,11 +106,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         val chamberName = args[1]
 
-        commandScope.launch {
+        plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
                 sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
-                return@launch
+                return@launchAsync
             }
 
             sender.sendMessage(plugin.getMessage("scan-started", "chamber" to chamberName))
@@ -145,7 +141,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         val chamberName = args[1]
 
-        commandScope.launch {
+        plugin.launchAsync {
             val success = plugin.chamberManager.setExitLocation(chamberName, sender.location)
             if (success) {
                 sender.sendMessage(plugin.getMessage("exit-set", "chamber" to chamberName))
@@ -171,11 +167,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         when (action) {
             "create" -> {
-                commandScope.launch {
+                plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
                         sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
-                        return@launch
+                        return@launchAsync
                     }
 
                     sender.sendMessage(plugin.getMessage("snapshot-creating", "chamber" to chamberName))
@@ -190,11 +186,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 }
             }
             "restore" -> {
-                commandScope.launch {
+                plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
                         sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
-                        return@launch
+                        return@launchAsync
                     }
 
                     sender.sendMessage(plugin.getMessage("snapshot-restoring", "chamber" to chamberName))
@@ -219,12 +215,12 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
-        commandScope.launch {
+        plugin.launchAsync {
             val chambers = plugin.chamberManager.getAllChambers()
 
             if (chambers.isEmpty()) {
                 sender.sendMessage(plugin.getMessage("chamber-list-empty"))
-                return@launch
+                return@launchAsync
             }
 
             sender.sendMessage(plugin.getMessage("chamber-list-header"))
@@ -251,11 +247,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         val chamberName = args[1]
 
-        commandScope.launch {
+        plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
                 sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
-                return@launch
+                return@launchAsync
             }
 
             val exitLoc = chamber.getExitLocation()
@@ -386,11 +382,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     val box = RegionUtil.createBoundingBox(loc1, loc2)!!
                     if (!validateRegionAndNotify(sender, box)) return
 
-                    commandScope.launch {
+                    plugin.launchAsync {
                         val existing = plugin.chamberManager.getChamber(chamberName)
                         if (existing != null) {
                             sender.sendMessage(plugin.getMessage("generation-cancelled-name-in-use", "name" to chamberName))
-                            return@launch
+                            return@launchAsync
                         }
                         val chamber = plugin.chamberManager.createChamber(chamberName, loc1, loc2)
                         if (chamber != null) {
@@ -434,11 +430,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                         val loc2 = selection.second
                         val box = RegionUtil.createBoundingBox(loc1, loc2)!!
                         if (!validateRegionAndNotify(sender, box)) return
-                        commandScope.launch {
+                        plugin.launchAsync {
                             val existing = plugin.chamberManager.getChamber(chamberName)
                             if (existing != null) {
                                 sender.sendMessage(plugin.getMessage("generation-cancelled-name-in-use", "name" to chamberName))
-                                return@launch
+                                return@launchAsync
                             }
                             val chamber = plugin.chamberManager.createChamber(chamberName, loc1, loc2)
                             if (chamber != null) {
@@ -486,11 +482,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 if (!validateRegionAndNotify(sender, box)) return
 
                 // Create chamber asynchronously
-                commandScope.launch {
+                plugin.launchAsync {
                     val existing = plugin.chamberManager.getChamber(name)
                     if (existing != null) {
                         sender.sendMessage(plugin.getMessage("generation-cancelled-name-in-use", "name" to name))
-                        return@launch
+                        return@launchAsync
                     }
                     val chamber = plugin.chamberManager.createChamber(name, loc1, loc2)
                     if (chamber != null) {
@@ -542,11 +538,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 val box = RegionUtil.createBoundingBox(loc1, loc2)!!
                 if (!validateRegionAndNotify(sender, box)) return
 
-                commandScope.launch {
+                plugin.launchAsync {
                     val existing = plugin.chamberManager.getChamber(name)
                     if (existing != null) {
                         sender.sendMessage(plugin.getMessage("generation-cancelled-name-in-use", "name" to name))
-                        return@launch
+                        return@launchAsync
                     }
                     val chamber = plugin.chamberManager.createChamber(name, loc1, loc2)
                     if (chamber != null) {
@@ -608,7 +604,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     sender.sendMessage("§7Rounded up to $volume blocks (over by $overhead) to fit minimum dimensions.")
                 }
 
-                commandScope.launch {
+                plugin.launchAsync {
                     val chamber = plugin.chamberManager.createChamber(name, loc1, loc2)
                     if (chamber != null) {
                         sender.sendMessage(plugin.getMessage("chamber-created", "chamber" to name))
@@ -846,7 +842,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         val chamberName = args[1]
 
-        commandScope.launch {
+        plugin.launchAsync {
             val success = plugin.chamberManager.deleteChamber(chamberName)
             if (success) {
                 sender.sendMessage(plugin.getMessage("chamber-deleted", "chamber" to chamberName))
@@ -895,12 +891,12 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
-        commandScope.launch {
+        plugin.launchAsync {
             if (args.size < 2) {
                 // Show own stats
                 if (sender !is Player) {
                     sender.sendMessage(plugin.getMessage("player-only"))
-                    return@launch
+                    return@launchAsync
                 }
 
                 val stats = plugin.statisticsManager.getStats(sender.uniqueId)
@@ -916,13 +912,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 // Show another player's stats
                 if (!sender.hasPermission("tcp.admin.stats")) {
                     sender.sendMessage(plugin.getMessage("no-permission"))
-                    return@launch
+                    return@launchAsync
                 }
 
                 val targetPlayer = plugin.server.getPlayer(args[1])
                 if (targetPlayer == null) {
                     sender.sendMessage(plugin.getMessage("player-not-found", "player" to args[1]))
-                    return@launch
+                    return@launchAsync
                 }
 
                 val stats = plugin.statisticsManager.getStats(targetPlayer.uniqueId)
@@ -944,7 +940,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
-        commandScope.launch {
+        plugin.launchAsync {
             // Determine which stat to show
             val statType = if (args.size >= 2) args[1].lowercase() else "chambers"
             val limit = plugin.config.getInt("statistics.top-players-count", 10)
@@ -957,7 +953,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 "time", "playtime" -> "time"
                 else -> {
                     sender.sendMessage(plugin.getMessage("invalid-stat-type"))
-                    return@launch
+                    return@launchAsync
                 }
             }
 
@@ -976,7 +972,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
             if (leaderboard.isEmpty()) {
                 sender.sendMessage(plugin.getMessage("leaderboard-empty"))
-                return@launch
+                return@launchAsync
             }
 
             leaderboard.forEachIndexed { index, (uuid, value) ->
@@ -1050,11 +1046,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessage("paste-loading"))
 
         // Load schematic and calculate actual paste bounds
-        commandScope.launch {
+        plugin.launchAsync {
             val bounds = plugin.schematicManager.getSchematicBounds(schematicName, location)
             if (bounds == null) {
                 sender.sendMessage(plugin.getMessage("paste-failed"))
-                return@launch
+                return@launchAsync
             }
 
             val (min, max) = bounds
@@ -1083,6 +1079,152 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 "time" to remaining
             ))
             sender.sendMessage(plugin.getMessage("paste-confirm-hint", "time" to remaining))
+        }
+    }
+
+    private fun handleLoot(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.loot")) {
+            sender.sendMessage(plugin.getMessage("no-permission"))
+            return
+        }
+
+        if (args.size < 2) {
+            sender.sendMessage("§cUsage: /tcp loot <set|clear|info|list>")
+            return
+        }
+
+        when (args[1].lowercase()) {
+            "set" -> handleLootSet(sender, args)
+            "clear" -> handleLootClear(sender, args)
+            "info" -> handleLootInfo(sender, args)
+            "list" -> handleLootList(sender)
+            else -> {
+                sender.sendMessage("§cUsage: /tcp loot <set|clear|info|list>")
+            }
+        }
+    }
+
+    private fun handleLootSet(sender: CommandSender, args: Array<out String>) {
+        // /tcp loot set <chamber> <normal|ominous> <table>
+        if (args.size < 5) {
+            sender.sendMessage("§cUsage: /tcp loot set <chamber> <normal|ominous> <table>")
+            return
+        }
+
+        val chamberName = args[2]
+        val typeStr = args[3].lowercase()
+        val tableName = args[4]
+
+        val vaultType = when (typeStr) {
+            "normal" -> io.github.darkstarworks.trialChamberPro.models.VaultType.NORMAL
+            "ominous" -> io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS
+            else -> {
+                sender.sendMessage("§cInvalid type. Use 'normal' or 'ominous'.")
+                return
+            }
+        }
+
+        // Validate loot table exists
+        if (plugin.lootManager.getTable(tableName) == null) {
+            sender.sendMessage(plugin.getMessage("loot-table-not-found", "table" to tableName))
+            return
+        }
+
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+
+            val success = plugin.chamberManager.setLootTable(chamberName, vaultType, tableName)
+            if (success) {
+                sender.sendMessage(plugin.getMessage("loot-set-success",
+                    "type" to vaultType.displayName,
+                    "chamber" to chamberName,
+                    "table" to tableName
+                ))
+            } else {
+                sender.sendMessage("§cFailed to set loot table. Check console for errors.")
+            }
+        }
+    }
+
+    private fun handleLootClear(sender: CommandSender, args: Array<out String>) {
+        // /tcp loot clear <chamber> [normal|ominous|all]
+        if (args.size < 3) {
+            sender.sendMessage("§cUsage: /tcp loot clear <chamber> [normal|ominous|all]")
+            return
+        }
+
+        val chamberName = args[2]
+        val typeStr = args.getOrNull(3)?.lowercase() ?: "all"
+
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+
+            when (typeStr) {
+                "normal" -> {
+                    plugin.chamberManager.setLootTable(chamberName, io.github.darkstarworks.trialChamberPro.models.VaultType.NORMAL, null)
+                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                }
+                "ominous" -> {
+                    plugin.chamberManager.setLootTable(chamberName, io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS, null)
+                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                }
+                "all" -> {
+                    plugin.chamberManager.setLootTable(chamberName, io.github.darkstarworks.trialChamberPro.models.VaultType.NORMAL, null)
+                    plugin.chamberManager.setLootTable(chamberName, io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS, null)
+                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                }
+                else -> {
+                    sender.sendMessage("§cInvalid type. Use 'normal', 'ominous', or 'all'.")
+                }
+            }
+        }
+    }
+
+    private fun handleLootInfo(sender: CommandSender, args: Array<out String>) {
+        // /tcp loot info <chamber>
+        if (args.size < 3) {
+            sender.sendMessage("§cUsage: /tcp loot info <chamber>")
+            return
+        }
+
+        val chamberName = args[2]
+
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+
+            sender.sendMessage(plugin.getMessage("loot-info-header", "chamber" to chamberName))
+
+            val normalTable = chamber.normalLootTable ?: plugin.getMessage("loot-info-default")
+            val ominousTable = chamber.ominousLootTable ?: plugin.getMessage("loot-info-default")
+
+            sender.sendMessage(plugin.getMessage("loot-info-normal", "table" to normalTable))
+            sender.sendMessage(plugin.getMessage("loot-info-ominous", "table" to ominousTable))
+        }
+    }
+
+    private fun handleLootList(sender: CommandSender) {
+        val tables = plugin.lootManager.getLootTableNames()
+
+        if (tables.isEmpty()) {
+            sender.sendMessage("§cNo loot tables found in loot.yml")
+            return
+        }
+
+        sender.sendMessage(plugin.getMessage("loot-list-header"))
+        tables.sorted().forEach { tableName ->
+            sender.sendMessage(plugin.getMessage("loot-list-item", "table" to tableName))
         }
     }
 

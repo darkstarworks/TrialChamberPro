@@ -15,6 +15,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/tcp help` | Show command list | None |
+| `/tcp menu` | Open admin GUI | `tcp.admin.menu` |
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
 | `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
@@ -52,6 +53,61 @@ Shows a list of all available commands.
 
 {% hint style="info" %}
 Only shows commands you have permission to use!
+{% endhint %}
+
+---
+
+### `/tcp menu`
+
+Opens the admin GUI for managing all aspects of TrialChamberPro without command line.
+
+**Usage:**
+```
+/tcp menu
+```
+
+**Permission:** `tcp.admin.menu`
+
+**Example:**
+```
+/tcp menu
+```
+
+**GUI Screens (v1.2.8+):**
+
+The admin GUI provides 14 different views organized into categories:
+
+**Main Menu** - Central hub with 6 category buttons:
+- **Chambers** - List and manage all registered chambers
+- **Loot Tables** - Browse available loot tables
+- **Statistics** - View leaderboards and player stats
+- **Settings** - Configure plugin settings in real-time
+- **Protection** - Toggle protection features
+- **Help** - Command reference and permissions
+
+**Chamber Management:**
+- **Chamber List** - Paginated list (36 per page) with quick actions
+- **Chamber Detail** - Full management hub (loot, vaults, settings, actions)
+- **Chamber Settings** - Per-chamber reset interval, exit location, loot overrides
+- **Vault Management** - View/reset player vault cooldowns
+
+**Settings:**
+- **Global Settings** - Toggle 13 config options without editing YAML
+- **Protection Menu** - Enable/disable protection features instantly
+
+**Statistics:**
+- **Stats Menu** - Overview with leaderboard shortcuts
+- **Leaderboards** - Top 10 players by category
+- **Player Stats** - Individual player statistics with K/D ratio
+
+**Key Features:**
+- **Runtime Config Editing** - Changes save immediately to config.yml
+- **Pagination** - Handle unlimited chambers
+- **Navigation** - Consistent back/close buttons throughout
+- **Session Restoration** - Return to previous screens automatically
+
+{% hint style="success" %}
+**No YAML editing required!** Most configuration can now be done entirely through the GUI.
 {% endhint %}
 
 ---
