@@ -1,5 +1,5 @@
-&e[v1.2.5] &fStatistics & Spectator Update
-&b* &fPrevious Folia support is &astable &f(Multi-threaded)
-&a+ &fNEW: &aPlaceholderAPI &7(Stats, Leaderboards, Time)
-&a+ &fNEW: &aTrial Spawner Wave System &7(Boss Bar tracking)
-&a+ &fNEW: &aSpectator Mode &7(Watch chambers after death)
+&e[v1.2.6] &fCritical Key Drop Fix
+&c! &fCRITICAL FIX: &cTrial Spawners &fnow drop keys after reset!
+&7(Spawners remembered players and didn't reset properly)
+&a+ &fNEW: &areset.reset-trial-spawners &fconfig option
+&a+ &fNow clears &7tracked players & entities on reset
