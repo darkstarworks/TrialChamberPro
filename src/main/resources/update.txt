@@ -1,6 +1,6 @@
-.
-§e[v1.2.8] §fGUI Overhaul & Stability
-§a+ §fNEW: §aComplete GUI Overhaul §7(14 New Views!)
-§a+ §fNEW: §aRuntime Config Editing §7(13 toggles in-game)
-§c! §fFIXED: §cMySQL §fDatabase Compatibility & Stability
-§c! §fFIXED: §cFolia §fSafety for player ejection & cleanup
+<black>.
+<aqua>[1.2.9] <gray>- <white>2025-12-07
+<lime>+ <white>NEW: <green>Update text now colored in console
+<aqua>[v1.2.8] <white>GUI Overhaul <gold>(14 New Views!)
+<yellow>! <white>FIXED: <red>MySQL <yellow>! <white>FIXED: <red>Folia
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
