@@ -1,5 +1,6 @@
-&e[v1.2.8] &fGUI Overhaul & Stability
-&a+ &fNEW: &aComplete GUI Overhaul &7(14 New Views!)
-&a+ &fNEW: &aRuntime Config Editing &7(13 toggles in-game)
-&c! &fFIXED: &cMySQL &fDatabase Compatibility & Stability
-&c! &fFIXED: &cFolia &fSafety for player ejection & cleanup
+.
+§e[v1.2.8] §fGUI Overhaul & Stability
+§a+ §fNEW: §aComplete GUI Overhaul §7(14 New Views!)
+§a+ §fNEW: §aRuntime Config Editing §7(13 toggles in-game)
+§c! §fFIXED: §cMySQL §fDatabase Compatibility & Stability
+§c! §fFIXED: §cFolia §fSafety for player ejection & cleanup
