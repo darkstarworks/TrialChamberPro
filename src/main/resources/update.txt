@@ -1,5 +1,6 @@
-&e[v1.2.7] &fPer-Chamber Loot Tables
-&a+ &fNEW: &aPer-Chamber Loot Tables!
-&7(Set different loot for each chamber you register)
-&a+ &fNEW: &a/tcp loot &fcommands for management
-&b* &fPriority: &7Chamber > Vault > Global Default
+<black>.
+<aqua>[1.2.10] <gray>- <white>2025-12-09
+<lime>+ <white>NEW: <green>Vanilla Advancements Now Granted!
+<lime>+ <white>Players now earn &a<green>"Trial(s) Edition"<white> & &a<green>"Under Lock and Key"<white>
+<lime>+ <white>Also grants &a<green>"Revaulting"<white> &7(Ominous Vault)<white>
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
