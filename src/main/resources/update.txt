@@ -1,6 +1,6 @@
 <black>.
-<aqua>[1.2.9] <gray>- <white>2025-12-07
-<lime>+ <white>NEW: <green>Update text now colored in console
-<aqua>[v1.2.8] <white>GUI Overhaul <gold>(14 New Views!)
-<yellow>! <white>FIXED: <red>MySQL <yellow>! <white>FIXED: <red>Folia
+<aqua>[1.2.10] <gray>- <white>2025-12-09
+<lime>+ <white>NEW: <green>Vanilla Advancements Now Granted!
+<lime>+ <white>Players now earn &a<green>"Trial(s) Edition"<white> & &a<green>"Under Lock and Key"<white>
+<lime>+ <white>Also grants &a<green>"Revaulting"<white> &7(Ominous Vault)<white>
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
