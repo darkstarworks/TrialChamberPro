@@ -2,6 +2,7 @@ package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.scheduler.ScheduledTask
+import io.github.darkstarworks.trialChamberPro.utils.AdvancementUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,6 +61,13 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
             if (!wasInChamber && isInChamber) {
                 playersInChambers.add(uuid)
                 playerEntryTimes[uuid] = System.currentTimeMillis()
+
+                // Grant "Minecraft: Trial(s) Edition" advancement (must run on entity thread)
+                plugin.scheduler.runAtEntity(player, Runnable {
+                    if (player.isOnline) {
+                        AdvancementUtil.grantTrialChamberEntry(player)
+                    }
+                })
 
                 // Optional: Send entry message
                 if (plugin.config.getBoolean("messages.chamber-entry-message", false)) {

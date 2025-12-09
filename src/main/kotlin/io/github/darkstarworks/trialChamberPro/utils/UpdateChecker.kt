@@ -2,6 +2,8 @@ package io.github.darkstarworks.trialChamberPro.utils
 
 import com.google.gson.JsonParser
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import net.kyori.adventure.text.minimessage.MiniMessage
+import org.bukkit.Bukkit
 import java.net.URI
 
 /**
@@ -22,13 +24,24 @@ class UpdateChecker(
                 if (isNewerVersion(latestVersion)) {
                     val updateInfo = updateDescriptionUrl?.let { fetchUpdateDescription(it) }
                         ?: "Check GitHub for details"
-                    val message = "[${plugin.name}] Update available: $latestVersion (current: $currentVersion) - $updateInfo"
-                    if (notifyConsole) plugin.logger.info(message)
+                    if (notifyConsole) {
+                        val header = "<gold>[${plugin.name}]</gold> <green>Update available:</green> <yellow>$latestVersion</yellow> <gray>(current: $currentVersion)</gray>"
+                        sendColoredConsoleMessage(header)
+                        // Send each line of the update info separately for proper formatting
+                        updateInfo.lines().forEach { line ->
+                            if (line.isNotBlank()) sendColoredConsoleMessage(line)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 plugin.logger.warning("Failed to check for updates: ${e.message}")
             }
         })
+    }
+
+    private fun sendColoredConsoleMessage(message: String) {
+        val component = MiniMessage.miniMessage().deserialize(message)
+        Bukkit.getConsoleSender().sendMessage(component)
     }
 
     private fun fetchUpdateDescription(url: String): String =

@@ -3,6 +3,7 @@ package io.github.darkstarworks.trialChamberPro.listeners
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.KeyType
 import io.github.darkstarworks.trialChamberPro.models.VaultType
+import io.github.darkstarworks.trialChamberPro.utils.AdvancementUtil
 import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
 import kotlinx.coroutines.*
 import org.bukkit.Material
@@ -238,6 +239,12 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                     }
 
                     player.sendMessage(plugin.getMessage("vault-opened", "type" to vaultType.displayName))
+
+                    // Grant the appropriate advancement
+                    when (vaultType) {
+                        VaultType.NORMAL -> AdvancementUtil.grantVaultUnlock(player)
+                        VaultType.OMINOUS -> AdvancementUtil.grantOminousVaultUnlock(player)
+                    }
 
                     // Play success sound and particles
                     playSuccessSound(player, player.location)

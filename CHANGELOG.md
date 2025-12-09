@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.10] - 2025-12-09
+### Added
+- **Vanilla Advancement Granting**: Plugin-created chambers now grant vanilla Trial Chamber advancements
+  - **"Minecraft: Trial(s) Edition"** (`adventure/minecraft_trials_edition`) - Granted when entering a plugin-managed chamber
+  - **"Under Lock and Key"** (`adventure/under_lock_and_key`) - Granted when opening a normal vault
+  - **"Revaulting"** (`adventure/revaulting`) - Granted when opening an ominous vault
+  - Preserves the vanilla progression experience for schematic-pasted chambers
+  - Folia compatible: Uses `runAtEntity()` for advancement granting in PlayerMovementListener
+
+### Technical Details
+- New utility: `AdvancementUtil.kt` with thread-safe advancement granting methods
+  - `grantTrialChamberEntry(player)` - For chamber entry
+  - `grantVaultUnlock(player)` - For normal vault opening
+  - `grantOminousVaultUnlock(player)` - For ominous vault (auto-grants prerequisite)
+- `VaultInteractListener` grants vault advancements after successful loot distribution
+- `PlayerMovementListener` grants entry advancement when player crosses into chamber bounds
+- All advancement operations run on entity thread for Folia compatibility
+
+## [1.2.9] - 2025-12-07
+### Changed
+- **Update Checker**: Migrated from plain text logging to MiniMessage format for colored console output
+  - Update notifications now display with proper colors in console
+  - `update.txt` now supports MiniMessage tags (e.g., `<green>`, `<yellow>`, `<gold>`)
+
 ## [1.2.8] - 2025-12-04
 ### Added
 - **Complete GUI Overhaul**: 14 new views replacing the old 6-view system
@@ -661,6 +685,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.9...v1.2.10
+[1.2.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.8...v1.2.9
 [1.2.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.7...v1.2.8
 [1.2.7]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.6...v1.2.7
 [1.2.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.5...v1.2.6
