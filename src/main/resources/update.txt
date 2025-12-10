@@ -1,6 +1,6 @@
 <black>.
-<aqua>[1.2.10] <gray>- <white>2025-12-09
-<lime>+ <white>NEW: <green>Vanilla Advancements Now Granted!
-<lime>+ <white>Players now earn &a<green>"Trial(s) Edition"<white> & &a<green>"Under Lock and Key"<white>
-<lime>+ <white>Also grants &a<green>"Revaulting"<white> &7(Ominous Vault)<white>
+<aqua>[1.2.11] <gray>- <white>2025-12-10
+<yellow>! <white>CRITICAL FIX: <red>Trial Spawners <yellow>stuck in cooldown after reset!
+<lime>+ <white>FIXED: <green>Spawners are now immediately ready <white>to activate after reset.
+<gray>(No longer waiting 30 minutes due to bad snapshot data)
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
