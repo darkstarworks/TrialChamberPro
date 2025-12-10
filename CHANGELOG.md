@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.2.10] - 2025-12-09
+## [1.2.11] - 2025-12-10
+### Fixed
+- **CRITICAL: Trial Spawners Not Dropping Keys After Reset**: Fixed trial spawners stuck in cooldown state after chamber reset
+  - Root cause: Snapshots captured the `trial_spawner_state` block data (e.g., `cooldown`, `ejecting_reward`)
+  - When restored, spawners remained in that state and wouldn't activate for 30 minutes
+  - Fix: `BlockRestorer.resetTrialSpawnerState()` now resets spawner state to `waiting_for_players` during restoration
+  - Spawners are now immediately ready to activate after chamber reset, regardless of snapshot timing
+  - All 6 spawner states are handled: `inactive`, `active`, `waiting_for_reward_ejection`, `ejecting_reward`, `cooldown`
+  - **Note**: Existing chambers will be fixed automatically on next reset - no action needed
+
+### Technical Details
+- New function: `BlockRestorer.resetTrialSpawnerState()` - Modifies trial spawner block data strings during restoration
+
+## [1.2.10] - 2025-12-10
 ### Added
 - **Vanilla Advancement Granting**: Plugin-created chambers now grant vanilla Trial Chamber advancements
   - **"Minecraft: Trial(s) Edition"** (`adventure/minecraft_trials_edition`) - Granted when entering a plugin-managed chamber
@@ -685,6 +698,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.8...v1.2.9
 [1.2.8]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.7...v1.2.8

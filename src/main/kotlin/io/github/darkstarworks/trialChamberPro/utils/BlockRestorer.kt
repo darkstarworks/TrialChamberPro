@@ -94,7 +94,11 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
 
         // Parse and set block data
         try {
-            val blockData = Bukkit.createBlockData(snapshot.blockData)
+            // CRITICAL FIX: Reset trial spawner state to waiting_for_players
+            // If the snapshot was taken while spawners were in cooldown state,
+            // they would be restored in cooldown and not drop keys for 30 minutes!
+            val blockDataString = resetTrialSpawnerState(snapshot.blockData)
+            val blockData = Bukkit.createBlockData(blockDataString)
             block.setBlockData(blockData, false) // Don't apply physics immediately
         } catch (_: Exception) {
             plugin.logger.warning("Invalid block data at ${location.blockX},${location.blockY},${location.blockZ}: ${snapshot.blockData}")
@@ -165,5 +169,46 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
         val batches = (blockCount + blocksPerTick - 1) / blocksPerTick
         // Each batch takes ~50ms, plus some overhead
         return ((batches * 50 + 500) / 1000).toLong() // Convert to seconds
+    }
+
+    /**
+     * Resets trial spawner state in block data string to waiting_for_players.
+     *
+     * Trial spawners have 6 states: inactive, waiting_for_players, active,
+     * waiting_for_reward_ejection, ejecting_reward, cooldown.
+     *
+     * If a snapshot was taken while spawners were in cooldown (or other non-fresh state),
+     * restoring that snapshot would create spawners that won't drop keys!
+     *
+     * This function modifies the block data string to ensure spawners are restored
+     * in the waiting_for_players state, ready to be activated.
+     *
+     * @param blockData The original block data string
+     * @return The modified block data string with reset spawner state
+     */
+    private fun resetTrialSpawnerState(blockData: String): String {
+        // Only process trial spawners
+        if (!blockData.contains("trial_spawner")) {
+            return blockData
+        }
+
+        // All possible trial spawner states that need to be reset
+        val statesToReset = listOf(
+            "trial_spawner_state=inactive",
+            "trial_spawner_state=active",
+            "trial_spawner_state=waiting_for_reward_ejection",
+            "trial_spawner_state=ejecting_reward",
+            "trial_spawner_state=cooldown"
+        )
+
+        var result = blockData
+        for (state in statesToReset) {
+            if (result.contains(state)) {
+                result = result.replace(state, "trial_spawner_state=waiting_for_players")
+                break // Only one state can be present
+            }
+        }
+
+        return result
     }
 }
