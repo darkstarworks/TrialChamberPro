@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import org.bukkit.GameMode
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -63,9 +64,14 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
                 playerEntryTimes[uuid] = System.currentTimeMillis()
 
                 // Grant "Minecraft: Trial(s) Edition" advancement (must run on entity thread)
+                // Only grant to survival/adventure players - not spectators or creative
                 plugin.scheduler.runAtEntity(player, Runnable {
-                    if (player.isOnline) {
-                        AdvancementUtil.grantTrialChamberEntry(player)
+                    if (player.isOnline &&
+                        (player.gameMode == GameMode.SURVIVAL || player.gameMode == GameMode.ADVENTURE)) {
+                        val granted = AdvancementUtil.grantTrialChamberEntry(player)
+                        if (!granted) {
+                            plugin.logger.warning("Failed to grant trial chamber entry advancement to ${player.name}")
+                        }
                     }
                 })
 

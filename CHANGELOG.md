@@ -4,7 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.2.11] - 2025-12-10
+## [1.2.12] - 2025-12-14
+### Fixed
+- **Advancement granted in spectator mode**: Fixed "Minecraft: Trial(s) Edition" advancement being granted when entering a chamber in spectator or creative mode
+  - Now only grants to players in Survival or Adventure mode
+- **Duplicate boss bar bug**: Fixed wave progress boss bars duplicating when a new wave starts during the 3-second completion delay
+  - Root cause: Old "Wave Complete!" bar remained visible while new wave created another bar
+  - Fix: Immediately remove old boss bar when starting a new wave at the same spawner
+  - Also added safeguard to prevent adding the same player as a viewer multiple times
+
+### Technical Details
+- `PlayerMovementListener` now checks game mode before granting entry advancement
+- `SpawnerWaveManager.startWave()` now cleans up completed waves before creating new ones
+- `SpawnerWaveManager.addPlayerToBossBar()` now checks if player is already viewing
+
+## [1.2.11] - 2025-12-14
 ### Fixed
 - **CRITICAL: Trial Spawners Not Dropping Keys After Reset**: Fixed trial spawners stuck in cooldown state after chamber reset
   - Root cause: Snapshots captured the `trial_spawner_state` block data (e.g., `cooldown`, `ejecting_reward`)
@@ -698,6 +712,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.9...v1.2.10
 [1.2.9]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.8...v1.2.9

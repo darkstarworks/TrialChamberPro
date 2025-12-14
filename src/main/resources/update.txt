@@ -1,6 +1,6 @@
 <black>.
-<aqua>[1.2.11] <gray>- <white>2025-12-10
-<yellow>! <white>CRITICAL FIX: <red>Trial Spawners <yellow>stuck in cooldown after reset!
-<lime>+ <white>FIXED: <green>Spawners are now immediately ready <white>to activate after reset.
-<gray>(No longer waiting 30 minutes due to bad snapshot data)
+<aqua>[1.2.12] <gray>- <white>2025-12-14
+<yellow>! <white>FIXED: <red>Advancements <yellow>granted in spectator/creative mode.
+<yellow>! <white>FIXED: <red>Duplicate Boss Bars <yellow>on spawner wave restart.
+<lime>+ <white>Now cleans up old boss bars immediately.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
