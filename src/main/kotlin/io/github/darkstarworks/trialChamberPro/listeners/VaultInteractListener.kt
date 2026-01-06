@@ -423,4 +423,13 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
         return result
     }
+
+    /**
+     * Cleans up resources when the plugin is disabled.
+     * Cancels the coroutine scope and clears the opening vaults map to prevent memory leaks.
+     */
+    fun shutdown() {
+        listenerScope.cancel()
+        openingVaults.clear()
+    }
 }

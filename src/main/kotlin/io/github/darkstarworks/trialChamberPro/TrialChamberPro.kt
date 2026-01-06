@@ -80,6 +80,9 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var spectatorManager: SpectatorManager
         private set
 
+    // Vault interaction listener (stored for proper shutdown)
+    private lateinit var vaultInteractListener: VaultInteractListener
+
     // Update checker
     private lateinit var updateChecker: UpdateChecker
 
@@ -181,8 +184,9 @@ class TrialChamberPro : JavaPlugin() {
                     getCommand("tcp")?.tabCompleter = tabCompleter
 
                     // Register listeners
+                    vaultInteractListener = VaultInteractListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
-                        VaultInteractListener(this@TrialChamberPro),
+                        vaultInteractListener,
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
@@ -337,6 +341,9 @@ class TrialChamberPro : JavaPlugin() {
         if (::spectatorManager.isInitialized) {
             spectatorManager.shutdown()
         }
+        if (::vaultInteractListener.isInitialized) {
+            vaultInteractListener.shutdown()
+        }
 
         // Close database connections
         if (::databaseManager.isInitialized) {
@@ -372,10 +379,11 @@ class TrialChamberPro : JavaPlugin() {
             message = message.replace("{$placeholder}", value?.toString() ?: "null")
         }
 
-        // Add prefix if not a list item or header
+        // Add prefix if not a list item, header, help text, or boss bar
         val shouldAddPrefix = !key.contains("list-item") &&
                 !key.contains("header") &&
-                !key.contains("help-")
+                !key.contains("help-") &&
+                !key.contains("boss-bar")
 
         val finalMessage = if (shouldAddPrefix) "$prefix$message" else message
 

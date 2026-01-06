@@ -3,6 +3,8 @@ package io.github.darkstarworks.trialChamberPro.managers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -16,6 +18,9 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     // In-memory cache for frequently accessed stats
     private val statsCache = ConcurrentHashMap<UUID, PlayerStats>()
     private val cacheExpiry = ConcurrentHashMap<UUID, Long>()
+
+    // Per-player mutexes to prevent concurrent database loads for the same player
+    private val loadingLocks = ConcurrentHashMap<UUID, Mutex>()
 
     /**
      * Player statistics data class
@@ -34,23 +39,36 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     /**
      * Gets statistics for a player.
      * Uses cache with 5-minute expiry.
+     * Thread-safe: uses per-player mutex to prevent concurrent database loads.
      */
     suspend fun getStats(playerUuid: UUID): PlayerStats = withContext(Dispatchers.IO) {
-        // Check cache first (thread-safe: get both values atomically)
+        // Quick check without lock (fast path for cached data)
         val expiry = cacheExpiry[playerUuid]
         val cachedStats = statsCache[playerUuid]
         if (expiry != null && cachedStats != null && System.currentTimeMillis() < expiry) {
             return@withContext cachedStats
         }
 
-        // Load from database
-        val stats = loadStatsFromDatabase(playerUuid)
+        // Get or create a mutex for this player to prevent concurrent DB loads
+        val mutex = loadingLocks.computeIfAbsent(playerUuid) { Mutex() }
 
-        // Update cache
-        statsCache[playerUuid] = stats
-        cacheExpiry[playerUuid] = System.currentTimeMillis() + 300000 // 5 minutes
+        mutex.withLock {
+            // Double-check cache after acquiring lock (another coroutine may have loaded it)
+            val expiryAfterLock = cacheExpiry[playerUuid]
+            val cachedAfterLock = statsCache[playerUuid]
+            if (expiryAfterLock != null && cachedAfterLock != null && System.currentTimeMillis() < expiryAfterLock) {
+                return@withContext cachedAfterLock
+            }
 
-        stats
+            // Load from database
+            val stats = loadStatsFromDatabase(playerUuid)
+
+            // Update cache
+            statsCache[playerUuid] = stats
+            cacheExpiry[playerUuid] = System.currentTimeMillis() + 300000 // 5 minutes
+
+            stats
+        }
     }
 
     /**

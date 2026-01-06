@@ -170,6 +170,10 @@ paste-undo-hint: "&7Use &e//undo &7to undo this paste"
 
 # Spawner Waves
 spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
+spawner-wave-boss-bar-complete: "Wave Complete!"
+spawner-wave-boss-bar-ominous: "Ominous Trial - Wave {wave}"
+spawner-wave-boss-bar-normal: "Trial Spawner - Wave {wave}"
+spawner-wave-boss-bar-progress: "{type} - {killed}/{total}"
 
 # Spectator Mode
 spectate-offer: "&7You died in &e{chamber}&7. Would you like to spectate?"
@@ -209,10 +213,17 @@ usage-info: "&cUsage: /tcp info <chamber>"
 usage-delete: "&cUsage: /tcp delete <chamber>"
 usage-generate-value-save: "&cUsage: /tcp generate value save <varName>"
 usage-generate-value-delete: "&cUsage: /tcp generate value delete <varName>"
+usage-generate-value: "&cUsage: /tcp generate value <varName> [chamberName]"
+usage-generate-value-extra: "&7Extra: /tcp generate value save|list|delete ..."
 usage-generate-coords: "&cUsage: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
+usage-generate-coords-legacy: "&7(legacy supported: /tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <name>)"
 usage-generate-wand: "&cUsage: /tcp generate wand <name>"
 usage-generate-blocks: "&cUsage: /tcp generate blocks <amount> [name] [roundingAllowance]"
 usage-generate: "&cUsage: /tcp generate <value|coords|wand|blocks> ..."
+usage-generate-help-value: "&cUsage: /tcp generate value <name>"
+usage-generate-help-or-coords: "&cOr: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
+usage-generate-help-or-wand: "&cOr: /tcp generate wand <name>"
+usage-generate-help-or-blocks: "&cOr: /tcp generate blocks <amount> [name] [roundingAllowance]"
 usage-vault-reset: "&cUsage: /tcp vault reset <chamber> <player> [normal|ominous]"
 usage-key-give: "&cUsage: /tcp key give <player> <amount> [normal|ominous]"
 usage-key-check: "&cUsage: /tcp key check <player>"
@@ -247,6 +258,15 @@ schematic-no-schematics: "&cNo schematics available."
 # Generation Info Messages
 generate-rounding-note: "&eNote: Requested {requested} blocks, but minimum viable region is {actual} (over by {overhead}). Consider increasing rounding allowance."
 generate-rounding-info: "&7Rounded up to {volume} blocks (over by {overhead}) to fit minimum dimensions."
+
+# System Messages
+plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
+
+# Info Display Format
+info-exit-location-set: "&a{x}, {y}, {z}"
+info-exit-location-not-set: "&cNot set"
+info-snapshot-created: "&aCreated"
+info-snapshot-not-created: "&cNot created"
 
 # Config/Reload Messages
 config-reloading: "&eReloading configuration..."

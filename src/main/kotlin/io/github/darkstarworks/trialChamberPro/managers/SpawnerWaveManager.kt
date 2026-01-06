@@ -3,8 +3,7 @@ package io.github.darkstarworks.trialChamberPro.managers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -29,27 +28,29 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
     /**
      * Represents the state of an active trial spawner wave.
+     * Uses AtomicInteger for thread-safe counter access from multiple event handlers.
      */
     data class WaveState(
         val spawnerId: String,
         val location: Location,
         val isOminous: Boolean,
         val startTime: Long = System.currentTimeMillis(),
-        var totalMobsExpected: Int = 0,
-        var mobsSpawned: Int = 0,
-        var mobsKilled: Int = 0,
+        val totalMobsExpected: java.util.concurrent.atomic.AtomicInteger = java.util.concurrent.atomic.AtomicInteger(0),
+        val mobsSpawned: java.util.concurrent.atomic.AtomicInteger = java.util.concurrent.atomic.AtomicInteger(0),
+        val mobsKilled: java.util.concurrent.atomic.AtomicInteger = java.util.concurrent.atomic.AtomicInteger(0),
         val trackedMobs: MutableSet<UUID> = ConcurrentHashMap.newKeySet(),
         val participatingPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet(),
         var bossBar: BossBar? = null,
         var waveNumber: Int = 1,
-        var completed: Boolean = false
+        @Volatile var completed: Boolean = false
     ) {
         fun getProgress(): Float {
-            if (totalMobsExpected <= 0) return 0f
-            return (mobsKilled.toFloat() / totalMobsExpected.toFloat()).coerceIn(0f, 1f)
+            val expected = totalMobsExpected.get()
+            if (expected <= 0) return 0f
+            return (mobsKilled.get().toFloat() / expected.toFloat()).coerceIn(0f, 1f)
         }
 
-        fun isAllMobsKilled(): Boolean = mobsKilled >= totalMobsExpected && totalMobsExpected > 0
+        fun isAllMobsKilled(): Boolean = mobsKilled.get() >= totalMobsExpected.get() && totalMobsExpected.get() > 0
     }
 
     // Active wave states keyed by spawner location string
@@ -77,8 +78,8 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         val existingWave = activeWaves[key]
         if (existingWave != null) {
             if (!existingWave.completed) {
-                // Update existing active wave with new expected mob count
-                existingWave.totalMobsExpected = maxOf(existingWave.totalMobsExpected, expectedMobs)
+                // Update existing active wave with new expected mob count (atomic max)
+                existingWave.totalMobsExpected.updateAndGet { current -> maxOf(current, expectedMobs) }
                 return existingWave
             } else {
                 // Wave is completed but still in cleanup delay - remove old boss bar immediately
@@ -92,9 +93,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         val wave = WaveState(
             spawnerId = key,
             location = spawnerLocation.clone(),
-            isOminous = isOminous,
-            totalMobsExpected = expectedMobs
-        )
+            isOminous = isOminous
+        ).apply {
+            totalMobsExpected.set(expectedMobs)
+        }
 
         // Create boss bar
         if (plugin.config.getBoolean("spawner-waves.show-boss-bar", true)) {
@@ -126,19 +128,17 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         // Track the mob
         wave.trackedMobs.add(mobUUID)
-        wave.mobsSpawned++
+        val spawned = wave.mobsSpawned.incrementAndGet()
         mobToSpawner[mobUUID] = key
 
-        // Update expected if we're spawning more than expected
-        if (wave.mobsSpawned > wave.totalMobsExpected) {
-            wave.totalMobsExpected = wave.mobsSpawned
-        }
+        // Update expected if we're spawning more than expected (atomic update)
+        wave.totalMobsExpected.updateAndGet { current -> maxOf(current, spawned) }
 
         // Update boss bar
         updateBossBar(wave)
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("[SpawnerWave] Mob spawned at $key: ${mob.type}, total=${wave.mobsSpawned}/${wave.totalMobsExpected}")
+            plugin.logger.info("[SpawnerWave] Mob spawned at $key: ${mob.type}, total=${wave.mobsSpawned.get()}/${wave.totalMobsExpected.get()}")
         }
     }
 
@@ -152,7 +152,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         val wave = activeWaves[key] ?: return false
         if (!wave.trackedMobs.remove(mobUUID)) return false
 
-        wave.mobsKilled++
+        wave.mobsKilled.incrementAndGet()
 
         // Track killer as participant
         if (killer != null) {
@@ -164,7 +164,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         updateBossBar(wave)
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("[SpawnerWave] Mob killed at $key: ${wave.mobsKilled}/${wave.totalMobsExpected}")
+            plugin.logger.info("[SpawnerWave] Mob killed at $key: ${wave.mobsKilled.get()}/${wave.totalMobsExpected.get()}")
         }
 
         // Check if wave is complete
@@ -232,7 +232,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("[SpawnerWave] Wave complete at ${wave.spawnerId}: " +
-                "killed ${wave.mobsKilled}, participants=${wave.participatingPlayers.size}, " +
+                "killed ${wave.mobsKilled.get()}, participants=${wave.participatingPlayers.size}, " +
                 "duration=${durationSeconds}s")
         }
 
@@ -251,7 +251,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
             val typeStr = if (wave.isOminous) "Ominous" else "Trial"
             val message = plugin.getMessage("spawner-wave-complete",
                 "type" to typeStr,
-                "killed" to wave.mobsKilled,
+                "killed" to wave.mobsKilled.get(),
                 "duration" to formatDuration(durationSeconds)
             )
 
@@ -262,7 +262,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         // Update boss bar to show completion then remove
         wave.bossBar?.let { bar ->
-            bar.name(Component.text("Wave Complete!", NamedTextColor.GREEN, TextDecoration.BOLD))
+            bar.name(getMessageComponent("spawner-wave-boss-bar-complete"))
             bar.progress(1.0f)
             bar.color(BossBar.Color.GREEN)
 
@@ -283,11 +283,8 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      */
     private fun createBossBar(wave: WaveState): BossBar {
         val color = if (wave.isOminous) BossBar.Color.PURPLE else BossBar.Color.YELLOW
-        val title = if (wave.isOminous) {
-            Component.text("Ominous Trial - Wave ${wave.waveNumber}", NamedTextColor.DARK_PURPLE)
-        } else {
-            Component.text("Trial Spawner - Wave ${wave.waveNumber}", NamedTextColor.GOLD)
-        }
+        val messageKey = if (wave.isOminous) "spawner-wave-boss-bar-ominous" else "spawner-wave-boss-bar-normal"
+        val title = getMessageComponent(messageKey, "wave" to wave.waveNumber)
 
         return BossBar.bossBar(
             title,
@@ -307,9 +304,12 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         bar.progress(progress)
 
         // Update title with kill count
-        val prefix = if (wave.isOminous) "Ominous Trial" else "Trial Spawner"
-        val color = if (wave.isOminous) NamedTextColor.DARK_PURPLE else NamedTextColor.GOLD
-        bar.name(Component.text("$prefix - ${wave.mobsKilled}/${wave.totalMobsExpected}", color))
+        val typeStr = if (wave.isOminous) "Ominous Trial" else "Trial Spawner"
+        bar.name(getMessageComponent("spawner-wave-boss-bar-progress",
+            "type" to typeStr,
+            "killed" to wave.mobsKilled.get(),
+            "total" to wave.totalMobsExpected.get()
+        ))
     }
 
     /**
@@ -354,6 +354,15 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
             seconds < 3600 -> "${seconds / 60}m ${seconds % 60}s"
             else -> "${seconds / 3600}h ${(seconds % 3600) / 60}m"
         }
+    }
+
+    /**
+     * Converts a message key with placeholders to a Component for boss bars.
+     * Uses the messages.yml translations without the plugin prefix.
+     */
+    private fun getMessageComponent(key: String, vararg replacements: Pair<String, Any?>): Component {
+        val message = plugin.getMessage(key, *replacements)
+        return LegacyComponentSerializer.legacySection().deserialize(message)
     }
 
     /**

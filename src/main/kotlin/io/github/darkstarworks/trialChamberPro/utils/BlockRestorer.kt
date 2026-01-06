@@ -58,7 +58,8 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
         // Group blocks by chunk for efficient processing
         val blocksByChunk = snapshot.entries.groupBy { it.key.chunk }
 
-        var processedBlocks = 0
+        // Use atomic counter for thread-safe progress tracking across multiple region threads (Folia)
+        val processedBlocks = java.util.concurrent.atomic.AtomicInteger(0)
 
         // Process each chunk
         blocksByChunk.forEach { (chunk, blockEntries) ->
@@ -81,7 +82,7 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
                                 } else {
                                     restoreBlock(location, blockSnapshot)
                                 }
-                                processedBlocks++
+                                processedBlocks.incrementAndGet()
                             } catch (e: Exception) {
                                 plugin.logger.warning(
                                     "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
@@ -90,7 +91,7 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
                         }
 
                         // Call progress callback
-                        onProgress?.invoke(processedBlocks, totalBlocks)
+                        onProgress?.invoke(processedBlocks.get(), totalBlocks)
                     })
                 }
 
@@ -109,7 +110,7 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
             }
         }
 
-        plugin.logger.info("Block restoration complete: $processedBlocks/$totalBlocks blocks restored")
+        plugin.logger.info("Block restoration complete: ${processedBlocks.get()}/$totalBlocks blocks restored")
 
         // Call completion callback on main/global thread
         plugin.scheduler.runTask(Runnable {

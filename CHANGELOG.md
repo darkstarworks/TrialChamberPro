@@ -4,14 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.16] - 2026-01-06
+### Fixed
+- **Thread Safety Improvements**: Fixed multiple concurrency issues discovered during code review
+  - `VaultManager.setLootTableForChamber()`: Now properly async with `suspend` and `Dispatchers.IO`
+  - `StatisticsManager.getStats()`: Added per-player mutex to prevent redundant database loads
+  - `BlockRestorer.processedBlocks`: Changed to `AtomicInteger` for Folia multi-region safety
+  - `SpawnerWaveManager` counters: Changed `mobsKilled`, `mobsSpawned`, `totalMobsExpected` to `AtomicInteger`
+
+- **Memory Leak Fix**: `VaultInteractListener.openingVaults` map now properly cleaned up on plugin disable
+  - Added `shutdown()` method to cancel coroutine scope and clear the map
+  - Plugin now calls shutdown on listener during `onDisable()`
+
+### Changed
+- **Full Message Localization**: All remaining hardcoded messages are now translatable via messages.yml
+  - Boss bar messages for spawner wave tracking (normal/ominous titles, progress, completion)
+  - Plugin startup message shown when commands are used during initialization
+  - Chamber info display format strings (exit location, snapshot status)
+  - Generate command usage/help messages
+
+### Technical Details
+- `StatisticsManager` uses `kotlinx.coroutines.sync.Mutex` for per-player locking with double-check pattern
+- `SpawnerWaveManager.WaveState` now uses `AtomicInteger` for all counters and `@Volatile` for `completed` flag
+- `VaultInteractListener` stored as field in main plugin class for proper lifecycle management
+- `SpawnerWaveManager` now uses `getMessageComponent()` helper to convert message strings to Adventure Components
+- `getMessage()` now skips prefix for keys containing "boss-bar"
+- Added 15 new message keys: `spawner-wave-boss-bar-*`, `usage-generate-*`, `info-*`, `plugin-starting-up`
+
 ## [1.2.15] - 2026-01-06
 ### Fixed
 - **CRITICAL: Spawner Cooldown Config Not Working**: Fixed `spawner-cooldown-minutes` setting having no effect
-  - Root cause: NBTUtil was restoring the old cooldown from snapshot data, overwriting the config value
-  - Fix: Removed cooldown restoration from NBTUtil - cooldown is now controlled exclusively by config
-  - Added 200ms safety delay between block restoration and spawner reset to ensure proper ordering
-  - Now works correctly with all values: 0 (no cooldown), -1 (vanilla default), or custom minutes
-  - Debug logging available with `debug.verbose-logging: true` to troubleshoot cooldown issues
+    - Root cause: NBTUtil was restoring the old cooldown from snapshot data, overwriting the config value
+    - Fix: Removed cooldown restoration from NBTUtil - cooldown is now controlled exclusively by config
+    - Added 200ms safety delay between block restoration and spawner reset to ensure proper ordering
+    - Now works correctly with all values: 0 (no cooldown), -1 (vanilla default), or custom minutes
+    - Debug logging available with `debug.verbose-logging: true` to troubleshoot cooldown issues
 
 ### Technical Details
 - `NBTUtil.restoreTrialSpawner()` no longer restores `cooldownLength` from snapshot data
@@ -769,6 +796,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.15...v1.2.16
 [1.2.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.14...v1.2.15
 [1.2.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.13...v1.2.14
 [1.2.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.12...v1.2.13

@@ -99,7 +99,11 @@ class VaultManager(private val plugin: TrialChamberPro) {
         plugin.logger.info("Vault counts cache cleared")
     }
 
-    fun setLootTableForChamber(chamberId: Int, type: VaultType, tableName: String) {
+    /**
+     * Sets the loot table for all vaults of a specific type in a chamber.
+     * Must be called from a coroutine context.
+     */
+    suspend fun setLootTableForChamber(chamberId: Int, type: VaultType, tableName: String) = withContext(Dispatchers.IO) {
         try {
             plugin.databaseManager.connection.use { conn ->
                 conn.prepareStatement(

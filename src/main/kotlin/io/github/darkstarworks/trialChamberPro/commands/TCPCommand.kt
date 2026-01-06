@@ -30,8 +30,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         // Guard commands until plugin finished async initialization, but allow help
         val sub = args[0].lowercase()
         if (!plugin.isReady && sub !in setOf("help")) {
-            // Use a literal message to avoid dependence on messages.yml key presence during upgrades
-            sender.sendMessage("§8[§6TCP§8]§r §eTrialChamberPro is still starting up. Please try again in a moment...")
+            sender.sendMessage(plugin.getMessage("plugin-starting-up"))
             return true
         }
 
@@ -258,9 +257,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
             val exitLoc = chamber.getExitLocation()
             val exitStr = if (exitLoc != null) {
-                "§a${exitLoc.blockX}, ${exitLoc.blockY}, ${exitLoc.blockZ}"
+                plugin.getMessage("info-exit-location-set",
+                    "x" to exitLoc.blockX,
+                    "y" to exitLoc.blockY,
+                    "z" to exitLoc.blockZ
+                )
             } else {
-                "§cNot set"
+                plugin.getMessage("info-exit-location-not-set")
             }
 
             val lastResetStr = if (chamber.lastReset != null) {
@@ -282,7 +285,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             ))
             sender.sendMessage(plugin.getMessage("info-last-reset", "time" to lastResetStr))
 
-            val snapshotStatus = if (chamber.snapshotFile != null) "§aCreated" else "§cNot created"
+            val snapshotStatus = if (chamber.snapshotFile != null) {
+                plugin.getMessage("info-snapshot-created")
+            } else {
+                plugin.getMessage("info-snapshot-not-created")
+            }
             sender.sendMessage(plugin.getMessage("info-snapshot", "status" to snapshotStatus))
         }
     }
@@ -294,11 +301,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 3) {
-            sender.sendMessage("§cUsage: /tcp generate value <name>")
-            sender.sendMessage("§cOr: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>")
-            sender.sendMessage("§7(legacy supported: /tcp generate coords <x1,y1,z1-x2,y2,z2> [world] <name>)")
-            sender.sendMessage("§cOr: /tcp generate wand <name>")
-            sender.sendMessage("§cOr: /tcp generate blocks <amount> [name] [roundingAllowance]")
+            sender.sendMessage(plugin.getMessage("usage-generate-help-value"))
+            sender.sendMessage(plugin.getMessage("usage-generate-help-or-coords"))
+            sender.sendMessage(plugin.getMessage("usage-generate-coords-legacy"))
+            sender.sendMessage(plugin.getMessage("usage-generate-help-or-wand"))
+            sender.sendMessage(plugin.getMessage("usage-generate-help-or-blocks"))
             return
         }
 
@@ -368,8 +375,8 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 val varName = args.getOrNull(2)
                 val chamberName = args.getOrNull(3) ?: varName
                 if (varName.isNullOrBlank() || chamberName.isNullOrBlank()) {
-                    sender.sendMessage("§cUsage: /tcp generate value <varName> [chamberName]")
-                    sender.sendMessage("§7Extra: /tcp generate value save|list|delete ...")
+                    sender.sendMessage(plugin.getMessage("usage-generate-value"))
+                    sender.sendMessage(plugin.getMessage("usage-generate-value-extra"))
                     return
                 }
 
@@ -880,8 +887,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
         if (!plugin.isReady) {
-            // Use literal message to avoid dependence on messages.yml during startup
-            sender.sendMessage("§8[§6TCP§8]§r §eTrialChamberPro is still starting up. Please try again in a moment...")
+            sender.sendMessage(plugin.getMessage("plugin-starting-up"))
             return
         }
         try {

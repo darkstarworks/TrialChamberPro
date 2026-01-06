@@ -434,15 +434,15 @@ class LootEditorView(
         // Persist to loot.yml
         plugin.lootManager.saveAllToFile()
 
-        // Update DB vaults for this chamber/type to use this table name (Folia compatible)
+        // Update DB vaults for this chamber/type to use this table name
         val type = if (kind == MenuService.LootKind.OMINOUS) VaultType.OMINOUS else VaultType.NORMAL
-        plugin.scheduler.runTaskAsync(Runnable {
+        plugin.launchAsync {
             try {
                 plugin.vaultManager.setLootTableForChamber(chamber.id, type, draft.tableName)
             } catch (e: Exception) {
                 plugin.logger.warning("Failed to update vault loot table: ${e.message}")
             }
-        })
+        }
 
         if (poolName != null) {
             player.sendMessage(plugin.getMessage("gui-loot-pool-saved", "pool" to poolName))
