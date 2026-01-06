@@ -36,10 +36,10 @@ class LootTableListView(
             tablePane.addItem(GuiItem(createTableItem(tableName, table)) { event ->
                 event.isCancelled = true
                 // Show info about how to edit
-                player.sendMessage(Component.text("To edit loot table '$tableName':", NamedTextColor.YELLOW))
-                player.sendMessage(Component.text("1. Go to Chambers and select a chamber", NamedTextColor.GRAY))
-                player.sendMessage(Component.text("2. Click Normal/Ominous Loot to edit", NamedTextColor.GRAY))
-                player.sendMessage(Component.text("3. Or edit loot.yml directly", NamedTextColor.GRAY))
+                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-1", "table" to tableName))
+                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-2"))
+                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-3"))
+                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-4"))
             })
         }
         gui.addPane(tablePane)

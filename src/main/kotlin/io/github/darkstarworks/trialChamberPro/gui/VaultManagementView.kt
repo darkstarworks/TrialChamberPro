@@ -43,7 +43,7 @@ class VaultManagementView(
         // Reset specific player button
         pane.addItem(GuiItem(createResetPlayerItem()) { event ->
             event.isCancelled = true
-            player.sendMessage(Component.text("Use: /tcp vault reset ${chamber.name} <player>", NamedTextColor.YELLOW))
+            player.sendMessage(plugin.getMessage("vault-reset-usage-hint", "chamber" to chamber.name))
         }, 6, 0)
 
         // Get vaults for this chamber
@@ -193,7 +193,7 @@ class VaultManagementView(
     // ==================== Action Handlers ====================
 
     private fun resetAllCooldowns(player: Player) {
-        player.sendMessage(Component.text("Resetting all vault cooldowns for ${chamber.name}...", NamedTextColor.YELLOW))
+        player.sendMessage(plugin.getMessage("vault-reset-all-start", "chamber" to chamber.name))
 
         plugin.launchAsync {
             val vaults = plugin.vaultManager.getVaultsForChamber(chamber.id)
@@ -205,19 +205,19 @@ class VaultManagementView(
             }
 
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(Component.text("Reset cooldowns on $resetCount vaults!", NamedTextColor.GREEN))
+                player.sendMessage(plugin.getMessage("vault-reset-all-complete", "count" to resetCount))
                 menu.openVaultManagement(player, chamber)
             })
         }
     }
 
     private fun resetVaultCooldowns(player: Player, vault: VaultData) {
-        player.sendMessage(Component.text("Resetting cooldowns for vault #${vault.id}...", NamedTextColor.YELLOW))
+        player.sendMessage(plugin.getMessage("vault-reset-single-start", "id" to vault.id))
 
         plugin.launchAsync {
             plugin.vaultManager.resetAllCooldowns(vault.id)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(Component.text("Vault cooldowns reset!", NamedTextColor.GREEN))
+                player.sendMessage(plugin.getMessage("vault-reset-single-complete"))
                 menu.openVaultManagement(player, chamber)
             })
         }

@@ -317,7 +317,7 @@ class LootEditorView(
             it.isCancelled = true
             val hand = player.inventory.itemInMainHand
             if (hand.type == Material.AIR) {
-                player.sendMessage(Component.text("Hold an item to add!", NamedTextColor.RED))
+                player.sendMessage(plugin.getMessage("gui-hold-item-to-add"))
                 return@GuiItem
             }
 
@@ -334,7 +334,7 @@ class LootEditorView(
             draft.weighted.add(newItem)
             draft.dirty = true
 
-            player.sendMessage(Component.text("Added ${hand.type.name} to loot table", NamedTextColor.GREEN))
+            player.sendMessage(plugin.getMessage("gui-item-added-to-loot", "item" to hand.type.name))
 
             // Refresh content and controls immediately without reopening
             refreshContent(player)
@@ -444,11 +444,10 @@ class LootEditorView(
             }
         })
 
-        val message = if (poolName != null) {
-            "✓ Saved pool '$poolName' in '${draft.tableName}'"
+        if (poolName != null) {
+            player.sendMessage(plugin.getMessage("gui-loot-pool-saved", "pool" to poolName))
         } else {
-            "✓ Saved loot table '${draft.tableName}'"
+            player.sendMessage(plugin.getMessage("gui-loot-changes-saved"))
         }
-        player.sendMessage(Component.text(message, NamedTextColor.GREEN))
     }
 }

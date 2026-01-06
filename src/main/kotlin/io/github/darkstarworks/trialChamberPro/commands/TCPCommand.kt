@@ -73,8 +73,8 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessage("help-leaderboard"))
         sender.sendMessage(plugin.getMessage("help-key"))
         sender.sendMessage(plugin.getMessage("help-vault"))
-        sender.sendMessage("§e/tcp paste §7- Paste Trial Chamber schematics")
-        sender.sendMessage("§e/tcp menu §7- Open the admin GUI")
+        sender.sendMessage(plugin.getMessage("help-paste"))
+        sender.sendMessage(plugin.getMessage("help-menu"))
         sender.sendMessage(plugin.getMessage("help-loot"))
         sender.sendMessage(plugin.getMessage("help-reload"))
     }
@@ -100,7 +100,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp scan <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-scan"))
             return
         }
 
@@ -135,7 +135,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp setexit <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-setexit"))
             return
         }
 
@@ -158,7 +158,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 3) {
-            sender.sendMessage("§cUsage: /tcp snapshot <create|restore> <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-snapshot"))
             return
         }
 
@@ -195,7 +195,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
                     sender.sendMessage(plugin.getMessage("snapshot-restoring", "chamber" to chamberName))
 
-                    val success = plugin.resetManager.resetChamber(chamber)
+                    // Pass player for WorldEdit undo support if sender is a player
+                    val initiatingPlayer = sender as? Player
+                    val success = plugin.resetManager.resetChamber(chamber, initiatingPlayer)
                     if (success) {
                         sender.sendMessage(plugin.getMessage("snapshot-restored"))
                     } else {
@@ -204,7 +206,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 }
             }
             else -> {
-                sender.sendMessage("§cUsage: /tcp snapshot <create|restore> <chamber>")
+                sender.sendMessage(plugin.getMessage("usage-snapshot"))
             }
         }
     }
@@ -241,7 +243,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp info <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-info"))
             return
         }
 
@@ -316,7 +318,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                         }
                         val varName = args.getOrNull(3)
                         if (varName.isNullOrBlank()) {
-                            sender.sendMessage("§cUsage: /tcp generate value save <varName>")
+                            sender.sendMessage(plugin.getMessage("usage-generate-value-save"))
                             return
                         }
                         val selection = WorldEditUtil.getSelection(sender)
@@ -352,7 +354,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     "delete" -> {
                         val varName = args.getOrNull(3)
                         if (varName.isNullOrBlank()) {
-                            sender.sendMessage("§cUsage: /tcp generate value delete <varName>")
+                            sender.sendMessage(plugin.getMessage("usage-generate-value-delete"))
                             return
                         }
                         val ok = WEVarStore.delete(plugin.dataFolder, varName)
@@ -375,7 +377,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 if (saved != null) {
                     val locs = WEVarStore.toLocations(saved)
                     if (locs == null) {
-                        sender.sendMessage("§cWorld '${saved.world}' for var '$varName' is not loaded.")
+                        sender.sendMessage(plugin.getMessage("error-world-not-loaded", "world" to saved.world, "name" to varName))
                         return
                     }
                     val (loc1, loc2) = locs
@@ -411,7 +413,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                                 ))
                             }
                         } else {
-                            sender.sendMessage("§cFailed to create chamber. Check console for errors.")
+                            sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
                         }
                     }
                 } else {
@@ -457,7 +459,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                                     ))
                                 }
                             } else {
-                                sender.sendMessage("§cFailed to create chamber. Check console for errors.")
+                                sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
                             }
                         }
                     } else {
@@ -471,7 +473,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 // - coords <world> <x1,y1,z1> <x2,y2,z2> <name>
                 val parsed = parseCoordsArgs(sender, args)
                 if (parsed == null) {
-                    sender.sendMessage("§cUsage: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>")
+                    sender.sendMessage(plugin.getMessage("usage-generate-coords"))
                     return
                 }
                 val (world, p1, p2, name) = parsed
@@ -511,7 +513,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                             ))
                         }
                     } else {
-                        sender.sendMessage("§cFailed to create chamber. Check console for errors.")
+                        sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
                     }
                 }
             }
@@ -526,7 +528,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 }
                 val name = args.getOrNull(2)
                 if (name.isNullOrBlank()) {
-                    sender.sendMessage("§cUsage: /tcp generate wand <name>")
+                    sender.sendMessage(plugin.getMessage("usage-generate-wand"))
                     return
                 }
                 val selection = WorldEditUtil.getSelection(sender)
@@ -566,7 +568,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                             ))
                         }
                     } else {
-                        sender.sendMessage("§cFailed to create chamber. Check console for errors.")
+                        sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
                     }
                 }
             }
@@ -578,7 +580,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 val amountStr = args.getOrNull(2)
                 val amount = amountStr?.toIntOrNull()
                 if (amount == null || amount <= 0) {
-                    sender.sendMessage("§cUsage: /tcp generate blocks <amount> [name] [roundingAllowance]")
+                    sender.sendMessage(plugin.getMessage("usage-generate-blocks"))
                     return
                 }
                 val name = args.getOrNull(3) ?: "chamber-${System.currentTimeMillis()}"
@@ -599,9 +601,11 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
                 val overhead = volume - amount
                 if (overhead > allowance) {
-                    sender.sendMessage("§eNote: Requested $amount blocks, but minimum viable region is $volume (over by $overhead). Consider increasing rounding allowance.")
+                    sender.sendMessage(plugin.getMessage("generate-rounding-note",
+                        "requested" to amount, "actual" to volume, "overhead" to overhead))
                 } else {
-                    sender.sendMessage("§7Rounded up to $volume blocks (over by $overhead) to fit minimum dimensions.")
+                    sender.sendMessage(plugin.getMessage("generate-rounding-info",
+                        "volume" to volume, "overhead" to overhead))
                 }
 
                 plugin.launchAsync {
@@ -627,12 +631,12 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                             ))
                         }
                     } else {
-                        sender.sendMessage("§cFailed to create chamber. Check console for errors.")
+                        sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
                     }
                 }
             }
             else -> {
-                sender.sendMessage("§cUsage: /tcp generate <value|coords> ...")
+                sender.sendMessage(plugin.getMessage("usage-generate"))
             }
         }
     }
@@ -645,13 +649,15 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         // Check minimum dimensions
         if (dx < MIN_XZ || dz < MIN_XZ || dy < MIN_Y) {
-            sender.sendMessage("§cRegion too small. Minimum size is ${MIN_XZ}x${MIN_Y}x${MIN_XZ} (width x height x depth). Got ${dx}x${dy}x${dz}.")
+            sender.sendMessage(plugin.getMessage("error-region-too-small",
+                "minXZ" to MIN_XZ, "minY" to MIN_Y, "dx" to dx, "dy" to dy, "dz" to dz))
             return false
         }
 
         val maxVolume = plugin.config.getInt("generation.max-volume", 500000).coerceAtLeast(1)
         if (volume > maxVolume) {
-            sender.sendMessage("§cRegion too large. Maximum allowed volume is $maxVolume blocks. Got ${volume}.")
+            sender.sendMessage(plugin.getMessage("error-region-too-large",
+                "maxVolume" to maxVolume, "volume" to volume))
             return false
         }
         return true
@@ -836,7 +842,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp delete <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-delete"))
             return
         }
 
@@ -866,7 +872,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handleMenu(sender: CommandSender) {
         if (sender !is Player) {
-            sender.sendMessage("This command can only be used in-game.")
+            sender.sendMessage(plugin.getMessage("player-only"))
             return
         }
         if (!sender.hasPermission("tcp.admin.menu")) {
@@ -874,13 +880,14 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
         if (!plugin.isReady) {
+            // Use literal message to avoid dependence on messages.yml during startup
             sender.sendMessage("§8[§6TCP§8]§r §eTrialChamberPro is still starting up. Please try again in a moment...")
             return
         }
         try {
             plugin.menuService.openFor(sender)
         } catch (e: Exception) {
-            sender.sendMessage("§cFailed to open menu: ${e.message}")
+            sender.sendMessage(plugin.getMessage("error-menu-failed", "error" to (e.message ?: "Unknown error")))
             e.printStackTrace()
         }
     }
@@ -1006,13 +1013,18 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (!plugin.schematicManager.isAvailable()) {
-            sender.sendMessage("§cWorldEdit/FAWE not found - schematic features are disabled")
+            sender.sendMessage(plugin.getMessage("worldedit-not-available"))
             return
         }
 
+        val availableList = plugin.schematicManager.listSchematics().joinToString(", ")
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp paste <schematic> [x y z]")
-            sender.sendMessage("§7Available schematics: ${plugin.schematicManager.listSchematics().joinToString(", ")}")
+            sender.sendMessage(plugin.getMessage("schematic-usage-hint"))
+            if (availableList.isNotEmpty()) {
+                sender.sendMessage(plugin.getMessage("schematic-usage", "list" to availableList))
+            } else {
+                sender.sendMessage(plugin.getMessage("schematic-no-schematics"))
+            }
             return
         }
 
@@ -1020,8 +1032,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         // Validate schematic exists
         if (!plugin.schematicManager.schematicExists(schematicName)) {
-            sender.sendMessage("§cSchematic '$schematicName' not found")
-            sender.sendMessage("§7Available schematics: ${plugin.schematicManager.listSchematics().joinToString(", ")}")
+            sender.sendMessage(plugin.getMessage("schematic-not-found", "name" to schematicName))
+            if (availableList.isNotEmpty()) {
+                sender.sendMessage(plugin.getMessage("schematic-usage", "list" to availableList))
+            }
             return
         }
 
@@ -1033,7 +1047,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val z = args[4].toIntOrNull()
 
             if (x == null || y == null || z == null) {
-                sender.sendMessage("§cInvalid coordinates. Usage: /tcp paste <schematic> [x y z]")
+                sender.sendMessage(plugin.getMessage("error-invalid-coordinates"))
                 return
             }
 
@@ -1089,7 +1103,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         }
 
         if (args.size < 2) {
-            sender.sendMessage("§cUsage: /tcp loot <set|clear|info|list>")
+            sender.sendMessage(plugin.getMessage("usage-loot"))
             return
         }
 
@@ -1099,7 +1113,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "info" -> handleLootInfo(sender, args)
             "list" -> handleLootList(sender)
             else -> {
-                sender.sendMessage("§cUsage: /tcp loot <set|clear|info|list>")
+                sender.sendMessage(plugin.getMessage("usage-loot"))
             }
         }
     }
@@ -1107,7 +1121,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private fun handleLootSet(sender: CommandSender, args: Array<out String>) {
         // /tcp loot set <chamber> <normal|ominous> <table>
         if (args.size < 5) {
-            sender.sendMessage("§cUsage: /tcp loot set <chamber> <normal|ominous> <table>")
+            sender.sendMessage(plugin.getMessage("usage-loot-set"))
             return
         }
 
@@ -1119,7 +1133,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "normal" -> io.github.darkstarworks.trialChamberPro.models.VaultType.NORMAL
             "ominous" -> io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS
             else -> {
-                sender.sendMessage("§cInvalid type. Use 'normal' or 'ominous'.")
+                sender.sendMessage(plugin.getMessage("error-invalid-type"))
                 return
             }
         }
@@ -1145,7 +1159,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     "table" to tableName
                 ))
             } else {
-                sender.sendMessage("§cFailed to set loot table. Check console for errors.")
+                sender.sendMessage(plugin.getMessage("error-loot-set-failed"))
             }
         }
     }
@@ -1153,7 +1167,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private fun handleLootClear(sender: CommandSender, args: Array<out String>) {
         // /tcp loot clear <chamber> [normal|ominous|all]
         if (args.size < 3) {
-            sender.sendMessage("§cUsage: /tcp loot clear <chamber> [normal|ominous|all]")
+            sender.sendMessage(plugin.getMessage("usage-loot-clear"))
             return
         }
 
@@ -1182,7 +1196,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                     sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
                 }
                 else -> {
-                    sender.sendMessage("§cInvalid type. Use 'normal', 'ominous', or 'all'.")
+                    sender.sendMessage(plugin.getMessage("error-invalid-type-loot-clear"))
                 }
             }
         }
@@ -1191,7 +1205,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private fun handleLootInfo(sender: CommandSender, args: Array<out String>) {
         // /tcp loot info <chamber>
         if (args.size < 3) {
-            sender.sendMessage("§cUsage: /tcp loot info <chamber>")
+            sender.sendMessage(plugin.getMessage("usage-loot-info"))
             return
         }
 
@@ -1218,7 +1232,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         val tables = plugin.lootManager.getLootTableNames()
 
         if (tables.isEmpty()) {
-            sender.sendMessage("§cNo loot tables found in loot.yml")
+            sender.sendMessage(plugin.getMessage("error-no-loot-tables"))
             return
         }
 

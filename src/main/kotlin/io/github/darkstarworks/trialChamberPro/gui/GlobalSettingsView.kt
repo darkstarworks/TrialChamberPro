@@ -185,8 +185,8 @@ class GlobalSettingsView(
         plugin.saveConfig()
 
         val settingName = configPath.split(".").last().replace("-", " ").replaceFirstChar { it.uppercase() }
-        player.sendMessage(Component.text("$settingName: ${if (newValue) "Enabled" else "Disabled"}",
-            if (newValue) NamedTextColor.GREEN else NamedTextColor.RED))
+        val valueText = if (newValue) plugin.getMessage("gui-setting-enabled") else plugin.getMessage("gui-setting-disabled")
+        player.sendMessage(plugin.getMessage("gui-setting-toggled", "setting" to settingName, "value" to valueText))
 
         // Refresh the view
         menu.openGlobalSettings(player)

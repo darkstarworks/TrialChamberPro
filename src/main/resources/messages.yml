@@ -194,3 +194,125 @@ loot-info-default: "&7(using default)"
 loot-list-header: "&6=== Available Loot Tables ==="
 loot-list-item: "&e- &f{table}"
 help-loot: "&e/tcp loot <set|clear|info|list> &7- Per-chamber loot tables"
+help-paste: "&e/tcp paste <schematic> &7- Paste Trial Chamber schematics"
+help-menu: "&e/tcp menu &7- Open the admin GUI"
+
+# Inventory & Loot
+inventory-full: "&eYour inventory was full! Some items were dropped."
+loot-received: "&aYou received: {item}"
+
+# Command Usage Messages
+usage-scan: "&cUsage: /tcp scan <chamber>"
+usage-setexit: "&cUsage: /tcp setexit <chamber>"
+usage-snapshot: "&cUsage: /tcp snapshot <create|restore> <chamber>"
+usage-info: "&cUsage: /tcp info <chamber>"
+usage-delete: "&cUsage: /tcp delete <chamber>"
+usage-generate-value-save: "&cUsage: /tcp generate value save <varName>"
+usage-generate-value-delete: "&cUsage: /tcp generate value delete <varName>"
+usage-generate-coords: "&cUsage: /tcp generate coords <x1,y1,z1> <x2,y2,z2> [world] <name>"
+usage-generate-wand: "&cUsage: /tcp generate wand <name>"
+usage-generate-blocks: "&cUsage: /tcp generate blocks <amount> [name] [roundingAllowance]"
+usage-generate: "&cUsage: /tcp generate <value|coords|wand|blocks> ..."
+usage-vault-reset: "&cUsage: /tcp vault reset <chamber> <player> [normal|ominous]"
+usage-key-give: "&cUsage: /tcp key give <player> <amount> [normal|ominous]"
+usage-key-check: "&cUsage: /tcp key check <player>"
+usage-key: "&cUsage: /tcp key <give|check>"
+usage-reset: "&cUsage: /tcp reset <chamber>"
+usage-loot-set: "&cUsage: /tcp loot set <chamber> <normal|ominous> <table>"
+usage-loot-clear: "&cUsage: /tcp loot clear <chamber> [normal|ominous|all]"
+usage-loot-info: "&cUsage: /tcp loot info <chamber>"
+usage-loot: "&cUsage: /tcp loot <set|clear|info|list|reload>"
+
+# Command Error Messages
+error-chamber-creation-failed: "&cFailed to create chamber. Check console for errors."
+error-world-not-loaded: "&cWorld '{world}' for var '{name}' is not loaded."
+error-region-too-small: "&cRegion too small. Minimum size is {minXZ}x{minY}x{minXZ} (width x height x depth). Got {dx}x{dy}x{dz}."
+error-region-too-large: "&cRegion too large. Maximum allowed volume is {maxVolume} blocks. Got {volume}."
+error-invalid-type: "&cInvalid type. Use 'normal' or 'ominous'."
+error-invalid-type-loot-clear: "&cInvalid type. Use 'normal', 'ominous', or 'all'."
+error-player-not-found: "&cPlayer not found or not online."
+error-ominous-key-unavailable: "&cOminous Trial Keys are not available in this server version."
+error-menu-failed: "&cFailed to open menu: {error}"
+error-loot-set-failed: "&cFailed to set loot table. Check console for errors."
+error-no-loot-tables: "&cNo loot tables found in loot.yml"
+error-invalid-coordinates: "&cInvalid coordinates. Usage: /tcp paste <schematic> [x y z]"
+
+# WorldEdit/Schematic Messages
+worldedit-not-available: "&cWorldEdit/FAWE not found - schematic features are disabled"
+schematic-usage: "&eAvailable schematics: {list}"
+schematic-usage-hint: "&eUsage: /tcp paste <schematic> [x y z]"
+schematic-not-found: "&cSchematic '{name}' not found."
+schematic-no-schematics: "&cNo schematics available."
+
+# Generation Info Messages
+generate-rounding-note: "&eNote: Requested {requested} blocks, but minimum viable region is {actual} (over by {overhead}). Consider increasing rounding allowance."
+generate-rounding-info: "&7Rounded up to {volume} blocks (over by {overhead}) to fit minimum dimensions."
+
+# Config/Reload Messages
+config-reloading: "&eReloading configuration..."
+config-reloaded: "&aConfiguration reloaded!"
+
+# Vault Management GUI Messages
+vault-reset-usage-hint: "&eUse: /tcp vault reset {chamber} <player>"
+vault-reset-all-start: "&eResetting all vault cooldowns for {chamber}..."
+vault-reset-all-complete: "&aReset cooldowns on {count} vaults!"
+vault-reset-single-start: "&eResetting cooldowns for vault #{id}..."
+vault-reset-single-complete: "&aVault cooldowns reset!"
+
+# GUI Action Messages - Chamber Operations
+gui-chamber-world-not-loaded: "&cChamber world not loaded!"
+gui-teleport-to-center: "&aTeleported to center of {chamber}"
+gui-forcing-reset: "&eForcing reset for '{chamber}'..."
+gui-chamber-reset-complete: "&aChamber '{chamber}' has been reset!"
+gui-reset-failed: "&cFailed to reset chamber: {error}"
+gui-no-players-in-chamber: "&eNo players are currently in this chamber."
+gui-players-ejected: "&aEjected {count} player(s) from '{chamber}'!"
+gui-no-snapshot-exists: "&cNo snapshot exists for this chamber!"
+gui-restoring-snapshot: "&eRestoring snapshot for '{chamber}'..."
+gui-snapshot-restored: "&aSnapshot restored!"
+gui-restore-failed: "&cFailed to restore: {error}"
+gui-creating-snapshot: "&eCreating snapshot for '{chamber}'..."
+gui-snapshot-created: "&aSnapshot created!"
+gui-snapshot-create-failed: "&cFailed to create snapshot: {error}"
+gui-reset-scheduled: "&eChamber '{chamber}' will reset in {seconds} seconds."
+gui-exit-scheduled: "&ePlayers will be ejected from '{chamber}' in {seconds} seconds."
+gui-exit-warning: "&cYou will be ejected from this chamber in {seconds} seconds!"
+gui-player-ejected: "&eYou have been ejected from the chamber!"
+
+# GUI Action Messages - Chamber Settings
+gui-reset-interval-set: "&aReset interval set to {value}"
+gui-reset-interval-failed: "&cFailed to update reset interval"
+gui-exit-location-set: "&aExit location set to your current position"
+gui-exit-location-failed: "&cFailed to set exit location"
+gui-no-exit-location: "&cNo exit location set for this chamber"
+gui-teleport-to-exit: "&aTeleported to exit location"
+gui-no-loot-tables: "&cNo loot tables available"
+gui-loot-table-set: "&a{type} loot table set to: {table}"
+gui-loot-table-failed: "&cFailed to set loot table"
+gui-loot-table-cleared: "&a{type} loot table override cleared"
+gui-loot-clear-failed: "&cFailed to clear loot table override"
+gui-spawner-cooldown-set: "&aSpawner cooldown set to {value}"
+gui-spawner-cooldown-failed: "&cFailed to update spawner cooldown"
+gui-spawner-cooldown-reset: "&aSpawner cooldown reset to global config"
+gui-spawner-cooldown-reset-failed: "&cFailed to reset spawner cooldown"
+
+# GUI Action Messages - Settings Toggle
+gui-setting-toggled: "&a{setting}: {value}"
+gui-setting-enabled: "Enabled"
+gui-setting-disabled: "Disabled"
+
+# GUI Action Messages - Loot Editor
+gui-hold-item-to-add: "&cHold an item to add!"
+gui-item-added-to-loot: "&aAdded {item} to loot table"
+gui-loot-changes-saved: "&aLoot table changes saved!"
+gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
+
+# GUI Info Messages - Loot Table List
+gui-loot-table-edit-hint-1: "&eTo edit loot table '{table}':"
+gui-loot-table-edit-hint-2: "&71. Go to Chambers and select a chamber"
+gui-loot-table-edit-hint-3: "&72. Click Normal/Ominous Loot to edit"
+gui-loot-table-edit-hint-4: "&73. Or edit loot.yml directly"
+
+# GUI Info Messages - Pool Selector
+gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
+gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"

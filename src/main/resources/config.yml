@@ -86,6 +86,12 @@ reset:
   reset-ominous-spawners: true  # Convert ominous spawners back to normal on reset
   clear-trial-omen-effect: true
   reset-vault-cooldowns: true  # Reset player vault cooldowns on chamber reset (REQUIRED for vanilla behavior)
+  # Trial spawner cooldown configuration
+  # This controls how long spawners stay inactive after players complete a wave
+  # Set to -1 to use vanilla default (30 minutes / 36000 ticks)
+  # Set to 0 to disable cooldown (spawners reactivate immediately)
+  # Set to a positive number for custom cooldown in minutes
+  spawner-cooldown-minutes: -1
 
 # Performance
 performance:

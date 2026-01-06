@@ -57,6 +57,7 @@ global:
   async-block-placement: true
   blocks-per-tick: 500
   auto-snapshot-on-register: true
+  spawner-cooldown-minutes: -1
 ```
 
 ### `default-reset-interval`
@@ -113,6 +114,28 @@ Adjust based on your server hardware:
 **Default:** `true`
 
 Automatically create a snapshot when registering a new chamber? Super convenient, but uses disk space. You can disable this if you want manual control.
+
+### `spawner-cooldown-minutes`
+**Default:** `-1` (vanilla behavior)
+**Unit:** Minutes
+
+Control how long trial spawners stay in cooldown after being completed. This affects when spawners can be reactivated after players defeat all mobs.
+
+**Values:**
+- `-1` = Use vanilla default (30 minutes / 36,000 ticks)
+- `0` = No cooldown (spawners reactivate immediately when players approach)
+- `1-60` = Custom cooldown in minutes
+
+{% hint style="info" %}
+**Use Cases:**
+- **Quick farming:** Set to `0` for instant reactivation—great for mob farms or high-activity servers
+- **Balanced gameplay:** Set to `5-15` minutes for faster resets than vanilla
+- **Vanilla experience:** Keep at `-1` for authentic Trial Chamber timing
+{% endhint %}
+
+{% hint style="success" %}
+**Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
+{% endhint %}
 
 ---
 

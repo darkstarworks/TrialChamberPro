@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.13] - 2026-01-06
+### Added
+- **Configurable Trial Spawner Cooldown**: Control how long trial spawners stay in cooldown after being completed
+  - Global setting: `spawner-cooldown-minutes` in config.yml (default: -1 for vanilla 30 min)
+  - Per-chamber override: Set custom cooldown for individual chambers via GUI or database
+  - Values: `-1` = vanilla default (30 min), `0` = no cooldown (instant reactivation), `1-60` = custom minutes
+  - GUI support in Chamber Settings view with preset options (0, 5, 10, 15, 30 min, or vanilla default)
+- **WorldEdit Undo Support for Chamber Resets**: Block restoration now integrates with WorldEdit's undo system
+  - When a player initiates a reset (command or GUI), changes are recorded in their WorldEdit undo history
+  - Use `//undo` to revert chamber resets initiated by you
+  - Automatic resets (scheduled) don't create undo entries (no initiating player)
+  - Uses WorldEdit's EditSession API via reflection (soft dependency)
+
+### Changed
+- **Complete Message Localization**: All user-facing messages are now translatable via messages.yml
+  - Added 50+ new message keys for GUI operations
+  - Chamber operations: teleport, reset, exit players, snapshot create/restore
+  - Settings operations: reset interval, exit location, loot table, spawner cooldown
+  - Loot editor operations: add item, save changes
+  - All hardcoded `Component.text()` messages replaced with `plugin.getMessage()`
+  - GUI categories: `gui-` prefixed keys for easy organization
+  - Placeholders: `{chamber}`, `{count}`, `{seconds}`, `{error}`, `{value}`, `{type}`, `{table}`, `{item}`, `{pool}`, `{setting}`
+
+### Technical Details
+- New config option: `spawner-cooldown-minutes` in global section
+- New Chamber model property: `spawnerCooldownMinutes: Int?` (null = use global)
+- Database migration: Added `spawner_cooldown_minutes` column to chambers table
+- `ResetManager.resetTrialSpawners()` now applies cooldown via `TrialSpawner.setCooldownLength()`
+- `BlockRestorer.restoreBlocks()` accepts optional `initiatingPlayer` parameter for WorldEdit integration
+- WorldEdit integration via reflection: `createWorldEditSession()`, `restoreBlockWithWorldEdit()`, `finalizeWorldEditSession()`
+- New messages.yml keys: 35+ GUI action messages with placeholder support
+
 ## [1.2.12] - 2025-12-14
 ### Fixed
 - **Advancement granted in spectator mode**: Fixed "Minecraft: Trial(s) Edition" advancement being granted when entering a chamber in spectator or creative mode
@@ -712,6 +744,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.12...v1.2.13
 [1.2.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.10...v1.2.11
 [1.2.10]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.9...v1.2.10

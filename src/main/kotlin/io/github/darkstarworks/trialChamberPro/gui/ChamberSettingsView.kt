@@ -32,6 +32,18 @@ class ChamberSettingsView(
             48 * 3600L to "48 hours",
             7 * 24 * 3600L to "1 week"
         )
+
+        // Spawner cooldown presets in minutes (null = global config, -1 = vanilla, 0+ = custom)
+        private val SPAWNER_COOLDOWNS = listOf(
+            null to "Global Config",
+            -1 to "Vanilla (30m)",
+            0 to "No Cooldown",
+            5 to "5 minutes",
+            10 to "10 minutes",
+            15 to "15 minutes",
+            30 to "30 minutes",
+            60 to "1 hour"
+        )
     }
 
     fun build(player: Player): ChestGui {
@@ -83,6 +95,18 @@ class ChamberSettingsView(
                 clearLootOverride(player, VaultType.OMINOUS)
             }
         }, 6, 2)
+
+        // Row 3: Spawner cooldown configuration
+        pane.addItem(GuiItem(createSpawnerCooldownItem()) { event ->
+            event.isCancelled = true
+            if (event.isLeftClick) {
+                cycleSpawnerCooldown(player, 1)
+            } else if (event.isRightClick) {
+                cycleSpawnerCooldown(player, -1)
+            } else if (event.isShiftClick && event.isRightClick) {
+                clearSpawnerCooldown(player)
+            }
+        }, 4, 3)
 
         // Row 4: Navigation
         val backItem = ItemStack(Material.ARROW).apply {
@@ -216,6 +240,31 @@ class ChamberSettingsView(
         }
     }
 
+    private fun createSpawnerCooldownItem(): ItemStack {
+        val currentCooldown = chamber.spawnerCooldownMinutes
+        val currentName = SPAWNER_COOLDOWNS.find { it.first == currentCooldown }?.second
+            ?: if (currentCooldown == null) "Global Config" else "${currentCooldown}m"
+
+        return ItemStack(Material.SPAWNER).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(Component.text("Spawner Cooldown", NamedTextColor.LIGHT_PURPLE)
+                    .decoration(TextDecoration.BOLD, true))
+                lore(listOf(
+                    Component.text("How long spawners stay inactive", NamedTextColor.GRAY),
+                    Component.text("after players complete a wave", NamedTextColor.GRAY),
+                    Component.empty(),
+                    Component.text("Current: ", NamedTextColor.WHITE)
+                        .append(Component.text(currentName,
+                            if (currentCooldown != null) NamedTextColor.LIGHT_PURPLE else NamedTextColor.GRAY)),
+                    Component.empty(),
+                    Component.text("Left Click: Increase", NamedTextColor.GREEN),
+                    Component.text("Right Click: Decrease", NamedTextColor.RED),
+                    Component.text("Shift+Right: Use global config", NamedTextColor.YELLOW)
+                ))
+            }
+        }
+    }
+
     // ==================== Action Handlers ====================
 
     private fun cycleResetInterval(player: Player, direction: Int) {
@@ -233,14 +282,14 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.updateResetInterval(chamber.id, newInterval)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(Component.text("Reset interval set to $newName", NamedTextColor.GREEN))
+                    player.sendMessage(plugin.getMessage("gui-reset-interval-set", "value" to newName))
                     // Refresh the view
                     val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
                     if (refreshedChamber != null) {
                         menu.openChamberSettings(player, refreshedChamber)
                     }
                 } else {
-                    player.sendMessage(Component.text("Failed to update reset interval", NamedTextColor.RED))
+                    player.sendMessage(plugin.getMessage("gui-reset-interval-failed"))
                 }
             })
         }
@@ -257,13 +306,13 @@ class ChamberSettingsView(
             )
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(Component.text("Exit location set to your current position", NamedTextColor.GREEN))
+                    player.sendMessage(plugin.getMessage("gui-exit-location-set"))
                     val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
                     if (refreshedChamber != null) {
                         menu.openChamberSettings(player, refreshedChamber)
                     }
                 } else {
-                    player.sendMessage(Component.text("Failed to set exit location", NamedTextColor.RED))
+                    player.sendMessage(plugin.getMessage("gui-exit-location-failed"))
                 }
             })
         }
@@ -272,18 +321,18 @@ class ChamberSettingsView(
     private fun teleportToExit(player: Player) {
         val exitLoc = chamber.getExitLocation()
         if (exitLoc == null) {
-            player.sendMessage(Component.text("No exit location set for this chamber", NamedTextColor.RED))
+            player.sendMessage(plugin.getMessage("gui-no-exit-location"))
             return
         }
         player.teleport(exitLoc)
-        player.sendMessage(Component.text("Teleported to exit location", NamedTextColor.GREEN))
+        player.sendMessage(plugin.getMessage("gui-teleport-to-exit"))
         player.closeInventory()
     }
 
     private fun cycleLootTable(player: Player, vaultType: VaultType, direction: Int) {
         val tables = plugin.lootManager.getLootTableNames().sorted()
         if (tables.isEmpty()) {
-            player.sendMessage(Component.text("No loot tables available", NamedTextColor.RED))
+            player.sendMessage(plugin.getMessage("gui-no-loot-tables"))
             return
         }
 
@@ -305,13 +354,13 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, newTable)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(Component.text("${vaultType.displayName} loot table set to: $newTable", NamedTextColor.GREEN))
+                    player.sendMessage(plugin.getMessage("gui-loot-table-set", "type" to vaultType.displayName, "table" to newTable))
                     val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
                     if (refreshedChamber != null) {
                         menu.openChamberSettings(player, refreshedChamber)
                     }
                 } else {
-                    player.sendMessage(Component.text("Failed to set loot table", NamedTextColor.RED))
+                    player.sendMessage(plugin.getMessage("gui-loot-table-failed"))
                 }
             })
         }
@@ -322,13 +371,57 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, null)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(Component.text("${vaultType.displayName} loot table override cleared", NamedTextColor.GREEN))
+                    player.sendMessage(plugin.getMessage("gui-loot-table-cleared", "type" to vaultType.displayName))
                     val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
                     if (refreshedChamber != null) {
                         menu.openChamberSettings(player, refreshedChamber)
                     }
                 } else {
-                    player.sendMessage(Component.text("Failed to clear loot table override", NamedTextColor.RED))
+                    player.sendMessage(plugin.getMessage("gui-loot-clear-failed"))
+                }
+            })
+        }
+    }
+
+    private fun cycleSpawnerCooldown(player: Player, direction: Int) {
+        val currentIndex = SPAWNER_COOLDOWNS.indexOfFirst { it.first == chamber.spawnerCooldownMinutes }
+        val newIndex = if (currentIndex == -1) {
+            if (direction > 0) 0 else SPAWNER_COOLDOWNS.lastIndex
+        } else {
+            (currentIndex + direction).mod(SPAWNER_COOLDOWNS.size)
+        }
+
+        val newCooldown = SPAWNER_COOLDOWNS[newIndex].first
+        val newName = SPAWNER_COOLDOWNS[newIndex].second
+
+        plugin.launchAsync {
+            val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, newCooldown)
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (success) {
+                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-set", "value" to newName))
+                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
+                    if (refreshedChamber != null) {
+                        menu.openChamberSettings(player, refreshedChamber)
+                    }
+                } else {
+                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-failed"))
+                }
+            })
+        }
+    }
+
+    private fun clearSpawnerCooldown(player: Player) {
+        plugin.launchAsync {
+            val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, null)
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (success) {
+                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset"))
+                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
+                    if (refreshedChamber != null) {
+                        menu.openChamberSettings(player, refreshedChamber)
+                    }
+                } else {
+                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset-failed"))
                 }
             })
         }

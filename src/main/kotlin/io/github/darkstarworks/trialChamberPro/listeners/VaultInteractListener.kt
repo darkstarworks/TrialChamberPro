@@ -234,7 +234,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                             leftover.values.forEach { item ->
                                 player.world.dropItemNaturally(player.location, item)
                             }
-                            player.sendMessage("§eYour inventory was full! Some items were dropped.")
+                            player.sendMessage(plugin.getMessage("inventory-full"))
                         }
                     }
 

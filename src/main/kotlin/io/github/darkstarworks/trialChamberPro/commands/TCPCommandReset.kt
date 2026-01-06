@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.bukkit.command.CommandSender
+import org.bukkit.entity.Player
 
 private val resetCommandScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
@@ -16,7 +17,7 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
     }
 
     if (args.size < 2) {
-        sender.sendMessage("§cUsage: /tcp reset <chamber>")
+        sender.sendMessage(plugin.getMessage("usage-reset"))
         return
     }
 
@@ -31,7 +32,9 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
 
         sender.sendMessage(plugin.getMessage("chamber-resetting", "chamber" to chamberName))
 
-        val success = plugin.resetManager.resetChamber(chamber)
+        // Pass player for WorldEdit undo support if sender is a player
+        val initiatingPlayer = sender as? Player
+        val success = plugin.resetManager.resetChamber(chamber, initiatingPlayer)
         if (success) {
             sender.sendMessage(plugin.getMessage("reset-success", "chamber" to chamberName))
         } else {

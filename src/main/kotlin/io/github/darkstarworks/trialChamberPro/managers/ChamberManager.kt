@@ -529,6 +529,13 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      * Parses a chamber from a result set.
      */
     private fun parseChamber(rs: ResultSet): Chamber {
+        // Handle spawner_cooldown_minutes column which may not exist in older databases
+        val spawnerCooldown = try {
+            rs.getInt("spawner_cooldown_minutes").takeIf { !rs.wasNull() }
+        } catch (_: Exception) {
+            null // Column doesn't exist yet
+        }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -549,7 +556,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             lastReset = rs.getLong("last_reset").takeIf { !rs.wasNull() },
             createdAt = rs.getLong("created_at"),
             normalLootTable = rs.getString("normal_loot_table"),
-            ominousLootTable = rs.getString("ominous_loot_table")
+            ominousLootTable = rs.getString("ominous_loot_table"),
+            spawnerCooldownMinutes = spawnerCooldown
         )
     }
 
@@ -750,6 +758,52 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update exit location: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Updates the spawner cooldown for a chamber.
+     *
+     * @param chamberId The chamber ID
+     * @param cooldownMinutes The new cooldown in minutes (null = use global config, -1 = vanilla, 0 = no cooldown)
+     * @return True if successful
+     */
+    suspend fun updateSpawnerCooldown(chamberId: Int, cooldownMinutes: Int?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET spawner_cooldown_minutes = ? WHERE id = ?").use { stmt ->
+                    if (cooldownMinutes == null) {
+                        stmt.setNull(1, java.sql.Types.INTEGER)
+                    } else {
+                        stmt.setInt(1, cooldownMinutes)
+                    }
+                    stmt.setInt(2, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        // Refresh cache
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        val cooldownDesc = when (cooldownMinutes) {
+                            null -> "global config"
+                            -1 -> "vanilla default"
+                            0 -> "no cooldown"
+                            else -> "${cooldownMinutes}m"
+                        }
+                        plugin.logger.info("Updated spawner cooldown for chamber $chamberId to $cooldownDesc")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update spawner cooldown: ${e.message}")
             false
         }
     }

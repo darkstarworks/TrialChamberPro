@@ -30,6 +30,7 @@ import java.io.File
  * @property createdAt Creation timestamp in milliseconds
  * @property normalLootTable Per-chamber loot table override for normal vaults (nullable)
  * @property ominousLootTable Per-chamber loot table override for ominous vaults (nullable)
+ * @property spawnerCooldownMinutes Per-chamber spawner cooldown override in minutes (nullable = use global config, -1 = vanilla, 0 = no cooldown)
  */
 data class Chamber(
     val id: Int,
@@ -51,7 +52,8 @@ data class Chamber(
     val lastReset: Long? = null,
     val createdAt: Long,
     val normalLootTable: String? = null,
-    val ominousLootTable: String? = null
+    val ominousLootTable: String? = null,
+    val spawnerCooldownMinutes: Int? = null
 ) {
     /**
      * Gets the loot table override for a specific vault type.

@@ -555,6 +555,99 @@ spectate-exited: "&7Your spirit returns to the mortal plane."
 
 ---
 
+### GUI Action Messages
+
+```yaml
+# Chamber Operations
+gui-chamber-world-not-loaded: "&cChamber world not loaded!"
+gui-teleport-to-center: "&aTeleported to center of {chamber}"
+gui-forcing-reset: "&eForcing reset for '{chamber}'..."
+gui-chamber-reset-complete: "&aChamber '{chamber}' has been reset!"
+gui-reset-failed: "&cFailed to reset chamber: {error}"
+gui-no-players-in-chamber: "&eNo players are currently in this chamber."
+gui-players-ejected: "&aEjected {count} player(s) from '{chamber}'!"
+gui-reset-scheduled: "&eChamber '{chamber}' will reset in {seconds} seconds."
+gui-exit-scheduled: "&ePlayers will be ejected from '{chamber}' in {seconds} seconds."
+gui-exit-warning: "&cYou will be ejected from this chamber in {seconds} seconds!"
+gui-player-ejected: "&eYou have been ejected from the chamber!"
+
+# Snapshot Operations
+gui-no-snapshot-exists: "&cNo snapshot exists for this chamber!"
+gui-restoring-snapshot: "&eRestoring snapshot for '{chamber}'..."
+gui-snapshot-restored: "&aSnapshot restored!"
+gui-restore-failed: "&cFailed to restore: {error}"
+gui-creating-snapshot: "&eCreating snapshot for '{chamber}'..."
+gui-snapshot-created: "&aSnapshot created!"
+gui-snapshot-create-failed: "&cFailed to create snapshot: {error}"
+
+# Chamber Settings
+gui-reset-interval-set: "&aReset interval set to {value}"
+gui-reset-interval-failed: "&cFailed to update reset interval"
+gui-exit-location-set: "&aExit location set to your current position"
+gui-exit-location-failed: "&cFailed to set exit location"
+gui-no-exit-location: "&cNo exit location set for this chamber"
+gui-teleport-to-exit: "&aTeleported to exit location"
+gui-spawner-cooldown-set: "&aSpawner cooldown set to {value}"
+gui-spawner-cooldown-failed: "&cFailed to update spawner cooldown"
+gui-spawner-cooldown-reset: "&aSpawner cooldown reset to global config"
+
+# Loot Table Settings
+gui-no-loot-tables: "&cNo loot tables available"
+gui-loot-table-set: "&a{type} loot table set to: {table}"
+gui-loot-table-failed: "&cFailed to set loot table"
+gui-loot-table-cleared: "&a{type} loot table override cleared"
+gui-loot-clear-failed: "&cFailed to clear loot table override"
+
+# Settings Toggle
+gui-setting-toggled: "&a{setting}: {value}"
+gui-setting-enabled: "Enabled"
+gui-setting-disabled: "Disabled"
+
+# Loot Editor
+gui-hold-item-to-add: "&cHold an item to add!"
+gui-item-added-to-loot: "&aAdded {item} to loot table"
+gui-loot-changes-saved: "&aLoot table changes saved!"
+gui-loot-pool-saved: "&aPool '{pool}' changes saved!"
+
+# Info Messages
+gui-loot-table-edit-hint-1: "&eTo edit loot table '{table}':"
+gui-loot-table-edit-hint-2: "&71. Go to Chambers and select a chamber"
+gui-loot-table-edit-hint-3: "&72. Click Normal/Ominous Loot to edit"
+gui-loot-table-edit-hint-4: "&73. Or edit loot.yml directly"
+gui-pool-create-hint: "&eTo add a new pool, edit loot.yml directly and /tcp reload"
+gui-pool-create-coming-soon: "&7GUI pool creation coming soon!"
+```
+
+**Placeholders:**
+- `{chamber}` - Chamber name
+- `{count}` - Number of players
+- `{seconds}` - Time in seconds
+- `{error}` - Error message
+- `{value}` - Setting value (e.g., "5 minutes", "Enabled")
+- `{type}` - Vault/loot type: "Normal" or "Ominous"
+- `{table}` - Loot table name
+- `{item}` - Item type name
+- `{pool}` - Pool name
+- `{setting}` - Setting name
+
+**Customization:**
+
+Tech-style:
+```yaml
+gui-forcing-reset: "&7[SYSTEM] Initiating reset of &f{chamber}&7..."
+gui-chamber-reset-complete: "&a[COMPLETE] &7Chamber &f{chamber}&7 restored"
+gui-reset-scheduled: "&7[SCHEDULED] &f{chamber}&7 reset in &e{seconds}s"
+```
+
+Immersive:
+```yaml
+gui-forcing-reset: "&7The ancient magic begins to stir in &e{chamber}&7..."
+gui-chamber-reset-complete: "&d✦ &7The chamber &e{chamber}&7 has been renewed!"
+gui-player-ejected: "&7An unseen force gently pushes you from the chamber..."
+```
+
+---
+
 ### Help Messages
 
 ```yaml

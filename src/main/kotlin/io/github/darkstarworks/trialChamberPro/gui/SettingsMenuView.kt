@@ -167,10 +167,10 @@ class SettingsMenuView(
     }
 
     private fun reloadConfig(player: Player) {
-        player.sendMessage(Component.text("Reloading configuration...", NamedTextColor.YELLOW))
+        player.sendMessage(plugin.getMessage("config-reloading"))
 
         plugin.reloadPluginConfig()
 
-        player.sendMessage(Component.text("Configuration reloaded!", NamedTextColor.GREEN))
+        player.sendMessage(plugin.getMessage("config-reloaded"))
     }
 }

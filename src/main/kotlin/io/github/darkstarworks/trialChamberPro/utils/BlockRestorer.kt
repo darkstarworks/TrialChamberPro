@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Location
+import org.bukkit.entity.Player
 
 /**
  * Utility class for asynchronously restoring blocks from snapshots.
@@ -13,6 +14,10 @@ import org.bukkit.Location
  *
  * Folia compatible: Uses location-based scheduling to ensure blocks are
  * modified on the correct region thread.
+ *
+ * WorldEdit integration: When a player is provided and WorldEdit is available,
+ * block changes are recorded in WorldEdit's EditSession so they can be undone
+ * with //undo. This doesn't replace WorldEdit's undo queue - it adds to it.
  */
 class BlockRestorer(private val plugin: TrialChamberPro) {
 
@@ -23,16 +28,32 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
      * @param snapshot Map of locations to block snapshots
      * @param onProgress Optional callback for progress updates (processed, total)
      * @param onComplete Optional callback when restoration is complete
+     * @param initiatingPlayer Optional player who initiated the restoration (for WorldEdit undo support)
      */
     suspend fun restoreBlocks(
         snapshot: Map<Location, BlockSnapshot>,
         onProgress: ((Int, Int) -> Unit)? = null,
-        onComplete: (() -> Unit)? = null
+        onComplete: (() -> Unit)? = null,
+        initiatingPlayer: Player? = null
     ) {
         val blocksPerTick = plugin.config.getInt("global.blocks-per-tick", 500)
         val totalBlocks = snapshot.size
 
         plugin.logger.info("Starting block restoration: $totalBlocks blocks")
+
+        // Try to set up WorldEdit integration if player provided and WorldEdit available
+        val weSession = if (initiatingPlayer != null && WorldEditUtil.isAvailable()) {
+            try {
+                createWorldEditSession(initiatingPlayer, snapshot)
+            } catch (e: Exception) {
+                plugin.logger.warning("Failed to create WorldEdit session for undo support: ${e.message}")
+                null
+            }
+        } else null
+
+        if (weSession != null) {
+            plugin.logger.info("WorldEdit integration enabled - changes can be undone with //undo")
+        }
 
         // Group blocks by chunk for efficient processing
         val blocksByChunk = snapshot.entries.groupBy { it.key.chunk }
@@ -54,7 +75,12 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
                     plugin.scheduler.runAtLocation(representativeLocation, Runnable {
                         batch.forEach { (location, blockSnapshot) ->
                             try {
-                                restoreBlock(location, blockSnapshot)
+                                // Use WorldEdit if available, otherwise direct Bukkit API
+                                if (weSession != null) {
+                                    restoreBlockWithWorldEdit(location, blockSnapshot, weSession)
+                                } else {
+                                    restoreBlock(location, blockSnapshot)
+                                }
                                 processedBlocks++
                             } catch (e: Exception) {
                                 plugin.logger.warning(
@@ -73,6 +99,16 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
             }
         }
 
+        // Finalize WorldEdit session if used
+        if (weSession != null) {
+            try {
+                finalizeWorldEditSession(weSession, initiatingPlayer!!)
+                plugin.logger.info("WorldEdit session finalized - use //undo to revert changes")
+            } catch (e: Exception) {
+                plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
+            }
+        }
+
         plugin.logger.info("Block restoration complete: $processedBlocks/$totalBlocks blocks restored")
 
         // Call completion callback on main/global thread
@@ -80,6 +116,14 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
             onComplete?.invoke()
         })
     }
+
+    /**
+     * Holder for WorldEdit session data during restoration.
+     */
+    private data class WorldEditSessionData(
+        val editSession: Any, // com.sk89q.worldedit.EditSession
+        val localSession: Any  // com.sk89q.worldedit.LocalSession
+    )
 
     /**
      * Restores a single block from a snapshot.
@@ -210,5 +254,136 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
         }
 
         return result
+    }
+
+    // ==================== WorldEdit Integration ====================
+
+    /**
+     * Creates a WorldEdit EditSession for recording block changes.
+     * Uses reflection to work with WorldEdit's API without compile-time dependency.
+     */
+    private fun createWorldEditSession(player: Player, snapshot: Map<Location, BlockSnapshot>): WorldEditSessionData? {
+        if (snapshot.isEmpty()) return null
+
+        val firstLocation = snapshot.keys.first()
+        val world = firstLocation.world ?: return null
+
+        try {
+            // Get WorldEdit and FAWE classes via reflection
+            val worldEditClass = Class.forName("com.sk89q.worldedit.WorldEdit")
+            val bukkitAdapterClass = Class.forName("com.sk89q.worldedit.bukkit.BukkitAdapter")
+
+            // Get WorldEdit instance
+            val getInstanceMethod = worldEditClass.getMethod("getInstance")
+            val worldEditInstance = getInstanceMethod.invoke(null)
+
+            // Get session manager
+            val getSessionManagerMethod = worldEditClass.getMethod("getSessionManager")
+            val sessionManager = getSessionManagerMethod.invoke(worldEditInstance)
+
+            // Adapt player to WorldEdit actor
+            val adaptPlayerMethod = bukkitAdapterClass.getMethod("adapt", Player::class.java)
+            val actor = adaptPlayerMethod.invoke(null, player)
+
+            // Get player's local session
+            val sessionManagerClass = Class.forName("com.sk89q.worldedit.session.SessionManager")
+            val getMethod = sessionManagerClass.getMethod("get", Class.forName("com.sk89q.worldedit.extension.platform.SessionOwner"))
+            val localSession = getMethod.invoke(sessionManager, actor)
+
+            // Adapt world
+            val adaptWorldMethod = bukkitAdapterClass.getMethod("adapt", org.bukkit.World::class.java)
+            val weWorld = adaptWorldMethod.invoke(null, world)
+
+            // Create EditSession using builder pattern
+            val newEditSessionBuilderMethod = worldEditClass.getMethod("newEditSessionBuilder")
+            val builder = newEditSessionBuilderMethod.invoke(worldEditInstance)
+
+            val builderClass = builder.javaClass
+            val worldMethod = builderClass.getMethod("world", Class.forName("com.sk89q.worldedit.world.World"))
+            worldMethod.invoke(builder, weWorld)
+
+            val maxBlocksMethod = builderClass.getMethod("maxBlocks", Int::class.java)
+            maxBlocksMethod.invoke(builder, -1) // No limit
+
+            val buildMethod = builderClass.getMethod("build")
+            val editSession = buildMethod.invoke(builder)
+
+            return WorldEditSessionData(editSession, localSession)
+        } catch (e: Exception) {
+            plugin.logger.fine("WorldEdit integration not available: ${e.message}")
+            return null
+        }
+    }
+
+    /**
+     * Restores a block using WorldEdit's EditSession for undo support.
+     */
+    private fun restoreBlockWithWorldEdit(location: Location, snapshot: BlockSnapshot, weSession: WorldEditSessionData) {
+        try {
+            val bukkitAdapterClass = Class.forName("com.sk89q.worldedit.bukkit.BukkitAdapter")
+
+            // Parse block data
+            val blockDataString = resetTrialSpawnerState(snapshot.blockData)
+            val bukkitBlockData = Bukkit.createBlockData(blockDataString)
+
+            // Adapt to WorldEdit BlockState
+            val adaptBlockDataMethod = bukkitAdapterClass.getMethod("adapt", org.bukkit.block.data.BlockData::class.java)
+            val weBlockState = adaptBlockDataMethod.invoke(null, bukkitBlockData)
+
+            // Create BlockVector3
+            val blockVector3Class = Class.forName("com.sk89q.worldedit.math.BlockVector3")
+            val atMethod = blockVector3Class.getMethod("at", Int::class.java, Int::class.java, Int::class.java)
+            val position = atMethod.invoke(null, location.blockX, location.blockY, location.blockZ)
+
+            // Set block through EditSession
+            val editSessionClass = weSession.editSession.javaClass
+            val setBlockMethod = editSessionClass.getMethod("setBlock",
+                blockVector3Class,
+                Class.forName("com.sk89q.worldedit.world.block.BlockStateHolder"))
+            setBlockMethod.invoke(weSession.editSession, position, weBlockState)
+
+            // Handle tile entity data separately with Bukkit API (WorldEdit doesn't support all NBT)
+            snapshot.tileEntity?.let { tileEntityData ->
+                val block = location.block
+                val state = block.state
+                NBTUtil.restoreTileEntity(state, tileEntityData)
+            }
+        } catch (e: Exception) {
+            // Fall back to direct Bukkit API
+            restoreBlock(location, snapshot)
+        }
+    }
+
+    /**
+     * Finalizes the WorldEdit session by flushing changes and adding to undo history.
+     */
+    private fun finalizeWorldEditSession(weSession: WorldEditSessionData, player: Player) {
+        try {
+            // Flush the EditSession to apply all changes
+            val editSessionClass = weSession.editSession.javaClass
+
+            // Try to call flushSession() or close()
+            try {
+                val flushMethod = editSessionClass.getMethod("flushSession")
+                flushMethod.invoke(weSession.editSession)
+            } catch (_: NoSuchMethodException) {
+                // Try close() for AutoCloseable
+                try {
+                    val closeMethod = editSessionClass.getMethod("close")
+                    closeMethod.invoke(weSession.editSession)
+                } catch (_: Exception) {
+                    // Ignore if neither method exists
+                }
+            }
+
+            // Remember this session in player's undo history
+            val localSessionClass = weSession.localSession.javaClass
+            val rememberMethod = localSessionClass.getMethod("remember", editSessionClass.interfaces.first { it.simpleName == "EditSession" } ?: editSessionClass)
+            rememberMethod.invoke(weSession.localSession, weSession.editSession)
+
+            plugin.logger.info("WorldEdit undo history updated for ${player.name}")
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to finalize WorldEdit session: ${e.message}")
+        }
     }
 }

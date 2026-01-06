@@ -62,8 +62,8 @@ class PoolSelectorView(
 
             pane.addItem(GuiItem(newPoolItem) { event ->
                 event.isCancelled = true
-                player.sendMessage(Component.text("To add a new pool, edit loot.yml directly and /tcp reload", NamedTextColor.YELLOW))
-                player.sendMessage(Component.text("GUI pool creation coming soon!", NamedTextColor.GRAY))
+                player.sendMessage(plugin.getMessage("gui-pool-create-hint"))
+                player.sendMessage(plugin.getMessage("gui-pool-create-coming-soon"))
             }, col, row)
         }
 

@@ -244,6 +244,14 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
                         // Column already exists - this is expected on subsequent runs
                     }
                 }
+
+                // v1.2.13: Per-chamber spawner cooldown
+                try {
+                    stmt.execute("ALTER TABLE chambers ADD COLUMN spawner_cooldown_minutes INT")
+                    plugin.logger.info("Migration executed: Added spawner_cooldown_minutes column")
+                } catch (_: SQLException) {
+                    // Column already exists - this is expected on subsequent runs
+                }
             }
         }
     }

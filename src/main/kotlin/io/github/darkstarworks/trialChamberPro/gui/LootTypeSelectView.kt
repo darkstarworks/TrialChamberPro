@@ -169,17 +169,17 @@ class LootTypeSelectView(
         when {
             shift && right -> {
                 // Force reset immediately (async), then notify on player's region thread (Folia compatible)
-                player.sendMessage(Component.text("Forcing reset for '${chamber.name}'...", NamedTextColor.YELLOW))
+                player.sendMessage(plugin.getMessage("gui-forcing-reset", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
-                        plugin.resetManager.resetChamber(chamber)
+                        plugin.resetManager.resetChamber(chamber, player)
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(Component.text("Chamber '${chamber.name}' has been reset!", NamedTextColor.GREEN))
+                            player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
                             player.closeInventory()
                         })
                     } catch (e: Exception) {
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(Component.text("Failed to reset chamber: ${e.message}", NamedTextColor.RED))
+                            player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                         })
                     }
                 }
@@ -199,7 +199,7 @@ class LootTypeSelectView(
         val playersInChamber = chamber.getPlayersInside()
 
         if (playersInChamber.isEmpty()) {
-            player.sendMessage(Component.text("No players are currently in this chamber.", NamedTextColor.YELLOW))
+            player.sendMessage(plugin.getMessage("gui-no-players-in-chamber"))
             return
         }
 
@@ -207,7 +207,7 @@ class LootTypeSelectView(
             shift && right -> {
                 // Force exit immediately
                 exitPlayers(playersInChamber)
-                player.sendMessage(Component.text("Ejected ${playersInChamber.size} player(s) from '${chamber.name}'!", NamedTextColor.GREEN))
+                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersInChamber.size, "chamber" to chamber.name))
                 player.closeInventory()
             }
             left -> {
@@ -222,18 +222,18 @@ class LootTypeSelectView(
     }
 
     private fun scheduleReset(player: Player, seconds: Int) {
-        player.sendMessage(Component.text("Chamber '${chamber.name}' will reset in $seconds seconds.", NamedTextColor.YELLOW))
+        player.sendMessage(plugin.getMessage("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
 
         plugin.scheduler.runTaskLater(Runnable {
             plugin.launchAsync {
                 try {
-                    plugin.resetManager.resetChamber(chamber)
+                    plugin.resetManager.resetChamber(chamber, player)
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(Component.text("Chamber '${chamber.name}' has been reset!", NamedTextColor.GREEN))
+                        player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
                     })
                 } catch (e: Exception) {
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(Component.text("Failed to reset chamber: ${e.message}", NamedTextColor.RED))
+                        player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                     })
                 }
             }
@@ -241,19 +241,19 @@ class LootTypeSelectView(
     }
 
     private fun scheduleExit(player: Player, playersToExit: List<Player>, seconds: Int) {
-        player.sendMessage(Component.text("Players will be ejected from '${chamber.name}' in $seconds seconds.", NamedTextColor.YELLOW))
+        player.sendMessage(plugin.getMessage("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
 
         // Warn players inside - use entity scheduling for each player (Folia compatible)
         playersToExit.forEach { p ->
             plugin.scheduler.runAtEntity(p, Runnable {
-                p.sendMessage(Component.text("You will be ejected from this chamber in $seconds seconds!", NamedTextColor.RED))
+                p.sendMessage(plugin.getMessage("gui-exit-warning", "seconds" to seconds))
             })
         }
 
         plugin.scheduler.runTaskLater(Runnable {
             exitPlayers(playersToExit)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(Component.text("Ejected ${playersToExit.size} player(s) from '${chamber.name}'!", NamedTextColor.GREEN))
+                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
             })
         }, seconds * 20L)
     }
@@ -264,7 +264,7 @@ class LootTypeSelectView(
         players.forEach { p ->
             if (dest != null) {
                 p.teleport(dest)
-                p.sendMessage(Component.text("You have been ejected from the chamber!", NamedTextColor.YELLOW))
+                p.sendMessage(plugin.getMessage("gui-player-ejected"))
             }
         }
     }

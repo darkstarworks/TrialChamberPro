@@ -692,7 +692,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         // Notify player
-        player.sendMessage(colorize("§aYou received: ${reward.displayName}"))
+        player.sendMessage(plugin.getMessage("loot-received", "item" to reward.displayName))
     }
 
     /**

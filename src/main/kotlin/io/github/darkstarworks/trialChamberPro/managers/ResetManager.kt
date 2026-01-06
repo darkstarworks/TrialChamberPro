@@ -116,8 +116,11 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
     /**
      * Resets a chamber completely.
+     *
+     * @param chamber The chamber to reset
+     * @param initiatingPlayer Optional player who initiated the reset (for WorldEdit undo support)
      */
-    suspend fun resetChamber(chamber: Chamber): Boolean = withContext(Dispatchers.IO) {
+    suspend fun resetChamber(chamber: Chamber, initiatingPlayer: Player? = null): Boolean = withContext(Dispatchers.IO) {
         plugin.logger.info("Resetting chamber: ${chamber.name}")
 
         try {
@@ -136,7 +139,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
             // Step 3: Restore from snapshot
             val snapshotFile = chamber.getSnapshotFile()
             if (snapshotFile != null && snapshotFile.exists()) {
-                restoreFromSnapshot(chamber, snapshotFile)
+                restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
             } else {
                 plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
             }
@@ -332,9 +335,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
      * and will drop trial keys again (50% chance per player per vanilla behavior).
      *
      * Folia compatible: Uses location-based scheduling.
+     *
+     * @param chamber The chamber to reset spawners in
+     * @param cooldownMinutesOverride Optional per-chamber cooldown override (null = use global config)
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun resetTrialSpawners(chamber: Chamber) {
+    private suspend fun resetTrialSpawners(chamber: Chamber, cooldownMinutesOverride: Int? = null) {
         withTimeout(10000) {  // 10 second timeout for larger chambers
             val chamberCenter = Location(
                 chamber.getWorld(),
@@ -353,6 +359,11 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
                         var resetCount = 0
                         val resetOminous = plugin.config.getBoolean("reset.reset-ominous-spawners", true)
+
+                        // Get cooldown setting: per-chamber override > global config > vanilla default (-1)
+                        val cooldownMinutes = cooldownMinutesOverride
+                            ?: chamber.spawnerCooldownMinutes
+                            ?: plugin.config.getInt("reset.spawner-cooldown-minutes", -1)
 
                         // Scan chamber for trial spawners
                         for (x in chamber.minX..chamber.maxX) {
@@ -377,6 +388,15 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                                 state.isOminous = false
                                             }
 
+                                            // Apply custom cooldown if configured
+                                            // -1 = vanilla default (don't change)
+                                            // 0 = no cooldown (immediate reactivation)
+                                            // >0 = custom cooldown in minutes
+                                            if (cooldownMinutes >= 0) {
+                                                val cooldownTicks = cooldownMinutes * 60 * 20 // minutes to ticks
+                                                state.cooldownLength = cooldownTicks
+                                            }
+
                                             // Commit changes
                                             state.update(true, false)
                                             resetCount++
@@ -387,7 +407,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
                         }
 
                         if (resetCount > 0) {
-                            plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name}")
+                            val cooldownInfo = when {
+                                cooldownMinutes < 0 -> "vanilla default"
+                                cooldownMinutes == 0 -> "no cooldown"
+                                else -> "${cooldownMinutes}m cooldown"
+                            }
+                            plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name} ($cooldownInfo)")
                         }
 
                         continuation.resume(Unit) {}
@@ -402,8 +427,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
     /**
      * Restores the chamber from a snapshot.
+     *
+     * @param chamber The chamber being restored
+     * @param snapshotFile The snapshot file to restore from
+     * @param initiatingPlayer Optional player who initiated the restoration (for WorldEdit undo support)
      */
-    private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File) {
+    private suspend fun restoreFromSnapshot(chamber: Chamber, snapshotFile: File, initiatingPlayer: Player? = null) {
         plugin.logger.info("Restoring chamber ${chamber.name} from snapshot")
 
         val snapshot = plugin.snapshotManager.loadSnapshot(snapshotFile)
@@ -422,16 +451,20 @@ class ResetManager(private val plugin: TrialChamberPro) {
             },
             onComplete = {
                 plugin.logger.info("Restored ${snapshot.size} blocks for chamber ${chamber.name}")
-            }
+            },
+            initiatingPlayer = initiatingPlayer
         )
     }
 
     /**
      * Forces an immediate reset of a chamber.
+     *
+     * @param chamberName The name of the chamber to reset
+     * @param initiatingPlayer Optional player who initiated the reset (for WorldEdit undo support)
      */
-    suspend fun forceReset(chamberName: String): Boolean {
+    suspend fun forceReset(chamberName: String, initiatingPlayer: Player? = null): Boolean {
         val chamber = plugin.chamberManager.getChamber(chamberName) ?: return false
-        return resetChamber(chamber)
+        return resetChamber(chamber, initiatingPlayer)
     }
 
     /**

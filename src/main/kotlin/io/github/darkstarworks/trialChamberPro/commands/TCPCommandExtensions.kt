@@ -18,14 +18,14 @@ fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
     }
 
     if (args.size < 2) {
-        sender.sendMessage("§cUsage: /tcp vault reset <chamber> <player> [normal|ominous]")
+        sender.sendMessage(plugin.getMessage("usage-vault-reset"))
         return
     }
 
     when (args[1].lowercase()) {
         "reset" -> {
             if (args.size < 4) {
-                sender.sendMessage("§cUsage: /tcp vault reset <chamber> <player> [normal|ominous]")
+                sender.sendMessage(plugin.getMessage("usage-vault-reset"))
                 return
             }
 
@@ -70,7 +70,7 @@ fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
             }
         }
         else -> {
-            sender.sendMessage("§cUsage: /tcp vault reset <chamber> <player> [normal|ominous]")
+            sender.sendMessage(plugin.getMessage("usage-vault-reset"))
         }
     }
 }
@@ -82,14 +82,14 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
     }
 
     if (args.size < 2) {
-        sender.sendMessage("§cUsage: /tcp key give <player> <amount> [normal|ominous]")
+        sender.sendMessage(plugin.getMessage("usage-key-give"))
         return
     }
 
     when (args[1].lowercase()) {
         "give" -> {
             if (args.size < 4) {
-                sender.sendMessage("§cUsage: /tcp key give <player> <amount> [normal|ominous]")
+                sender.sendMessage(plugin.getMessage("usage-key-give"))
                 return
             }
 
@@ -105,7 +105,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
 
             val targetPlayer = Bukkit.getPlayer(playerName)
             if (targetPlayer == null) {
-                sender.sendMessage("§cPlayer not found or not online.")
+                sender.sendMessage(plugin.getMessage("error-player-not-found"))
                 return
             }
 
@@ -115,7 +115,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
                     try {
                         Material.valueOf("OMINOUS_TRIAL_KEY")
                     } catch (_: IllegalArgumentException) {
-                        sender.sendMessage("§cOminous Trial Keys are not available in this server version.")
+                        sender.sendMessage(plugin.getMessage("error-ominous-key-unavailable"))
                         return
                     }
                 }
@@ -133,14 +133,14 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
         }
         "check" -> {
             if (args.size < 3) {
-                sender.sendMessage("§cUsage: /tcp key check <player>")
+                sender.sendMessage(plugin.getMessage("usage-key-check"))
                 return
             }
 
             val playerName = args[2]
             val targetPlayer = Bukkit.getPlayer(playerName)
             if (targetPlayer == null) {
-                sender.sendMessage("§cPlayer not found or not online.")
+                sender.sendMessage(plugin.getMessage("error-player-not-found"))
                 return
             }
 
@@ -170,7 +170,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
             ))
         }
         else -> {
-            sender.sendMessage("§cUsage: /tcp key <give|check>")
+            sender.sendMessage(plugin.getMessage("usage-key"))
         }
     }
 }
