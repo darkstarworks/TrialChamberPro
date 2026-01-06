@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.2.16"
+version = "1.2.17"
 
 repositories {
     mavenCentral()

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.17] - 2026-01-06
+### Added
+- **Wild Spawner Cooldown Configuration**: Control cooldown for trial spawners OUTSIDE registered chambers
+  - New config option: `reset.wild-spawner-cooldown-minutes`
+  - Values: `-1` = vanilla default (30 min), `0` = no cooldown (instant reactivation), `1-60` = custom minutes
+  - Applies server-wide to all unregistered Trial Chamber spawners
+  - Useful for servers wanting consistent spawner behavior across the world
+  - Boss bar wave tracking now also works for wild spawners (not just registered chambers)
+
+### Technical Details
+- `SpawnerWaveListener` now tracks and configures wild spawner cooldowns
+- Cooldown is set once per wave start (not on every mob spawn) to avoid repeated `state.update()` calls
+- Uses `TrialSpawner.cooldownLength` property from Paper API
+- Debug logging available with `debug.verbose-logging: true`
+
 ## [1.2.16] - 2026-01-06
 ### Fixed
 - **Thread Safety Improvements**: Fixed multiple concurrency issues discovered during code review
@@ -796,6 +811,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.16...v1.2.17
 [1.2.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.15...v1.2.16
 [1.2.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.14...v1.2.15
 [1.2.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.13...v1.2.14

@@ -26,6 +26,7 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
     /**
      * Handles mob spawns from trial spawners.
+     * Tracks spawns from both registered chambers and wild spawners.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onCreatureSpawn(event: CreatureSpawnEvent) {
@@ -43,24 +44,67 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         // Find the trial spawner that spawned this mob (search nearby)
         val spawnerLocation = findNearbyTrialSpawner(location) ?: return
 
-        // Check if spawner is within a registered chamber
-        val chamber = plugin.chamberManager.getCachedChamberAt(spawnerLocation)
-        if (chamber == null) {
-            // Not in a tracked chamber, ignore
-            return
-        }
-
         // Determine if ominous from spawner block state
         val world = spawnerLocation.world ?: return
         val block = world.getBlockAt(spawnerLocation)
         val isOminous = isTrialSpawnerOminous(block)
 
-        // Record the spawn
+        // Check if spawner is within a registered chamber
+        val chamber = plugin.chamberManager.getCachedChamberAt(spawnerLocation)
+
+        if (chamber == null) {
+            // Wild spawner - configure cooldown if setting is enabled
+            configureWildSpawnerCooldown(block, isOminous)
+        }
+
+        // Record the spawn (for both chamber and wild spawners)
         plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, entity, isOminous)
 
         // Add nearby players to the wave tracking
         location.getNearbyPlayers(detectionRadius.toDouble()).forEach { player ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
+        }
+    }
+
+    /**
+     * Configures cooldown for wild spawners (outside registered chambers).
+     * Only modifies cooldown if reset.wild-spawner-cooldown-minutes is configured (not -1).
+     * Called once per wave start (checks if wave already exists).
+     */
+    private fun configureWildSpawnerCooldown(block: org.bukkit.block.Block, isOminous: Boolean) {
+        val wildCooldownMinutes = plugin.config.getInt("reset.wild-spawner-cooldown-minutes", -1)
+        if (wildCooldownMinutes == -1) return // Use vanilla default
+
+        // Check if we've already configured this spawner in this wave
+        // Only configure once per wave start to avoid repeated state.update() calls
+        val existingWave = plugin.spawnerWaveManager.getWaveAt(block.location)
+        if (existingWave != null) {
+            return // Already tracking this spawner, cooldown already configured
+        }
+
+        try {
+            val state = block.state
+            if (state is org.bukkit.block.TrialSpawner) {
+                val cooldownTicks = if (wildCooldownMinutes == 0) {
+                    1 // Minimum 1 tick to avoid potential issues
+                } else {
+                    wildCooldownMinutes * 60 * 20 // Convert minutes to ticks
+                }
+
+                state.cooldownLength = cooldownTicks
+                state.update()
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    val typeStr = if (isOminous) "ominous" else "normal"
+                    plugin.logger.info("[WildSpawner] Configured $typeStr spawner at " +
+                        "${block.location.blockX},${block.location.blockY},${block.location.blockZ} " +
+                        "with cooldown: ${wildCooldownMinutes}min (${cooldownTicks} ticks)")
+                }
+            }
+        } catch (e: Exception) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.warning("[WildSpawner] Failed to configure cooldown: ${e.message}")
+            }
         }
     }
 
@@ -81,6 +125,7 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
     /**
      * Adds players to boss bar when they approach trial spawners.
+     * Works for both registered chambers and wild spawners.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onPlayerMove(event: PlayerMoveEvent) {
@@ -98,11 +143,8 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val player = event.player
         val location = to
 
-        // Check if player is in a chamber
-        val chamber = plugin.chamberManager.getCachedChamberAt(location)
-        if (chamber == null) return
-
         // Find nearby trial spawners and add player to their waves
+        // Works for both chamber spawners and wild spawners
         findNearbyTrialSpawners(location, detectionRadius).forEach { spawnerLocation ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
         }

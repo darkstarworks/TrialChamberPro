@@ -142,6 +142,28 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 **Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
 {% endhint %}
 
+### `wild-spawner-cooldown-minutes`
+**Default:** `-1` (vanilla behavior)
+**Unit:** Minutes
+
+Control cooldown for trial spawners **outside** of registered chambers (wild/unregistered Trial Chambers). This is a server-wide setting that affects all spawners not managed by TrialChamberPro.
+
+**Values:**
+- `-1` = Use vanilla default (30 minutes)
+- `0` = No cooldown (spawners reactivate immediately)
+- `1-60` = Custom cooldown in minutes
+
+{% hint style="info" %}
+**Use Cases:**
+- **Server-wide fast farming:** Set to `0` for all wild spawners to reactivate instantly
+- **Consistent experience:** Match wild spawner behavior to your chamber settings
+- **Vanilla purists:** Keep at `-1` to leave unregistered chambers untouched
+{% endhint %}
+
+{% hint style="warning" %}
+**Bonus Feature:** When this setting is enabled (not -1), spawner wave tracking (boss bars) will also work in wild Trial Chambers, giving players progress feedback even in unregistered chambers!
+{% endhint %}
+
 ---
 
 ## 🔒 Vault Settings

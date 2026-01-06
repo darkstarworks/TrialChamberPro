@@ -96,6 +96,12 @@ reset:
   # Set to a positive number for custom cooldown in minutes
   spawner-cooldown-minutes: -1
 
+  # Wild spawner cooldown (spawners OUTSIDE of registered chambers)
+  # Same values as spawner-cooldown-minutes:
+  # -1 = vanilla default (30 minutes), 0 = no cooldown, 1-60 = custom minutes
+  # This allows controlling cooldown for unregistered Trial Chambers server-wide
+  wild-spawner-cooldown-minutes: -1
+
 # Performance
 performance:
   cache-chamber-lookups: true

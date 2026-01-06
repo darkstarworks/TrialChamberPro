@@ -1,10 +1,10 @@
 <black>.
+<aqua>[1.2.17] <gray>- <white>2026-01-06
+<lime>+ <white>Wild spawner cooldown: Configure cooldown for spawners outside chambers.
+<lime>+ <white>New config: reset.wild-spawner-cooldown-minutes (-1/0/custom).
+<lime>+ <white>Boss bar wave tracking now works for wild spawners too.
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 <aqua>[1.2.16] <gray>- <white>2026-01-06
 <lime>+ <white>Full message localization: boss bar, commands, info display.
 <lime>+ <white>All user-facing text now translatable via messages.yml.
-<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-<aqua>[1.2.15] <gray>- <white>2026-01-06
-<yellow>! <white>FIXED: <red>Spawner cooldown config <yellow>now works (was being overwritten).
-<yellow>! <white>FIXED: <red>Thread safety <yellow>issues in managers and listeners.
-<yellow>! <white>FIXED: <red>Memory leak <yellow>in VaultInteractListener on plugin disable.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _

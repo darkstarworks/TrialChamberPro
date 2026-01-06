@@ -495,27 +495,64 @@ time-seconds: "{seconds}s"
 
 ---
 
+### System Messages
+
+```yaml
+plugin-starting-up: "&eTrialChamberPro is still starting up. Please try again in a moment..."
+```
+
+Shown when commands are used before the plugin finishes async initialization.
+
+---
+
+### Info Display Format
+
+```yaml
+# Used in /tcp info output
+info-exit-location-set: "&a{x}, {y}, {z}"
+info-exit-location-not-set: "&cNot set"
+info-snapshot-created: "&aCreated"
+info-snapshot-not-created: "&cNot created"
+```
+
+**Placeholders:**
+- `{x}`, `{y}`, `{z}` - Coordinates
+
+These are displayed as values in the chamber info command output.
+
+---
+
 ### Spawner Waves
 
 ```yaml
 spawner-wave-complete: "&a✓ {type} Spawner wave complete! &7Killed &e{killed}&7 mobs in &f{duration}"
+
+# Boss bar messages (no prefix added - displayed on boss bar)
+spawner-wave-boss-bar-complete: "Wave Complete!"
+spawner-wave-boss-bar-ominous: "Ominous Trial - Wave {wave}"
+spawner-wave-boss-bar-normal: "Trial Spawner - Wave {wave}"
+spawner-wave-boss-bar-progress: "{type} - {killed}/{total}"
 ```
 
 **Placeholders:**
 - `{type}` - Spawner type: "Trial" or "Ominous"
 - `{killed}` - Number of mobs killed
+- `{total}` - Total mobs expected
 - `{duration}` - Time to complete (e.g., "1m 30s")
+- `{wave}` - Wave number
 
 **Examples:**
 
 Celebratory:
 ```yaml
 spawner-wave-complete: "&6🎉 &e{type} Wave Cleared! &7{killed} mobs defeated in {duration}!"
+spawner-wave-boss-bar-complete: "✓ Victory!"
 ```
 
 Competitive:
 ```yaml
 spawner-wave-complete: "&a[WAVE COMPLETE] &7{killed} kills in &f{duration}"
+spawner-wave-boss-bar-progress: "{killed}/{total} eliminated"
 ```
 
 ---
