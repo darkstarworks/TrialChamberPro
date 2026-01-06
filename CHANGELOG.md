@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [1.2.17] - 2026-01-06
+## [1.2.18] - 2026-01-07
+### Fixed
+- **Wild Spawner Cooldown Not Working**: Fixed cooldown setting having no effect on wild spawners
+  - Root cause: Cooldown was set at wave start, but spawner caches cooldown value at that point
+  - Fix: Now sets cooldown at **wave completion** (before spawner enters cooldown state)
+  - For `cooldown-minutes: 0`: Also clears tracked players/entities for true instant reactivation
+
+### Technical Details
+- `SpawnerWaveManager.configureWildSpawnerCooldownAtCompletion()` handles the timing
+- For cooldown=0: Calls `stopTrackingPlayer()` and `stopTrackingEntity()` so spawner reactivates for same players
+- Debug logging available with `debug.verbose-logging: true`
+
+## [1.2.17] - 2026-01-07
 ### Added
 - **Wild Spawner Cooldown Configuration**: Control cooldown for trial spawners OUTSIDE registered chambers
   - New config option: `reset.wild-spawner-cooldown-minutes`
@@ -14,10 +26,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Boss bar wave tracking now also works for wild spawners (not just registered chambers)
 
 ### Technical Details
-- `SpawnerWaveListener` now tracks and configures wild spawner cooldowns
-- Cooldown is set once per wave start (not on every mob spawn) to avoid repeated `state.update()` calls
+- `SpawnerWaveListener` tracks spawns from wild spawners and adds them to wave tracking
 - Uses `TrialSpawner.cooldownLength` property from Paper API
-- Debug logging available with `debug.verbose-logging: true`
 
 ## [1.2.16] - 2026-01-06
 ### Fixed
@@ -811,6 +821,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.17...v1.2.18
 [1.2.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.16...v1.2.17
 [1.2.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.15...v1.2.16
 [1.2.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.14...v1.2.15

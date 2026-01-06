@@ -7,6 +7,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.Material
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -236,6 +237,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                 "duration=${durationSeconds}s")
         }
 
+        // Configure cooldown for wild spawners (must be done BEFORE spawner enters cooldown state)
+        configureWildSpawnerCooldownAtCompletion(wave)
+
         // Award bonus stats to participants
         if (plugin.config.getBoolean("spawner-waves.award-stats", true)) {
             wave.participatingPlayers.forEach { playerUUID ->
@@ -275,6 +279,80 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         } ?: run {
             // No boss bar, clean up immediately
             activeWaves.remove(wave.spawnerId)
+        }
+    }
+
+    /**
+     * Configures cooldown for wild spawners at wave completion.
+     * This is the critical timing - must be set BEFORE the spawner transitions to cooldown state.
+     * For registered chambers, cooldown is handled by ResetManager during chamber reset.
+     *
+     * When cooldown is 0, also clears tracked players so the spawner can reactivate for them.
+     */
+    private fun configureWildSpawnerCooldownAtCompletion(wave: WaveState) {
+        val wildCooldownMinutes = plugin.config.getInt("reset.wild-spawner-cooldown-minutes", -1)
+        if (wildCooldownMinutes == -1) return // Use vanilla default
+
+        // Check if this spawner is in a registered chamber
+        val chamber = plugin.chamberManager.getCachedChamberAt(wave.location)
+        if (chamber != null) {
+            // Registered chamber - cooldown handled by ResetManager
+            return
+        }
+
+        try {
+            val world = wave.location.world ?: return
+            val block = world.getBlockAt(wave.location)
+
+            if (block.type != Material.TRIAL_SPAWNER) {
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.warning("[WildSpawner] Block at ${wave.location} is not a trial spawner")
+                }
+                return
+            }
+
+            val state = block.state
+            if (state is org.bukkit.block.TrialSpawner) {
+                val cooldownTicks = if (wildCooldownMinutes == 0) {
+                    1 // Minimum 1 tick to avoid potential issues
+                } else {
+                    wildCooldownMinutes * 60 * 20 // Convert minutes to ticks
+                }
+
+                state.cooldownLength = cooldownTicks
+
+                // For instant reactivation (cooldown 0), also clear tracked players
+                // so the spawner will activate again for the same players
+                if (wildCooldownMinutes == 0) {
+                    val trackedPlayers = state.trackedPlayers.toList() // Copy to avoid CME
+                    trackedPlayers.forEach { player ->
+                        state.stopTrackingPlayer(player)
+                    }
+                    // Also clear tracked entities (spawned mobs)
+                    val trackedEntities = state.trackedEntities.toList()
+                    trackedEntities.forEach { entity ->
+                        state.stopTrackingEntity(entity)
+                    }
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[WildSpawner] Cleared ${trackedPlayers.size} tracked players " +
+                            "and ${trackedEntities.size} tracked entities for instant reactivation")
+                    }
+                }
+
+                state.update()
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    val typeStr = if (wave.isOminous) "ominous" else "normal"
+                    plugin.logger.info("[WildSpawner] Set $typeStr spawner cooldown at wave completion: " +
+                        "${wave.location.blockX},${wave.location.blockY},${wave.location.blockZ} " +
+                        "cooldown=${wildCooldownMinutes}min (${cooldownTicks} ticks)")
+                }
+            }
+        } catch (e: Exception) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.warning("[WildSpawner] Failed to configure cooldown at completion: ${e.message}")
+            }
         }
     }
 
