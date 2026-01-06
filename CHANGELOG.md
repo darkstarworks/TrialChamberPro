@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.15] - 2026-01-06
+### Fixed
+- **CRITICAL: Spawner Cooldown Config Not Working**: Fixed `spawner-cooldown-minutes` setting having no effect
+  - Root cause: NBTUtil was restoring the old cooldown from snapshot data, overwriting the config value
+  - Fix: Removed cooldown restoration from NBTUtil - cooldown is now controlled exclusively by config
+  - Added 200ms safety delay between block restoration and spawner reset to ensure proper ordering
+  - Now works correctly with all values: 0 (no cooldown), -1 (vanilla default), or custom minutes
+  - Debug logging available with `debug.verbose-logging: true` to troubleshoot cooldown issues
+
+### Technical Details
+- `NBTUtil.restoreTrialSpawner()` no longer restores `cooldownLength` from snapshot data
+- `ResetManager.resetTrialSpawners()` now has comprehensive debug logging for cooldown configuration
+- Added verification check after `state.update()` to detect if cooldown was properly applied
+
+## [1.2.14] - 2026-01-06
+### Added
+- **Disable Automatic Resets**: Set `default-reset-interval: 0` to disable automatic chamber resets
+  - Chambers will only reset via manual `/tcp reset <chamber>` command or GUI
+  - Per-chamber override available in Chamber Settings GUI with "Disabled" option
+  - Useful for event chambers or manually-controlled dungeons
+
+### Technical Details
+- `ResetManager.scheduleResetIfNeeded()` now skips scheduling when `resetInterval <= 0`
+- Added "Disabled" preset to `ChamberSettingsView` reset interval options
+
 ## [1.2.13] - 2026-01-06
 ### Added
 - **Configurable Trial Spawner Cooldown**: Control how long trial spawners stay in cooldown after being completed
@@ -744,6 +769,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.15]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.14...v1.2.15
+[1.2.14]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.13...v1.2.14
 [1.2.13]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.12...v1.2.13
 [1.2.12]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.11...v1.2.12
 [1.2.11]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.10...v1.2.11

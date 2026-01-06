@@ -23,8 +23,9 @@ class ChamberSettingsView(
     private val chamber: Chamber
 ) {
     companion object {
-        // Reset interval presets in seconds
+        // Reset interval presets in seconds (0 = disabled)
         private val RESET_INTERVALS = listOf(
+            0L to "Disabled",
             3600L to "1 hour",
             6 * 3600L to "6 hours",
             12 * 3600L to "12 hours",

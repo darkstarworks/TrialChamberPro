@@ -13,7 +13,10 @@ database:
 
 # Global chamber settings
 global:
-  default-reset-interval: 172800 # 48 hours in seconds
+  # Default reset interval in seconds
+  # Set to 0 to disable automatic resets (manual reset only via /tcp reset or GUI)
+  # Common values: 86400 (daily), 172800 (48h), 604800 (weekly)
+  default-reset-interval: 172800
   reset-warning-times: [300, 60, 30] # Warnings in seconds before reset
   teleport-players-on-reset: true
   teleport-location: EXIT_POINT # EXIT_POINT, OUTSIDE_BOUNDS, or WORLD_SPAWN

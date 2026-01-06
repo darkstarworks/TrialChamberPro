@@ -48,10 +48,17 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
     /**
      * Schedules a reset for a chamber if it's due.
+     * If resetInterval is <= 0, automatic resets are disabled for this chamber.
      */
     private suspend fun scheduleResetIfNeeded(chamber: Chamber) {
         // Skip if already scheduled
         if (scheduledResets.containsKey(chamber.id)) return
+
+        // Skip if automatic resets are disabled (resetInterval <= 0)
+        if (chamber.resetInterval <= 0) {
+            plugin.logger.fine("Automatic resets disabled for chamber ${chamber.name} (interval: ${chamber.resetInterval})")
+            return
+        }
 
         val lastReset = chamber.lastReset ?: chamber.createdAt
         val resetIntervalMs = chamber.resetInterval * 1000
@@ -140,11 +147,17 @@ class ResetManager(private val plugin: TrialChamberPro) {
             val snapshotFile = chamber.getSnapshotFile()
             if (snapshotFile != null && snapshotFile.exists()) {
                 restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
+
+                // Small delay to ensure all scheduled block restoration tasks complete
+                // before we modify spawner state. This is important because restoreBlocks()
+                // schedules tasks asynchronously and returns before they complete.
+                delay(200)
             } else {
                 plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
             }
 
             // Step 4: Reset trial spawners (clear tracked players so they drop keys again)
+            // This runs AFTER block restoration completes to apply config-based cooldown
             if (plugin.config.getBoolean("reset.reset-trial-spawners", true)) {
                 resetTrialSpawners(chamber)
             }
@@ -365,6 +378,13 @@ class ResetManager(private val plugin: TrialChamberPro) {
                             ?: chamber.spawnerCooldownMinutes
                             ?: plugin.config.getInt("reset.spawner-cooldown-minutes", -1)
 
+                        val verboseLogging = plugin.config.getBoolean("debug.verbose-logging", false)
+                        if (verboseLogging) {
+                            plugin.logger.info("[SpawnerReset] Chamber: ${chamber.name}, cooldownMinutes: $cooldownMinutes " +
+                                "(override: $cooldownMinutesOverride, perChamber: ${chamber.spawnerCooldownMinutes}, " +
+                                "config: ${plugin.config.getInt("reset.spawner-cooldown-minutes", -1)})")
+                        }
+
                         // Scan chamber for trial spawners
                         for (x in chamber.minX..chamber.maxX) {
                             for (y in chamber.minY..chamber.maxY) {
@@ -373,6 +393,8 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                     if (block.type == Material.TRIAL_SPAWNER) {
                                         val state = block.state
                                         if (state is org.bukkit.block.TrialSpawner) {
+                                            val oldCooldown = state.cooldownLength
+
                                             // Clear tracked players - KEY fix for trial key drops!
                                             state.trackedPlayers.forEach { player ->
                                                 state.stopTrackingPlayer(player)
@@ -395,10 +417,26 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                             if (cooldownMinutes >= 0) {
                                                 val cooldownTicks = cooldownMinutes * 60 * 20 // minutes to ticks
                                                 state.cooldownLength = cooldownTicks
+
+                                                if (verboseLogging) {
+                                                    plugin.logger.info("[SpawnerReset] Spawner at ${block.x},${block.y},${block.z}: " +
+                                                        "cooldown $oldCooldown -> $cooldownTicks ticks (${cooldownMinutes}m)")
+                                                }
                                             }
 
                                             // Commit changes
                                             state.update(true, false)
+
+                                            // Verify the change was applied (debug)
+                                            if (verboseLogging && cooldownMinutes >= 0) {
+                                                val newState = block.state as? org.bukkit.block.TrialSpawner
+                                                val actualCooldown = newState?.cooldownLength ?: -1
+                                                val cooldownTicks = cooldownMinutes * 60 * 20
+                                                if (actualCooldown != cooldownTicks) {
+                                                    plugin.logger.warning("[SpawnerReset] MISMATCH! Expected $cooldownTicks but got $actualCooldown")
+                                                }
+                                            }
+
                                             resetCount++
                                         }
                                     }
@@ -409,8 +447,8 @@ class ResetManager(private val plugin: TrialChamberPro) {
                         if (resetCount > 0) {
                             val cooldownInfo = when {
                                 cooldownMinutes < 0 -> "vanilla default"
-                                cooldownMinutes == 0 -> "no cooldown"
-                                else -> "${cooldownMinutes}m cooldown"
+                                cooldownMinutes == 0 -> "no cooldown (0 ticks)"
+                                else -> "${cooldownMinutes}m cooldown (${cooldownMinutes * 60 * 20} ticks)"
                             }
                             plugin.logger.info("Reset $resetCount trial spawners in chamber ${chamber.name} ($cooldownInfo)")
                         }

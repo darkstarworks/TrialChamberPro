@@ -66,10 +66,15 @@ global:
 
 How long before chambers automatically reset. This is the default for ALL chambers unless overridden per-chamber.
 
-**Common values:**
+**Values:**
+- `0` or negative = **Disabled** (no automatic resets)
 - Daily: `86400`
 - Twice daily: `43200`
 - Weekly: `604800`
+
+{% hint style="info" %}
+**Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/tcp reset <chamber>` or the GUI.
+{% endhint %}
 
 ### `reset-warning-times`
 **Default:** `[300, 60, 30]`
@@ -561,6 +566,8 @@ Enable detailed logging for debugging. Logs include:
 - Block state information
 - Vault saving and updates
 - Loot roll calculations
+- Spawner wave tracking (mob spawns, deaths, wave completion)
+- **Spawner cooldown configuration** (v1.2.15+): Shows config values, old→new cooldown for each spawner, and verification that changes were applied
 
 **Version 1.1.9+:** When enabled, displays a prominent startup banner on server start:
 ```

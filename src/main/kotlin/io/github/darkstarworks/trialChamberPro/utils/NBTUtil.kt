@@ -96,6 +96,10 @@ object NBTUtil {
      * Restores Trial Spawner data and resets its state.
      * CRITICAL: This clears tracked players so the spawner can be reactivated
      * and will drop trial keys again when completed.
+     *
+     * NOTE: Cooldown length is NOT restored from snapshot - it's controlled by
+     * the config setting (reset.spawner-cooldown-minutes) and applied in
+     * ResetManager.resetTrialSpawners() which runs AFTER block restoration.
      */
     private fun restoreTrialSpawner(spawner: TrialSpawner, data: Map<String, Any>): Boolean {
         return try {
@@ -115,11 +119,10 @@ object NBTUtil {
             val wasOminous = data["ominous"] as? Boolean ?: false
             spawner.isOminous = wasOminous
 
-            // Restore cooldown length if captured
-            val cooldownLength = data["cooldownLength"] as? Int
-            if (cooldownLength != null && cooldownLength > 0) {
-                spawner.cooldownLength = cooldownLength
-            }
+            // NOTE: cooldownLength is intentionally NOT restored from snapshot.
+            // The cooldown is controlled by config (reset.spawner-cooldown-minutes)
+            // and set by ResetManager.resetTrialSpawners() after block restoration.
+            // This ensures the config setting always takes precedence.
 
             // Restore required player range if captured
             val requiredRange = data["requiredPlayerRange"] as? Int
