@@ -10,10 +10,14 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Root cause: Cooldown was set at wave start, but spawner caches cooldown value at that point
   - Fix: Now sets cooldown at **wave completion** (before spawner enters cooldown state)
   - For `cooldown-minutes: 0`: Also clears tracked players/entities for true instant reactivation
+- **Copied Spawners Retaining Old Cooldown**: Fixed spawners copied from chambers keeping their baked-in cooldown
+  - When cooldown=0, spawner state is force-reset to `waiting_for_players` after key ejection
+  - Handles spawners with old NBT data from being copied with WorldEdit/etc.
 
 ### Technical Details
 - `SpawnerWaveManager.configureWildSpawnerCooldownAtCompletion()` handles the timing
 - For cooldown=0: Calls `stopTrackingPlayer()` and `stopTrackingEntity()` so spawner reactivates for same players
+- For cooldown=0: Schedules `forceResetSpawnerState()` 2 seconds after wave completion to bypass baked-in cooldown
 - Debug logging available with `debug.verbose-logging: true`
 
 ## [1.2.17] - 2026-01-07

@@ -1,8 +1,8 @@
 <black>.
 <aqua>[1.2.18] <gray>- <white>2026-01-07
 <yellow>! <white>FIXED: <red>Wild spawner cooldown <yellow>now actually works.
-<yellow>! <white>Cooldown set at wave completion instead of wave start.
-<lime>+ <white>Cooldown 0 now clears tracked players for true instant reactivation.
+<yellow>! <white>FIXED: <red>Copied spawners <yellow>no longer retain old cooldown from chambers.
+<lime>+ <white>Cooldown 0: Force-resets spawner state for instant reactivation.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 <aqua>[1.2.17] <gray>- <white>2026-01-07
 <lime>+ <white>Wild spawner cooldown: Configure cooldown for spawners outside chambers.

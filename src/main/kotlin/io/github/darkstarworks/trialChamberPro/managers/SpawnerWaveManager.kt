@@ -238,6 +238,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         }
 
         // Configure cooldown for wild spawners (must be done BEFORE spawner enters cooldown state)
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("[SpawnerWave] Calling configureWildSpawnerCooldownAtCompletion for ${wave.spawnerId}")
+        }
         configureWildSpawnerCooldownAtCompletion(wave)
 
         // Award bonus stats to participants
@@ -291,12 +294,24 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      */
     private fun configureWildSpawnerCooldownAtCompletion(wave: WaveState) {
         val wildCooldownMinutes = plugin.config.getInt("reset.wild-spawner-cooldown-minutes", -1)
-        if (wildCooldownMinutes == -1) return // Use vanilla default
+
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("[WildSpawner] Wave complete - checking cooldown config: wild-spawner-cooldown-minutes=$wildCooldownMinutes")
+        }
+
+        if (wildCooldownMinutes == -1) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[WildSpawner] Skipping - using vanilla default (config is -1)")
+            }
+            return
+        }
 
         // Check if this spawner is in a registered chamber
         val chamber = plugin.chamberManager.getCachedChamberAt(wave.location)
         if (chamber != null) {
-            // Registered chamber - cooldown handled by ResetManager
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[WildSpawner] Skipping - spawner is inside registered chamber '${chamber.name}'")
+            }
             return
         }
 
@@ -338,6 +353,13 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
                         plugin.logger.info("[WildSpawner] Cleared ${trackedPlayers.size} tracked players " +
                             "and ${trackedEntities.size} tracked entities for instant reactivation")
                     }
+
+                    // Schedule a delayed task to force-reset spawner state after key ejection
+                    // This handles copied spawners that have old cooldown values baked in
+                    val spawnerLocation = wave.location.clone()
+                    plugin.scheduler.runAtLocationLater(spawnerLocation, Runnable {
+                        forceResetSpawnerState(spawnerLocation)
+                    }, 40L) // 2 seconds - enough time for key ejection
                 }
 
                 state.update()
@@ -352,6 +374,50 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         } catch (e: Exception) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.warning("[WildSpawner] Failed to configure cooldown at completion: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Forces a trial spawner to reset from cooldown state to waiting_for_players.
+     * Used for instant reactivation when wild-spawner-cooldown-minutes is 0.
+     * This handles copied spawners that have old cooldown values baked into their NBT.
+     */
+    private fun forceResetSpawnerState(location: Location) {
+        try {
+            val world = location.world ?: return
+            val block = world.getBlockAt(location)
+
+            if (block.type != Material.TRIAL_SPAWNER) return
+
+            val blockData = block.blockData
+            val blockDataString = blockData.asString
+
+            // Check if spawner is in cooldown state
+            if (!blockDataString.contains("trial_spawner_state=cooldown")) {
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("[WildSpawner] Spawner not in cooldown state, no force-reset needed")
+                }
+                return
+            }
+
+            // Replace cooldown state with waiting_for_players
+            val newBlockDataString = blockDataString.replace(
+                "trial_spawner_state=cooldown",
+                "trial_spawner_state=waiting_for_players"
+            )
+
+            // Create new block data from the modified string
+            val newBlockData = plugin.server.createBlockData(newBlockDataString)
+            block.setBlockData(newBlockData, false)
+
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[WildSpawner] Force-reset spawner state to waiting_for_players at " +
+                    "${location.blockX},${location.blockY},${location.blockZ}")
+            }
+        } catch (e: Exception) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.warning("[WildSpawner] Failed to force-reset spawner state: ${e.message}")
             }
         }
     }
