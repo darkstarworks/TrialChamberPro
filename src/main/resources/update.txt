@@ -1,4 +1,14 @@
 <black>.
+<aqua>[1.2.21] <gray>- <white>2026-01-10
+<yellow>! <white>FIXED: <red>Vault cooldowns not working <yellow>- now uses native Paper API.
+<lime>+ <white>IMPROVED: Vault reset commands now properly clear cooldowns.
+<lime>+ <white>IMPROVED: Trial key detection uses direct Material enum.
+<lime>+ <white>IMPROVED: Spawner ominous detection uses native API (no reflection).
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+<aqua>[1.2.20] <gray>- <white>2026-01-10
+<yellow>! <white>FIXED: <red>GUI icons misplaced <yellow>- updated InventoryFramework.
+<yellow>! <white>FIXED: <red>Vault spam-click at 5-second boundary <yellow>- race condition fixed.
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 <aqua>[1.2.19] <gray>- <white>2026-01-09
 <lime>+ <white>NEW: <aqua>/tcp info <white>now shows plugin info (version, integrations, status).
 <yellow>! <white>FIXED: <red>GUI item drag exploit <yellow>- items can no longer be moved.

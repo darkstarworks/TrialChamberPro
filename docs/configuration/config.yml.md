@@ -2,11 +2,13 @@
 
 Your `config.yml` is the control panel for TrialChamberPro. It's where you decide how chambers behave, when they reset, and how much protection you want. Let's break it down section by section.
 
+.
 {% hint style="info" %}
 **Location:** `plugins/TrialChamberPro/config.yml`
 
 After making changes, reload with `/tcp reload`
 {% endhint %}
+.
 
 ---
 
@@ -29,9 +31,11 @@ database:
 
 SQLite is perfect for single servers—no setup required, everything in one file. MySQL is for networks where multiple servers need to share chamber data.
 
+.
 {% hint style="success" %}
 **Stick with SQLite unless** you're running a network with BungeeCord/Velocity and need multiple servers to share chambers.
 {% endhint %}
+.
 
 ### MySQL Options (only used when `type: MYSQL`)
 
@@ -72,9 +76,11 @@ How long before chambers automatically reset. This is the default for ALL chambe
 - Twice daily: `43200`
 - Weekly: `604800`
 
+.
 {% hint style="info" %}
 **Disable automatic resets:** Set to `0` to disable automatic resets entirely. Chambers will only reset when manually triggered via `/tcp reset <chamber>` or the GUI.
 {% endhint %}
+.
 
 ### `reset-warning-times`
 **Default:** `[300, 60, 30]`
@@ -131,16 +137,18 @@ Control how long trial spawners stay in cooldown after being completed. This aff
 - `0` = No cooldown (spawners reactivate immediately when players approach)
 - `1-60` = Custom cooldown in minutes
 
+.
 {% hint style="info" %}
 **Use Cases:**
 - **Quick farming:** Set to `0` for instant reactivation—great for mob farms or high-activity servers
 - **Balanced gameplay:** Set to `5-15` minutes for faster resets than vanilla
 - **Vanilla experience:** Keep at `-1` for authentic Trial Chamber timing
 {% endhint %}
-
+.
 {% hint style="success" %}
 **Per-Chamber Override:** You can set different cooldowns for individual chambers via the GUI (Chamber Settings → Spawner Cooldown) or database. Per-chamber settings override this global value.
 {% endhint %}
+.
 
 ### `wild-spawner-cooldown-minutes`
 **Default:** `-1` (vanilla behavior)
@@ -153,16 +161,18 @@ Control cooldown for trial spawners **outside** of registered chambers (wild/unr
 - `0` = No cooldown (spawners reactivate immediately)
 - `1-60` = Custom cooldown in minutes
 
+.
 {% hint style="info" %}
 **Use Cases:**
 - **Server-wide fast farming:** Set to `0` for all wild spawners to reactivate instantly
 - **Consistent experience:** Match wild spawner behavior to your chamber settings
 - **Vanilla purists:** Keep at `-1` to leave unregistered chambers untouched
 {% endhint %}
-
+.
 {% hint style="warning" %}
 **Bonus Feature:** When this setting is enabled (not -1), spawner wave tracking (boss bars) will also work in wild Trial Chambers, giving players progress feedback even in unregistered chambers!
 {% endhint %}
+.
 
 ---
 
@@ -191,16 +201,34 @@ vaults:
 
 The big one! Each player gets their own loot and cooldowns. If `false`, vaults work like vanilla (one-time use, everyone shares).
 
+.
 {% hint style="warning" %}
 **Setting this to false** removes per-player cooldowns. Vaults become first-come-first-served. Usually not what you want for managed chambers!
 {% endhint %}
+.
 
 ### `normal-cooldown-hours` / `ominous-cooldown-hours`
-**Default:** `24` / `48` hours
+**Default:** `-1` (permanent until reset)
 
 How long before a player can loot the same vault again. Separate cooldowns for normal and ominous vaults.
 
+**Values:**
+- `-1` = Permanent lock until chamber reset (vanilla behavior, recommended)
+- `0` or positive = Time-based cooldown in hours
+
+.
+{% hint style="info" %}
+**v1.2.21+:** Vault cooldowns now use Paper's native Vault API (`hasRewardedPlayer`/`addRewardedPlayer`) for tracking. This is more reliable because:
+- Uses vanilla Minecraft's built-in player tracking
+- Cooldowns automatically reset when the chamber is restored from snapshot
+- No database sync issues
+
+**Note:** Time-based cooldowns (`0` or positive values) are less reliable with the native API since it doesn't track timestamps. For consistent behavior, use `-1` (permanent) and rely on chamber resets.
+{% endhint %}
+.
+
 **Ideas:**
+- Vanilla behavior: `-1` (permanent until chamber reset)
 - Short cooldowns: `1` or `6` hours (for active servers)
 - Long cooldowns: `72` or `168` hours (weekly)
 - Match chamber resets: `48` hours (synchronized gameplay)
@@ -340,9 +368,11 @@ Kill ALL mobs in the chamber, even those not from spawners (like player pets). U
 
 **CRITICAL for trial key drops!** Reset trial spawner state when the chamber resets. This clears the spawner's internal tracking of which players have completed it.
 
+.
 {% hint style="warning" %}
 **Why this matters:** Trial spawners store which players have "completed" them. Without clearing this data, spawners won't spawn mobs or drop keys for returning players. This setting ensures spawners work like vanilla after each reset.
 {% endhint %}
+.
 
 **Vanilla behavior when enabled:**
 - Spawners forget which players completed them
@@ -473,13 +503,15 @@ If a loot table has `min-rolls: 3` and `max-rolls: 5`:
 - Suspicious Stew made with dandelions
 - Custom items/armor with `Attribute.GENERIC_LUCK` modifiers
 
+.
 {% hint style="info" %}
 **Tip:** This is great for rewarding players who bring LUCK potions to chambers, or for special events where you want to boost loot!
 {% endhint %}
-
+.
 {% hint style="warning" %}
 **Balance Warning:** LUCK can significantly increase loot output. Test with your loot tables to ensure it doesn't break your economy.
 {% endhint %}
+.
 
 ---
 
@@ -519,9 +551,11 @@ Track mob kills from waves in player statistics. Used for leaderboards.
 
 Send a chat message when a wave is complete showing kill count and duration.
 
+.
 {% hint style="info" %}
 **How it works:** When mobs spawn from a trial spawner, the plugin tracks them. As players kill mobs, the boss bar updates. When all mobs are dead, players get a completion message.
 {% endhint %}
+.
 
 ---
 
@@ -561,6 +595,7 @@ Extra space outside the chamber boundary where spectators can still fly. Allows 
 
 Allow spectating empty chambers (when no other players are inside). Usually `false`—spectating is for watching teammates.
 
+.
 {% hint style="info" %}
 **Spectator Mode Flow:**
 1. Player dies in chamber
@@ -568,6 +603,7 @@ Allow spectating empty chambers (when no other players are inside). Usually `fal
 3. Type "spectate" to accept → GameMode.SPECTATOR, teleport to center
 4. Type "exit" to leave → restored to previous game mode, teleported to exit
 {% endhint %}
+.
 
 ---
 
@@ -602,17 +638,19 @@ Enable detailed logging for debugging. Logs include:
 
 This helps verify that debug mode is actually loaded from your config file.
 
+.
 {% hint style="info" %}
 **Troubleshooting:** If you don't see the startup banner after enabling debug mode:
 1. Make sure you're editing the config in `plugins/TrialChamberPro/config.yml` (not the default in the plugin jar)
 2. Fully restart your server (not just `/tcp reload`)
 3. Check for YAML syntax errors in your config file
 {% endhint %}
-
+.
 {% hint style="warning" %}
 Debug mode generates TONS of console output. Don't leave it on in production!
 {% endhint %}
 
+.
 ---
 
 ## 🎯 Quick Configs for Common Setups
@@ -674,25 +712,29 @@ After editing `config.yml`:
 
 Most settings apply immediately. Chamber-specific settings (like `default-reset-interval`) only affect new resets, not chambers mid-cycle.
 
+.
 {% hint style="info" %}
 **Database changes** require a full restart, not just a reload.
 {% endhint %}
 
+.
 ---
 
 ## 💡 Pro Tips
 
+.
 {% hint style="success" %}
 **Start conservative:** Use longer cooldowns and reset intervals initially. It's easier to shorten them later than deal with player complaints about too-frequent changes.
 {% endhint %}
-
+.
 {% hint style="info" %}
 **Test in dev:** Create a test chamber to experiment with settings. Use `/tcp reset TestChamber` to see how changes affect gameplay.
 {% endhint %}
-
+.
 {% hint style="warning" %}
 **Backup before tuning:** Changing database settings wrong can corrupt data. Always backup `plugins/TrialChamberPro/` before major config changes.
 {% endhint %}
+.
 
 ---
 
@@ -713,15 +755,15 @@ SQLite unless you're running multiple servers that need shared data. SQLite is f
 ---
 
 Need help with something specific? Check out the other configuration pages!
-
+.
 {% content-ref url="loot.yml.md" %}
 [loot.yml.md](loot.yml.md)
 {% endcontent-ref %}
-
+.
 {% content-ref url="messages.yml.md" %}
 [messages.yml.md](messages.yml.md)
 {% endcontent-ref %}
-
+.
 
 ---
 

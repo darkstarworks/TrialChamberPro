@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.21] - 2026-01-10
+### Fixed
+- **Vault Cooldown Not Working**: Fixed permanent vault cooldown not being enforced after the 5-second spam protection expires
+  - Root cause: We were cancelling the `PlayerInteractEvent` to handle loot ourselves, but this prevented vanilla from tracking the player in the vault's `rewarded_players` NBT
+  - Our database tracking was supposed to handle cooldowns, but wasn't being respected properly
+  - Fix: Now uses Paper's native `Vault` TileState API for cooldown tracking:
+    - `hasRewardedPlayer(UUID)` to check if player already opened the vault
+    - `addRewardedPlayer(UUID)` to mark player as rewarded after giving loot
+    - `update()` to persist the block state changes
+  - This is more reliable because it uses Minecraft's built-in tracking that persists with the block
+  - Cooldowns automatically reset when the vault block is restored during chamber reset
+
+### Improved
+- **SpawnerWaveListener**: Removed reflection-based ominous detection, now uses Paper's native `TrialSpawner.isOminous` property directly
+- **VaultInteractListener**: Simplified trial key detection using direct `Material.OMINOUS_TRIAL_KEY` enum instead of string comparison
+  - Note: Vault ominous detection still uses block data string parsing as Paper's Vault TileState doesn't have `isOminous` property (unlike TrialSpawner)
+- **Vault Reset Commands**: Now properly clear both database tracking AND native Vault `rewarded_players`
+  - `/tcp vault reset <chamber> <player>` - Clears specific player from vault cooldown
+  - GUI "Reset All Cooldowns" button - Clears all players from vault cooldowns
+  - Chamber automatic reset - Clears all vault cooldowns (both DB and native API)
+  - Uses `Vault.removeRewardedPlayer(UUID)` and `Vault.update()` to clear native state
+  - Fully Folia-compatible using `scheduler.runAtLocation()` for block operations
+
+### Technical Details
+- `VaultInteractListener` now imports `org.bukkit.block.Vault` TileState
+- Cooldown check: `block.state as? Vault` then `vaultState.hasRewardedPlayer(player.uniqueId)`
+- After loot: `vaultState.addRewardedPlayer(player.uniqueId)` then `vaultState.update()` (CRITICAL: must call update!)
+- Database `recordOpen` is still called for statistics tracking, but not used for cooldown enforcement
+- Both operations run on the region thread (Folia compatible) using `scheduler.runAtLocation()`
+- Added `vault-error` message to messages.yml for edge cases where vault state can't be updated
+- Key detection: `Material.TRIAL_KEY` and `Material.OMINOUS_TRIAL_KEY` direct enum comparison
+- Spawner ominous check: `state.isOminous` property (no reflection needed)
+
 ## [1.2.20] - 2026-01-10
 ### Fixed
 - **GUI Icons Misplaced**: Updated InventoryFramework from 0.11.5 to 0.11.6 to fix potential GUI rendering issues

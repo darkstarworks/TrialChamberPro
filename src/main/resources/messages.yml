@@ -57,6 +57,7 @@ no-key: "&cYou need a Trial Key to open this vault!"
 vault-not-found: "&cNo vault found at this location."
 vault-loot-table-missing: "&cVault configuration error! Loot table not found. Please contact an admin."
 vault-no-loot-generated: "&cVault is empty! No loot was generated. Please contact an admin."
+vault-error: "&cAn error occurred while opening the vault. Please try again."
 
 # Trial Keys
 key-given: "&aGave &e{amount}&a {type} Trial Key(s) to &e{player}&a."

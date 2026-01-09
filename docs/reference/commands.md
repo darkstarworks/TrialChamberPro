@@ -1,12 +1,13 @@
 # 📝 Commands Reference
 
 All commands start with `/tcp` (short for TrialChamberPro). Most require specific permissions—check the [Permissions](permissions.md) page for details.
-
+.
 {% hint style="info" %}
 **Aliases:** `/tcp`, `/trialchamberpro`, `/tcpro`
 
 **Tab completion:** Available for all commands! Press `Tab` while typing for suggestions.
 {% endhint %}
+.
 
 ---
 
@@ -51,9 +52,11 @@ Shows a list of all available commands.
 /tcp help
 ```
 
+.
 {% hint style="info" %}
 Only shows commands you have permission to use!
 {% endhint %}
+.
 
 ---
 
@@ -106,9 +109,11 @@ The admin GUI provides 14 different views organized into categories:
 - **Navigation** - Consistent back/close buttons throughout
 - **Session Restoration** - Return to previous screens automatically
 
+.
 {% hint style="success" %}
 **No YAML editing required!** Most configuration can now be done entirely through the GUI.
 {% endhint %}
+.
 
 ---
 
@@ -177,9 +182,11 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots.
 [TCP] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
+.
 {% hint style="warning" %}
 **Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
 {% endhint %}
+.
 
 ---
 
@@ -243,9 +250,11 @@ Scans the chamber and saves every block to a compressed snapshot file.
 
 **Time:** 5-30 seconds depending on chamber size
 
+.
 {% hint style="success" %}
 **Update snapshots anytime!** Made changes to your chamber? Run `/tcp snapshot create` again to update.
 {% endhint %}
+.
 
 #### `restore` - Restore Snapshot
 Immediately resets the chamber from its snapshot (same as `/tcp reset`).
@@ -282,7 +291,7 @@ Forces an immediate chamber reset.
 **What it does:**
 1. Teleports all players inside to the exit location
 2. Restores all blocks from snapshot
-3. Resets vault states
+3. Resets vault states (clears native `rewarded_players`)
 4. Removes spawned mobs (configurable)
 5. Clears ground items (configurable)
 
@@ -291,9 +300,11 @@ Forces an immediate chamber reset.
 - Manual reset for events
 - Fixing a broken chamber
 
+.
 {% hint style="info" %}
-**Doesn't affect player vault cooldowns** unless `reset-vault-cooldowns: true` in config.yml.
+**Vault cooldowns:** When `reset-vault-cooldowns: true` in config.yml (default), vault cooldowns are cleared both in the database AND via Paper's native Vault API. This ensures players can truly loot vaults again after a reset.
 {% endhint %}
+.
 
 ---
 
@@ -420,6 +431,7 @@ Permanently deletes a chamber and all associated data.
 /tcp delete TestChamber
 ```
 
+.
 {% hint style="danger" %}
 **⚠️ PERMANENT ACTION!** This deletes:
 - Chamber boundaries and settings
@@ -430,6 +442,7 @@ Permanently deletes a chamber and all associated data.
 
 **Cannot be undone!**
 {% endhint %}
+.
 
 ---
 
@@ -458,6 +471,7 @@ Resets a player's vault cooldowns for a specific chamber.
 
 **What it does:**
 - Resets cooldowns for ALL vaults in the chamber
+- Clears both database tracking AND native Vault block state (v1.2.21+)
 - Player can immediately loot vaults again
 - Filters by vault type if specified
 
@@ -466,9 +480,15 @@ Resets a player's vault cooldowns for a specific chamber.
 - Event rewards ("free vault access!")
 - Testing vault mechanics
 
+.
 {% hint style="info" %}
 **Per-vault cooldowns:** This resets cooldowns for every vault in the chamber individually, not just one vault.
 {% endhint %}
+.
+{% hint style="success" %}
+**v1.2.21+:** This command now properly clears Paper's native Vault `rewarded_players` list in addition to database tracking. This ensures players can truly loot vaults again immediately.
+{% endhint %}
+.
 
 ---
 
@@ -501,9 +521,11 @@ Gives trial keys to a player.
 - Sell keys in-game shop (via command blocks or other plugins)
 - Testing vault mechanics
 
+.
 {% hint style="warning" %}
 **Player must be online!** Offline players can't receive items. The command will fail if the player isn't online.
 {% endhint %}
+.
 
 ---
 
@@ -569,9 +591,11 @@ View player statistics for Trial Chamber activity.
 [TCP] Time Spent: 5h 32m
 ```
 
+.
 {% hint style="info" %}
 **Requires statistics to be enabled** in config.yml (`statistics.enabled: true`)
 {% endhint %}
+.
 
 **Tracked stats:**
 - **Chambers Completed** - How many times player completed a chamber
@@ -627,9 +651,11 @@ View top players for a specific statistic.
 - Number of players shown: `statistics.top-players-count` in config.yml (default: 10)
 - Update frequency: `statistics.leaderboard-update-interval` in config.yml (default: 1 hour)
 
+.
 {% hint style="info" %}
 **Leaderboards are cached** to prevent database lag. They update on the interval specified in config, not in real-time.
 {% endhint %}
+.
 
 ---
 
@@ -660,9 +686,11 @@ Reloads the plugin configuration without restarting the server.
 - Existing chamber data in memory
 - Active reset timers (they continue with old intervals until next reset)
 
+.
 {% hint style="warning" %}
 **Database changes require restart!** If you changed database settings in config.yml, you MUST restart the server, not just reload.
 {% endhint %}
+.
 
 ---
 
@@ -754,21 +782,26 @@ Reloads the plugin configuration without restarting the server.
 
 ## 💡 Pro Tips
 
+.
 {% hint style="success" %}
 **Use tab completion!** Press `Tab` while typing commands to autocomplete chamber names, player names, and arguments.
 {% endhint %}
-
+.
+.
 {% hint style="info" %}
 **Aliases:** All leaderboard commands work with `/tcp lb` and `/tcp top` for quick access.
 {% endhint %}
-
+.
+.
 {% hint style="warning" %}
 **Chamber names are case-sensitive** in some commands. Use tab completion to ensure correct capitalization.
 {% endhint %}
-
+.
+.
 {% hint style="info" %}
 **Offline player support:** Most commands work with offline players (like `/tcp vault reset`), but `/tcp key give` requires the player to be online.
 {% endhint %}
+.
 
 ---
 
@@ -832,20 +865,26 @@ tcp.stats       # Can view own stats
 
 ## 🎯 Related Pages
 
+.
 {% content-ref url="permissions.md" %}
 [permissions.md](permissions.md)
 {% endcontent-ref %}
+.
 
 Complete permission nodes for all commands and features.
 
+.
 {% content-ref url="../configuration/config.yml.md" %}
 [config.yml.md](../configuration/config.yml.md)
 {% endcontent-ref %}
+.
 
 Settings that affect command behavior (auto-scan, auto-snapshot, etc.)
 
+.
 {% content-ref url="../getting-started/your-first-chamber.md" %}
 [your-first-chamber.md](../getting-started/your-first-chamber.md)
 {% endcontent-ref %}
+.
 
 Step-by-step guide using these commands to set up your first chamber.

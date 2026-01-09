@@ -6,9 +6,11 @@ import io.github.darkstarworks.trialChamberPro.models.VaultType
 import io.github.darkstarworks.trialChamberPro.utils.AdvancementUtil
 import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
 import kotlinx.coroutines.*
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
 import org.bukkit.Sound
+import org.bukkit.block.Vault
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -45,9 +47,11 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             return
         }
 
-        // Determine vault type from block state string (more reliable than property access)
-        val blockStateString = block.blockData.asString
-        val vaultType = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
+        // Determine vault type from block data
+        // Note: Paper's Vault TileState doesn't have isOminous property (unlike TrialSpawner)
+        // so we must use block data string parsing
+        val blockDataString = block.blockData.asString
+        val vaultType = if (blockDataString.contains("ominous=true", ignoreCase = true)) {
             VaultType.OMINOUS
         } else {
             VaultType.NORMAL
@@ -55,20 +59,15 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("Vault interaction: blockData='$blockStateString', detected type=$vaultType")
+            plugin.logger.info("Vault interaction: blockData='$blockDataString', detected type=$vaultType")
         }
 
         // Check if key validation is enabled
         if (plugin.config.getBoolean("trial-keys.validate-key-type", true)) {
-            // Validate key type by checking material name
-            // Ominous trial keys are a separate item ID: minecraft:ominous_trial_key
-            val keyType = when {
-                item.type == Material.TRIAL_KEY -> KeyType.NORMAL
-                // Check for ominous trial key by material name (not in enum yet)
-                item.type.name.equals("OMINOUS_TRIAL_KEY", ignoreCase = true) -> KeyType.OMINOUS
-                // Also accept variations in naming
-                item.type.name.contains("OMINOUS", ignoreCase = true) &&
-                    item.type.name.contains("KEY", ignoreCase = true) -> KeyType.OMINOUS
+            // Validate key type using direct Material enum
+            val keyType = when (item.type) {
+                Material.TRIAL_KEY -> KeyType.NORMAL
+                Material.OMINOUS_TRIAL_KEY -> KeyType.OMINOUS
                 else -> null
             }
 
@@ -140,41 +139,82 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     /**
      * Handles the vault opening logic.
      * NOTE: Spam-click protection is done SYNCHRONOUSLY in the event handler before this is called.
+     *
+     * Uses Paper's native Vault TileState API for cooldown tracking (hasRewardedPlayer/addRewardedPlayer).
+     * This is more reliable than database tracking because:
+     * 1. It uses vanilla Minecraft's built-in tracking (rewarded_players NBT)
+     * 2. It persists automatically with the block state
+     * 3. It resets automatically when the vault block is restored during chamber reset
      */
     private suspend fun handleVaultOpen(
         player: org.bukkit.entity.Player,
         location: org.bukkit.Location,
         vaultType: VaultType
     ) {
-        // Get vault data for the specific type (normal or ominous)
-        val vault = plugin.vaultManager.getVault(location, vaultType)
-        if (vault == null) {
+        // Get vault data for the specific type (normal or ominous) - needed for loot table resolution
+        val vaultData = plugin.vaultManager.getVault(location, vaultType)
+        if (vaultData == null) {
             player.sendMessage(plugin.getMessage("vault-not-found"))
             return
         }
 
-        // Check permission bypass
+        // Check permission bypass - skip cooldown check entirely
         if (player.hasPermission("tcp.bypass.cooldown")) {
-            openVault(player, vault, vaultType)
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Vault API] Player ${player.name} has tcp.bypass.cooldown permission - SKIPPING cooldown check!")
+            }
+            openVault(player, vaultData, vaultType, location)
             return
         }
 
-        // Check cooldown
-        val (canOpen, remainingTime) = plugin.vaultManager.canOpenVault(player.uniqueId, vault)
+        // Use Paper's native Vault API for cooldown checking
+        // This MUST be done on the main thread (or region thread for Folia)
+        val hasAlreadyRewarded = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
+            plugin.scheduler.runAtLocation(location, Runnable {
+                try {
+                    val block = location.block
+                    val vaultState = block.state as? Vault
 
-        if (!canOpen) {
-            // Vault is locked
-            if (remainingTime == Long.MAX_VALUE) {
-                // Permanent lock (vanilla behavior)
+                    if (vaultState == null) {
+                        plugin.logger.warning("Block at $location is not a Vault TileState!")
+                        continuation.resume(false) {}
+                        return@Runnable
+                    }
+
+                    val hasRewarded = vaultState.hasRewardedPlayer(player.uniqueId)
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[Vault API] hasRewardedPlayer(${player.name}): $hasRewarded")
+                    }
+
+                    continuation.resume(hasRewarded) {}
+                } catch (e: Exception) {
+                    plugin.logger.severe("Error checking vault reward status: ${e.message}")
+                    e.printStackTrace()
+                    continuation.resume(false) {} // Allow opening on error
+                }
+            })
+        }
+
+        if (hasAlreadyRewarded) {
+            // Vault is locked for this player (they already got loot)
+            // Check config to determine behavior (permanent vs time-based)
+            val cooldownHours = when (vaultType) {
+                VaultType.NORMAL -> plugin.config.getLong("vaults.normal-cooldown-hours", -1)
+                VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
+            }
+
+            if (cooldownHours < 0) {
+                // Permanent lock (vanilla behavior) - player must wait for chamber reset
                 player.sendMessage(plugin.getMessage("vault-locked",
                     "type" to vaultType.displayName
                 ))
             } else {
-                // Time-based cooldown
-                val timeString = MessageUtil.formatTime(remainingTime)
-                player.sendMessage(plugin.getMessage("vault-cooldown",
-                    "type" to vaultType.displayName,
-                    "time" to timeString
+                // Time-based cooldown configured, but Vault API doesn't track time
+                // For now, treat as permanent until chamber reset (vanilla behavior)
+                // Future enhancement: Could use database for time-based cooldowns
+                player.sendMessage(plugin.getMessage("vault-locked",
+                    "type" to vaultType.displayName
                 ))
             }
 
@@ -182,8 +222,8 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             showCooldownParticles(player, location, vaultType)
             playErrorSound(player)
         } else {
-            // Can open the vault
-            openVault(player, vault, vaultType)
+            // Can open the vault - player hasn't been rewarded yet
+            openVault(player, vaultData, vaultType, location)
         }
     }
 
@@ -191,23 +231,26 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
      * Opens a vault for a player.
      * CRITICAL FIX: Handles race condition where player may disconnect during loot generation.
      * CRITICAL FIX: Does NOT consume key if no loot was generated (missing loot table).
+     *
+     * Uses Paper's native Vault API to mark player as rewarded (addRewardedPlayer).
      */
     private suspend fun openVault(
         player: org.bukkit.entity.Player,
-        vault: io.github.darkstarworks.trialChamberPro.models.VaultData,
-        vaultType: VaultType
+        vaultData: io.github.darkstarworks.trialChamberPro.models.VaultData,
+        vaultType: VaultType,
+        location: Location
     ) {
         // Resolve the effective loot table (chamber override > vault default)
-        val chamber = plugin.chamberManager.getChamberById(vault.chamberId)
+        val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId)
         val effectiveLootTable = plugin.chamberManager.getEffectiveLootTable(
-            chamber, vaultType, vault.lootTable
+            chamber, vaultType, vaultData.lootTable
         )
 
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             val chamberOverride = chamber?.getLootTable(vaultType)
-            plugin.logger.info("Opening vault ID ${vault.id}: type=${vault.type}, " +
-                "vaultDefault='${vault.lootTable}', chamberOverride='$chamberOverride', " +
+            plugin.logger.info("Opening vault ID ${vaultData.id}: type=${vaultData.type}, " +
+                "vaultDefault='${vaultData.lootTable}', chamberOverride='$chamberOverride', " +
                 "effective='$effectiveLootTable'")
         }
 
@@ -229,11 +272,50 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             return  // Don't consume key, don't mark vault as opened
         }
 
-        // NOW record the opening (for cooldown tracking) - only after we know loot was generated
-        plugin.vaultManager.recordOpen(player.uniqueId, vault.id)
+        // Mark player as rewarded using Paper's native Vault API
+        // This MUST be done on the region thread (before giving items)
+        val rewardMarked = kotlinx.coroutines.suspendCancellableCoroutine<Boolean> { continuation ->
+            plugin.scheduler.runAtLocation(location, Runnable {
+                try {
+                    val block = location.block
+                    val vaultState = block.state as? Vault
+
+                    if (vaultState == null) {
+                        plugin.logger.warning("Cannot mark reward - block at $location is not a Vault!")
+                        continuation.resume(false) {}
+                        return@Runnable
+                    }
+
+                    // Add player to rewarded list
+                    vaultState.addRewardedPlayer(player.uniqueId)
+
+                    // CRITICAL: Must call update() to persist the block state changes
+                    vaultState.update()
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[Vault API] addRewardedPlayer(${player.name}) - marked and persisted")
+                    }
+
+                    continuation.resume(true) {}
+                } catch (e: Exception) {
+                    plugin.logger.severe("Error marking vault reward: ${e.message}")
+                    e.printStackTrace()
+                    continuation.resume(false) {}
+                }
+            })
+        }
+
+        if (!rewardMarked) {
+            plugin.logger.warning("Failed to mark player as rewarded! Key will NOT be consumed.")
+            player.sendMessage(plugin.getMessage("vault-error"))
+            return
+        }
+
+        // Also record in database for statistics tracking (but not for cooldown - Vault API handles that)
+        plugin.vaultManager.recordOpen(player.uniqueId, vaultData.id)
 
         // Update statistics (for leaderboards and /tcp stats)
-        plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
+        plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vaultData.type)
 
         // MUST switch to entity's region thread for player access (Folia compatible)
         // Use scheduler adapter instead of Dispatchers.Main (which doesn't exist in server environment)

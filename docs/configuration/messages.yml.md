@@ -220,12 +220,14 @@ chamber-reset-complete: "&dThe chamber's ancient power has been renewed!"
 ```yaml
 vault-opened: "&aYou opened a {type} Vault!"
 vault-cooldown: "&cThis {type} Vault is on cooldown for &e{time}&c."
+vault-locked: "&cYou have already opened this {type} Vault! It will unlock when the chamber resets."
 vault-reset: "&aVault cooldown reset for &e{player}&a."
 wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
 no-key: "&cYou need a Trial Key to open this vault!"
 vault-not-found: "&cNo vault found at this location."
 vault-loot-table-missing: "&cVault configuration error! Loot table not found. Please contact an admin."
 vault-no-loot-generated: "&cVault is empty! No loot was generated. Please contact an admin."
+vault-error: "&cAn error occurred while opening the vault. Please try again."
 ```
 
 **Placeholders:**
@@ -238,8 +240,16 @@ vault-no-loot-generated: "&cVault is empty! No loot was generated. Please contac
 - `vault-loot-table-missing` - Shown when the configured loot table doesn't exist (indicates configuration error)
 - `vault-no-loot-generated` - Shown when a loot table exists but generates no items (empty weighted-items or bad config)
 
+**New in v1.2.21:**
+- `vault-locked` - Shown when a player has already opened a vault (permanent cooldown until reset)
+- `vault-error` - Shown when the vault block state can't be updated (rare edge case)
+
 {% hint style="info" %}
-**Note:** In v1.2.19+, if these error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the admin fixes the configuration.
+**Note:** In v1.2.19+, if error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the issue is resolved.
+{% endhint %}
+
+{% hint style="success" %}
+**v1.2.21+:** Vault cooldowns now use Paper's native API. The `vault-locked` message is shown for permanent cooldowns (vanilla behavior). This automatically resets when the chamber is restored from snapshot.
 {% endhint %}
 
 **Examples:**

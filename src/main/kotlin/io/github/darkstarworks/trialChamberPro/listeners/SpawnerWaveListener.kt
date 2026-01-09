@@ -215,28 +215,20 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
     /**
      * Checks if a trial spawner block is in ominous mode.
-     * Uses Paper API with fallback to block data string parsing.
+     * Uses Paper's native TrialSpawner.isOminous property.
      */
     private fun isTrialSpawnerOminous(block: org.bukkit.block.Block): Boolean {
         if (block.type != Material.TRIAL_SPAWNER) return false
 
         return try {
-            // Try to use the TrialSpawner API (Paper 1.21+)
             val state = block.state
             if (state is org.bukkit.block.TrialSpawner) {
-                // Use reflection to check for isOminous() method (may not exist in all versions)
-                val isOminousMethod = state.javaClass.getMethod("isOminous")
-                isOminousMethod.invoke(state) as? Boolean ?: false
+                state.isOminous
             } else {
-                // Fallback: parse block data string
-                block.blockData.asString.contains("ominous=true", ignoreCase = true)
+                false
             }
-        } catch (_: NoSuchMethodException) {
-            // Method doesn't exist, fallback to string parsing
-            block.blockData.asString.contains("ominous=true", ignoreCase = true)
         } catch (_: Exception) {
-            // Any other error, fallback to string parsing
-            block.blockData.asString.contains("ominous=true", ignoreCase = true)
+            false
         }
     }
 }

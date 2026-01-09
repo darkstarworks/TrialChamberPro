@@ -4,8 +4,12 @@ import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.VaultData
 import io.github.darkstarworks.trialChamberPro.models.VaultType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Material
+import org.bukkit.block.Vault
 import java.sql.ResultSet
 import java.util.UUID
 
@@ -13,6 +17,7 @@ import java.util.UUID
  * Manages vault tracking, cooldowns, and player interactions.
  * Handles per-player vault loot with separate cooldowns for Normal and Ominous vaults.
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VaultManager(private val plugin: TrialChamberPro) {
 
     data class VaultCounts(val normal: Int, val ominous: Int, val updatedAt: Long)
@@ -195,8 +200,15 @@ class VaultManager(private val plugin: TrialChamberPro) {
 
                     val rs = stmt.executeQuery()
                     if (rs.next()) {
-                        rs.getLong("last_opened")
+                        val lastOpened = rs.getLong("last_opened")
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("[Cooldown] getLastOpened: player=$playerUuid, vault=$vaultId, lastOpened=$lastOpened")
+                        }
+                        lastOpened
                     } else {
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("[Cooldown] getLastOpened: player=$playerUuid, vault=$vaultId, NOT FOUND (returning 0)")
+                        }
                         0L
                     }
                 }
@@ -217,6 +229,10 @@ class VaultManager(private val plugin: TrialChamberPro) {
         try {
             val now = System.currentTimeMillis()
 
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Cooldown] recordOpen STARTING: player=$playerUuid, vault=$vaultId, timestamp=$now")
+            }
+
             plugin.databaseManager.connection.use { conn ->
                 // Use UPSERT (atomic INSERT or UPDATE) to avoid race conditions
                 // This is SQLite 3.24.0+ syntax
@@ -233,11 +249,16 @@ class VaultManager(private val plugin: TrialChamberPro) {
                     stmt.setString(1, playerUuid.toString())
                     stmt.setInt(2, vaultId)
                     stmt.setLong(3, now)
-                    stmt.executeUpdate()
+                    val rowsAffected = stmt.executeUpdate()
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[Cooldown] recordOpen COMPLETED: player=$playerUuid, vault=$vaultId, rowsAffected=$rowsAffected")
+                    }
                 }
             }
         } catch (e: Exception) {
             plugin.logger.severe("Failed to record vault opening: ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -249,10 +270,17 @@ class VaultManager(private val plugin: TrialChamberPro) {
      * @return Pair of (canOpen, remainingTime in milliseconds)
      */
     suspend fun canOpenVault(playerUuid: UUID, vault: VaultData): Pair<Boolean, Long> {
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("[Cooldown] canOpenVault CHECKING: player=$playerUuid, vaultId=${vault.id}, vaultType=${vault.type}")
+        }
+
         val lastOpened = getLastOpened(playerUuid, vault.id)
 
         if (lastOpened == 0L) {
             // Never opened before
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Cooldown] canOpenVault RESULT: ALLOWED (never opened before)")
+            }
             return Pair(true, 0L)
         }
 
@@ -262,9 +290,16 @@ class VaultManager(private val plugin: TrialChamberPro) {
             VaultType.OMINOUS -> plugin.config.getLong("vaults.ominous-cooldown-hours", -1)
         }
 
+        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+            plugin.logger.info("[Cooldown] canOpenVault: lastOpened=$lastOpened, cooldownHours=$cooldownHours")
+        }
+
         // Check for permanent lock (vanilla behavior)
         if (cooldownHours < 0) {
             // -1 or any negative value means permanent lock until chamber reset
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Cooldown] canOpenVault RESULT: BLOCKED (permanent lock, cooldownHours=$cooldownHours)")
+            }
             return Pair(false, Long.MAX_VALUE)
         }
 
@@ -274,8 +309,14 @@ class VaultManager(private val plugin: TrialChamberPro) {
         val remaining = cooldownMs - timeSince
 
         return if (remaining <= 0) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Cooldown] canOpenVault RESULT: ALLOWED (cooldown expired)")
+            }
             Pair(true, 0L)
         } else {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[Cooldown] canOpenVault RESULT: BLOCKED (remaining=${remaining}ms)")
+            }
             Pair(false, remaining)
         }
     }
@@ -327,46 +368,64 @@ class VaultManager(private val plugin: TrialChamberPro) {
 
     /**
      * Resets the cooldown for a player on a specific vault.
+     * Clears both database tracking AND native Vault.rewarded_players.
      *
      * @param playerUuid Player UUID
      * @param vaultId Vault ID
      * @return True if reset successfully
      */
-    suspend fun resetCooldown(playerUuid: UUID, vaultId: Int): Boolean = withContext(Dispatchers.IO) {
-        try {
-            plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement(
-                    "DELETE FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
-                ).use { stmt ->
-                    stmt.setString(1, playerUuid.toString())
-                    stmt.setInt(2, vaultId)
-                    stmt.executeUpdate() > 0
+    suspend fun resetCooldown(playerUuid: UUID, vaultId: Int): Boolean {
+        // Clear database tracking
+        val dbCleared = withContext(Dispatchers.IO) {
+            try {
+                plugin.databaseManager.connection.use { conn ->
+                    conn.prepareStatement(
+                        "DELETE FROM player_vaults WHERE player_uuid = ? AND vault_id = ?"
+                    ).use { stmt ->
+                        stmt.setString(1, playerUuid.toString())
+                        stmt.setInt(2, vaultId)
+                        stmt.executeUpdate() > 0
+                    }
                 }
+            } catch (e: Exception) {
+                plugin.logger.severe("Failed to reset cooldown in database: ${e.message}")
+                false
             }
-        } catch (e: Exception) {
-            plugin.logger.severe("Failed to reset cooldown: ${e.message}")
-            false
         }
+
+        // Also clear from native Vault block state
+        clearVaultRewardedPlayer(vaultId, playerUuid)
+
+        return dbCleared
     }
 
     /**
      * Resets all player cooldowns for a specific vault.
+     * Clears both database tracking AND native Vault.rewarded_players.
      *
      * @param vaultId Vault ID
-     * @return Number of records deleted
+     * @return Number of records deleted from database
      */
-    suspend fun resetAllCooldowns(vaultId: Int): Int = withContext(Dispatchers.IO) {
-        try {
-            plugin.databaseManager.connection.use { conn ->
-                conn.prepareStatement("DELETE FROM player_vaults WHERE vault_id = ?").use { stmt ->
-                    stmt.setInt(1, vaultId)
-                    stmt.executeUpdate()
+    suspend fun resetAllCooldowns(vaultId: Int): Int {
+        // Clear database tracking
+        val dbCount = withContext(Dispatchers.IO) {
+            try {
+                plugin.databaseManager.connection.use { conn ->
+                    conn.prepareStatement("DELETE FROM player_vaults WHERE vault_id = ?").use { stmt ->
+                        stmt.setInt(1, vaultId)
+                        stmt.executeUpdate()
+                    }
                 }
+            } catch (e: Exception) {
+                plugin.logger.severe("Failed to reset all cooldowns in database: ${e.message}")
+                0
             }
-        } catch (e: Exception) {
-            plugin.logger.severe("Failed to reset all cooldowns: ${e.message}")
-            0
         }
+
+        // Also clear all rewarded players from native Vault block state
+        clearAllVaultRewardedPlayers(vaultId)
+
+        return dbCount
     }
 
     /**
@@ -469,5 +528,124 @@ class VaultManager(private val plugin: TrialChamberPro) {
             type = VaultType.valueOf(rs.getString("type")),
             lootTable = rs.getString("loot_table")
         )
+    }
+
+    /**
+     * Clears a specific player from a vault's native rewarded_players list.
+     * Uses Paper's Vault.removeRewardedPlayer() API.
+     * Must be called on the region thread (Folia compatible).
+     *
+     * @param vaultId Vault ID (to look up coordinates)
+     * @param playerUuid Player UUID to remove
+     */
+    private suspend fun clearVaultRewardedPlayer(vaultId: Int, playerUuid: UUID) {
+        // Get vault data to find coordinates
+        val vaultData = getVaultById(vaultId) ?: return
+        val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId) ?: return
+        val world = Bukkit.getWorld(chamber.world) ?: return
+        val location = Location(world, vaultData.x.toDouble(), vaultData.y.toDouble(), vaultData.z.toDouble())
+
+        // Clear from native Vault state on the region thread (Folia compatible)
+        suspendCancellableCoroutine<Unit> { continuation ->
+            plugin.scheduler.runAtLocation(location, Runnable {
+                try {
+                    val block = location.block
+                    if (block.type != Material.VAULT) {
+                        continuation.resume(Unit) {}
+                        return@Runnable
+                    }
+
+                    val vaultState = block.state as? Vault
+                    if (vaultState == null) {
+                        continuation.resume(Unit) {}
+                        return@Runnable
+                    }
+
+                    vaultState.removeRewardedPlayer(playerUuid)
+                    vaultState.update()
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[Vault API] Removed rewarded player $playerUuid from vault at ${location.blockX},${location.blockY},${location.blockZ}")
+                    }
+
+                    continuation.resume(Unit) {}
+                } catch (e: Exception) {
+                    plugin.logger.warning("Failed to clear vault rewarded player: ${e.message}")
+                    continuation.resume(Unit) {}
+                }
+            })
+        }
+    }
+
+    /**
+     * Clears all players from a vault's native rewarded_players list.
+     * Uses Paper's Vault.removeRewardedPlayer() API.
+     * Must be called on the region thread (Folia compatible).
+     *
+     * @param vaultId Vault ID (to look up coordinates)
+     */
+    private suspend fun clearAllVaultRewardedPlayers(vaultId: Int) {
+        // Get vault data to find coordinates
+        val vaultData = getVaultById(vaultId) ?: return
+        val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId) ?: return
+        val world = Bukkit.getWorld(chamber.world) ?: return
+        val location = Location(world, vaultData.x.toDouble(), vaultData.y.toDouble(), vaultData.z.toDouble())
+
+        // Clear all from native Vault state on the region thread (Folia compatible)
+        suspendCancellableCoroutine<Unit> { continuation ->
+            plugin.scheduler.runAtLocation(location, Runnable {
+                try {
+                    val block = location.block
+                    if (block.type != Material.VAULT) {
+                        continuation.resume(Unit) {}
+                        return@Runnable
+                    }
+
+                    val vaultState = block.state as? Vault
+                    if (vaultState == null) {
+                        continuation.resume(Unit) {}
+                        return@Runnable
+                    }
+
+                    // Get all rewarded players and remove them
+                    val rewardedPlayers = vaultState.rewardedPlayers.toList()
+                    rewardedPlayers.forEach { uuid ->
+                        vaultState.removeRewardedPlayer(uuid)
+                    }
+                    vaultState.update()
+
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.info("[Vault API] Cleared ${rewardedPlayers.size} rewarded players from vault at ${location.blockX},${location.blockY},${location.blockZ}")
+                    }
+
+                    continuation.resume(Unit) {}
+                } catch (e: Exception) {
+                    plugin.logger.warning("Failed to clear all vault rewarded players: ${e.message}")
+                    continuation.resume(Unit) {}
+                }
+            })
+        }
+    }
+
+    /**
+     * Gets vault data by ID.
+     */
+    private suspend fun getVaultById(vaultId: Int): VaultData? = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("SELECT * FROM vaults WHERE id = ?").use { stmt ->
+                    stmt.setInt(1, vaultId)
+                    val rs = stmt.executeQuery()
+                    if (rs.next()) {
+                        parseVault(rs)
+                    } else {
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to get vault by ID: ${e.message}")
+            null
+        }
     }
 }
