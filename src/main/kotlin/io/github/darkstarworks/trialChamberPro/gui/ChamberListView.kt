@@ -144,6 +144,7 @@ class ChamberListView(
         gui.addPane(controlsPane)
 
         gui.setOnGlobalClick { it.isCancelled = true }
+        gui.setOnGlobalDrag { it.isCancelled = true }
 
         return gui
     }

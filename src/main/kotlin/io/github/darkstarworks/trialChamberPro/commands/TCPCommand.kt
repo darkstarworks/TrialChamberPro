@@ -241,11 +241,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             return
         }
 
+        // If no chamber name provided, show plugin info
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("usage-info"))
+            showPluginInfo(sender)
             return
         }
 
+        // Otherwise show chamber info
         val chamberName = args[1]
 
         plugin.launchAsync {
@@ -292,6 +294,70 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             }
             sender.sendMessage(plugin.getMessage("info-snapshot", "status" to snapshotStatus))
         }
+    }
+
+    /**
+     * Shows plugin information including version, authors, integrations, and status.
+     */
+    private fun showPluginInfo(sender: CommandSender) {
+        val desc = plugin.description
+        val version = desc.version
+        val authors = desc.authors.joinToString(", ")
+
+        // Check integrations
+        val worldEdit = plugin.server.pluginManager.getPlugin("WorldEdit") != null ||
+                        plugin.server.pluginManager.getPlugin("FastAsyncWorldEdit") != null
+        val worldGuard = plugin.server.pluginManager.getPlugin("WorldGuard") != null
+        val placeholderApi = plugin.server.pluginManager.getPlugin("PlaceholderAPI") != null
+        val vault = plugin.server.pluginManager.getPlugin("Vault") != null
+
+        // Get chamber count
+        val chamberCount = plugin.chamberManager.getCachedChambers().size
+
+        // Database type
+        val dbType = plugin.databaseManager.databaseType
+
+        // Folia detection
+        val isFolia = try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
+            true
+        } catch (_: ClassNotFoundException) {
+            false
+        }
+
+        sender.sendMessage(plugin.getMessage("plugin-info-header"))
+        sender.sendMessage(plugin.getMessage("plugin-info-version", "version" to version))
+        sender.sendMessage(plugin.getMessage("plugin-info-authors", "authors" to authors))
+        sender.sendMessage(plugin.getMessage("plugin-info-database", "type" to dbType))
+        sender.sendMessage(plugin.getMessage("plugin-info-chambers", "count" to chamberCount))
+        sender.sendMessage(plugin.getMessage("plugin-info-platform",
+            "platform" to if (isFolia) "Folia" else "Paper/Spigot"
+        ))
+
+        // Integrations
+        sender.sendMessage(plugin.getMessage("plugin-info-integrations-header"))
+
+        val weStatus = if (worldEdit) "§a✓" else "§c✗"
+        val wgStatus = if (worldGuard) "§a✓" else "§c✗"
+        val papiStatus = if (placeholderApi) "§a✓" else "§c✗"
+        val vaultStatus = if (vault) "§a✓" else "§c✗"
+
+        sender.sendMessage(plugin.getMessage("plugin-info-integration-worldedit", "status" to weStatus))
+        sender.sendMessage(plugin.getMessage("plugin-info-integration-worldguard", "status" to wgStatus))
+        sender.sendMessage(plugin.getMessage("plugin-info-integration-papi", "status" to papiStatus))
+        sender.sendMessage(plugin.getMessage("plugin-info-integration-vault", "status" to vaultStatus))
+
+        // Config status
+        sender.sendMessage(plugin.getMessage("plugin-info-config-header"))
+        val perPlayerLoot = if (plugin.config.getBoolean("vaults.per-player-loot", true)) "§a✓" else "§c✗"
+        val spawnerWaves = if (plugin.config.getBoolean("spawner-waves.enabled", true)) "§a✓" else "§c✗"
+        val spectatorMode = if (plugin.config.getBoolean("spectator-mode.enabled", true)) "§a✓" else "§c✗"
+        val statistics = if (plugin.config.getBoolean("statistics.enabled", true)) "§a✓" else "§c✗"
+
+        sender.sendMessage(plugin.getMessage("plugin-info-config-per-player", "status" to perPlayerLoot))
+        sender.sendMessage(plugin.getMessage("plugin-info-config-spawner-waves", "status" to spawnerWaves))
+        sender.sendMessage(plugin.getMessage("plugin-info-config-spectator", "status" to spectatorMode))
+        sender.sendMessage(plugin.getMessage("plugin-info-config-statistics", "status" to statistics))
     }
 
     private fun handleGenerate(sender: CommandSender, args: Array<out String>) {

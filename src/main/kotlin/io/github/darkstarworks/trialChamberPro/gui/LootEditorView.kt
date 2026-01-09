@@ -43,8 +43,11 @@ class LootEditorView(
     fun build(player: Player): ChestGui {
         gui = ChestGui(6, title())
 
-        // Disable all drag operations
+        // Disable all click and drag operations
         gui.setOnGlobalClick { event ->
+            event.isCancelled = true
+        }
+        gui.setOnGlobalDrag { event ->
             event.isCancelled = true
         }
 

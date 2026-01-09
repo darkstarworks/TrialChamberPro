@@ -90,6 +90,7 @@ class VaultManagementView(
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
+        gui.setOnGlobalDrag { it.isCancelled = true }
 
         return gui
     }

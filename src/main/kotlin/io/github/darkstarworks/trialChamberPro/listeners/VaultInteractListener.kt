@@ -103,6 +103,34 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         if (plugin.config.getBoolean("vaults.per-player-loot", true)) {
             event.isCancelled = true // We'll handle the vault opening ourselves
 
+            // CRITICAL: Check the lock SYNCHRONOUSLY before launching async work
+            // This prevents the spam-click race condition where multiple coroutines could
+            // be launched before any of them checks the lock
+            val lockKey = "${player.uniqueId}:${block.location.blockX}:${block.location.blockY}:${block.location.blockZ}:${vaultType.name}"
+            val now = System.currentTimeMillis()
+
+            // Periodically clean up old entries to prevent memory leaks (entries older than 30 seconds)
+            if (openingVaults.size > 100) {
+                openingVaults.entries.removeIf { now - it.value > 30000 }
+            }
+
+            val existingOperation = openingVaults[lockKey]
+
+            if (existingOperation != null && now - existingOperation < 5000) {
+                // Operation still in progress (less than 5 seconds ago), ignore this click
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("Vault interaction ignored - already opening (spam protection)")
+                }
+                return
+            }
+
+            // Set the lock SYNCHRONOUSLY before launching async work
+            openingVaults[lockKey] = now
+
+            // Launch coroutine WITHOUT explicit lock removal
+            // The timestamp check above handles expiration - removing explicitly causes
+            // a race condition at the 5-second boundary where the remove() races with
+            // new events checking the lock
             listenerScope.launch(exceptionHandler) {
                 handleVaultOpen(player, block.location, vaultType)
             }
@@ -111,6 +139,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
     /**
      * Handles the vault opening logic.
+     * NOTE: Spam-click protection is done SYNCHRONOUSLY in the event handler before this is called.
      */
     private suspend fun handleVaultOpen(
         player: org.bukkit.entity.Player,
@@ -124,77 +153,50 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             return
         }
 
-        // Create a unique key for this player-vault combination
-        val lockKey = "${player.uniqueId}:${vault.id}"
-
-        // Check if this vault is already being opened by this player (prevents spam-click race condition)
-        val now = System.currentTimeMillis()
-        val existingOperation = openingVaults[lockKey]
-        if (existingOperation != null && now - existingOperation < 5000) {
-            // Operation still in progress (less than 5 seconds ago)
+        // Check permission bypass
+        if (player.hasPermission("tcp.bypass.cooldown")) {
+            openVault(player, vault, vaultType)
             return
         }
 
-        // Mark this vault as being opened
-        openingVaults[lockKey] = now
+        // Check cooldown
+        val (canOpen, remainingTime) = plugin.vaultManager.canOpenVault(player.uniqueId, vault)
 
-        try {
-            // Check permission bypass
-            if (player.hasPermission("tcp.bypass.cooldown")) {
-                openVault(player, vault, vaultType)
-                return
-            }
-
-            // Check cooldown
-            val (canOpen, remainingTime) = plugin.vaultManager.canOpenVault(player.uniqueId, vault)
-
-            if (!canOpen) {
-                // Vault is locked
-                if (remainingTime == Long.MAX_VALUE) {
-                    // Permanent lock (vanilla behavior)
-                    player.sendMessage(plugin.getMessage("vault-locked",
-                        "type" to vaultType.displayName
-                    ))
-                } else {
-                    // Time-based cooldown
-                    val timeString = MessageUtil.formatTime(remainingTime)
-                    player.sendMessage(plugin.getMessage("vault-cooldown",
-                        "type" to vaultType.displayName,
-                        "time" to timeString
-                    ))
-                }
-
-                // Show cooldown particles
-                showCooldownParticles(player, location, vaultType)
-                playErrorSound(player)
+        if (!canOpen) {
+            // Vault is locked
+            if (remainingTime == Long.MAX_VALUE) {
+                // Permanent lock (vanilla behavior)
+                player.sendMessage(plugin.getMessage("vault-locked",
+                    "type" to vaultType.displayName
+                ))
             } else {
-                // Can open the vault
-                openVault(player, vault, vaultType)
+                // Time-based cooldown
+                val timeString = MessageUtil.formatTime(remainingTime)
+                player.sendMessage(plugin.getMessage("vault-cooldown",
+                    "type" to vaultType.displayName,
+                    "time" to timeString
+                ))
             }
-        } finally {
-            // Clean up the lock after 5 seconds to prevent memory leaks
-            listenerScope.launch {
-                delay(5000)
-                openingVaults.remove(lockKey)
-            }
+
+            // Show cooldown particles
+            showCooldownParticles(player, location, vaultType)
+            playErrorSound(player)
+        } else {
+            // Can open the vault
+            openVault(player, vault, vaultType)
         }
     }
 
     /**
      * Opens a vault for a player.
      * CRITICAL FIX: Handles race condition where player may disconnect during loot generation.
+     * CRITICAL FIX: Does NOT consume key if no loot was generated (missing loot table).
      */
     private suspend fun openVault(
         player: org.bukkit.entity.Player,
         vault: io.github.darkstarworks.trialChamberPro.models.VaultData,
         vaultType: VaultType
     ) {
-        // Record the opening (for cooldown tracking)
-        plugin.vaultManager.recordOpen(player.uniqueId, vault.id)
-
-        // Update statistics (for leaderboards and /tcp stats)
-        plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
-
         // Resolve the effective loot table (chamber override > vault default)
         val chamber = plugin.chamberManager.getChamberById(vault.chamberId)
         val effectiveLootTable = plugin.chamberManager.getEffectiveLootTable(
@@ -209,8 +211,29 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                 "effective='$effectiveLootTable'")
         }
 
+        // Check if the loot table exists BEFORE generating loot
+        val tableExists = plugin.lootManager.getTable(effectiveLootTable) != null
+        if (!tableExists) {
+            plugin.logger.warning("Loot table '$effectiveLootTable' not found! Key will NOT be consumed.")
+            player.sendMessage(plugin.getMessage("vault-loot-table-missing"))
+            return  // Don't consume key, don't mark vault as opened
+        }
+
         // Generate loot (async, player might disconnect during this)
         val loot = plugin.lootManager.generateLoot(effectiveLootTable, player)
+
+        // CRITICAL: If no loot was generated, don't consume the key or mark the vault
+        if (loot.isEmpty()) {
+            plugin.logger.warning("No loot generated from table '$effectiveLootTable'! Key will NOT be consumed.")
+            player.sendMessage(plugin.getMessage("vault-no-loot-generated"))
+            return  // Don't consume key, don't mark vault as opened
+        }
+
+        // NOW record the opening (for cooldown tracking) - only after we know loot was generated
+        plugin.vaultManager.recordOpen(player.uniqueId, vault.id)
+
+        // Update statistics (for leaderboards and /tcp stats)
+        plugin.statisticsManager.incrementVaultsOpened(player.uniqueId, vault.type)
 
         // MUST switch to entity's region thread for player access (Folia compatible)
         // Use scheduler adapter instead of Dispatchers.Main (which doesn't exist in server environment)
@@ -250,7 +273,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                     playSuccessSound(player, player.location)
                     showSuccessParticles(player, player.location, vaultType)
 
-                    // Consume the trial key
+                    // Consume the trial key - ONLY if we got this far (loot was generated and given)
                     val item = player.inventory.itemInMainHand
                     if (item.amount > 1) {
                         item.amount -= 1

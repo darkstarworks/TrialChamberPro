@@ -32,8 +32,11 @@ class AmountEditorView(
     fun build(): ChestGui {
         gui = ChestGui(3, "Edit Amount: ${currentItem.type.name}")
 
-        // Disable all drag operations
+        // Disable all click and drag operations
         gui.setOnGlobalClick { event ->
+            event.isCancelled = true
+        }
+        gui.setOnGlobalDrag { event ->
             event.isCancelled = true
         }
 

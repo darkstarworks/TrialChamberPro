@@ -8,6 +8,26 @@ Time to get creative! The `loot.yml` file is where you customize what players ge
 After making changes, reload with `/tcp reload`
 {% endhint %}
 
+{% hint style="danger" %}
+**CRITICAL: Never use TAB characters in loot.yml!**
+
+TAB characters will cause the entire YAML file to fail to load silently. This results in **all loot tables being empty**, causing vaults to give no loot even though keys are consumed (fixed in v1.2.19+).
+
+**Symptoms of TAB character issues:**
+- Console shows: `Loot table not found: default (available: )`
+- Keys are consumed but no loot is given
+- No YAML parsing errors are shown
+
+**How to check:**
+1. Open `loot.yml` in a text editor that shows whitespace
+2. Look for `→` (TAB) characters instead of spaces
+3. Replace all TABs with spaces (2 or 4 spaces per indentation level)
+
+**Prevention:**
+- Configure your text editor to use "spaces for tabs"
+- Use editors like VS Code, Notepad++, or Sublime Text that can show whitespace
+{% endhint %}
+
 ---
 
 ## 🎯 Understanding Loot Tables
@@ -1181,6 +1201,9 @@ Open 50 vaults, record what you get, calculate actual drop rates. Does it match 
 ---
 
 ## ❓ Common Questions
+
+**"My loot tables aren't loading / vaults give no loot!"**
+Most likely caused by TAB characters in your YAML file. Check the console for `Loot table not found: default (available: )` - if the available list is empty, your entire loot.yml failed to parse. Open the file in an editor that shows whitespace and replace all TABs with spaces. See the warning at the top of this page for more details.
 
 **"Can I use NBT data for custom items?"**
 Not directly. Use custom item plugins (ItemsAdder, Oraxen) which handle NBT internally.

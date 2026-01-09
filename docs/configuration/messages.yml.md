@@ -224,6 +224,8 @@ vault-reset: "&aVault cooldown reset for &e{player}&a."
 wrong-key-type: "&cYou need a {required_type} Trial Key to open this vault!"
 no-key: "&cYou need a Trial Key to open this vault!"
 vault-not-found: "&cNo vault found at this location."
+vault-loot-table-missing: "&cVault configuration error! Loot table not found. Please contact an admin."
+vault-no-loot-generated: "&cVault is empty! No loot was generated. Please contact an admin."
 ```
 
 **Placeholders:**
@@ -231,6 +233,14 @@ vault-not-found: "&cNo vault found at this location."
 - `{time}` - Cooldown time remaining
 - `{player}` - Player name
 - `{required_type}` - Key type needed
+
+**New in v1.2.19:**
+- `vault-loot-table-missing` - Shown when the configured loot table doesn't exist (indicates configuration error)
+- `vault-no-loot-generated` - Shown when a loot table exists but generates no items (empty weighted-items or bad config)
+
+{% hint style="info" %}
+**Note:** In v1.2.19+, if these error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the admin fixes the configuration.
+{% endhint %}
 
 **Examples:**
 

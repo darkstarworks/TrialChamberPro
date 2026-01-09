@@ -22,7 +22,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp snapshot <action> <chamber>` | Manage snapshots | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp list` | List all chambers | `tcp.admin` |
-| `/tcp info <chamber>` | Show chamber details | `tcp.admin` |
+| `/tcp info [chamber]` | Show plugin info, or chamber details if specified | `tcp.admin` |
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.create` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
@@ -320,24 +320,62 @@ Shows chamber name, world, and total block count.
 
 ---
 
-### `/tcp info <chamber>`
+### `/tcp info [chamber]`
 
-Shows detailed information about a chamber.
+Shows plugin information (when used without arguments) or detailed chamber information (when a chamber name is provided).
 
 **Usage:**
 ```
+/tcp info
 /tcp info <chamber_name>
 ```
 
 **Permission:** `tcp.admin`
 
 **Arguments:**
-- `<chamber_name>` - Name of the chamber
+- `[chamber_name]` - Optional: Name of the chamber to show details for
 
 **Examples:**
 ```
+/tcp info
 /tcp info MainChamber
 ```
+
+#### Plugin Info (no arguments)
+
+When used without arguments, shows plugin-wide information:
+
+**Example output:**
+```
+[TCP] === TrialChamberPro Plugin Info ===
+[TCP] Version: 1.2.19
+[TCP] Authors: DarkStarWorks
+[TCP] Database: SQLITE
+[TCP] Registered Chambers: 5
+[TCP] Platform: Paper/Spigot
+[TCP] --- Integrations ---
+[TCP]   WorldEdit/FAWE: ✓
+[TCP]   WorldGuard: ✗
+[TCP]   PlaceholderAPI: ✓
+[TCP]   Vault: ✗
+[TCP] --- Features ---
+[TCP]   Per-Player Loot: ✓
+[TCP]   Spawner Waves: ✓
+[TCP]   Spectator Mode: ✓
+[TCP]   Statistics: ✓
+```
+
+**Info shown:**
+- Plugin version and authors
+- Database type (SQLite/MySQL)
+- Number of registered chambers
+- Server platform (Paper/Spigot or Folia)
+- Integration status (WorldEdit, WorldGuard, PlaceholderAPI, Vault)
+- Feature status (Per-Player Loot, Spawner Waves, Spectator Mode, Statistics)
+
+#### Chamber Info (with argument)
+
+When used with a chamber name, shows detailed chamber information:
 
 **Example output:**
 ```

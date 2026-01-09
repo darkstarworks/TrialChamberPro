@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.2.18"
+version = "1.2.20"
 
 repositories {
     mavenCentral()
@@ -36,7 +36,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.1.0")
 
     // GUI Framework
-    implementation("com.github.stefvanschie.inventoryframework:IF:0.11.5")
+    implementation("com.github.stefvanschie.inventoryframework:IF:0.11.6")
 
     // JSON parsing for update checker
     implementation("com.google.code.gson:gson:2.10.1")

@@ -50,6 +50,9 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
 
         gui.addPane(controls)
 
+        gui.setOnGlobalClick { it.isCancelled = true }
+        gui.setOnGlobalDrag { it.isCancelled = true }
+
         return gui
     }
 

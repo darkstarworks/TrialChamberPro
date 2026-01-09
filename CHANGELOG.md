@@ -4,6 +4,55 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.20] - 2026-01-10
+### Fixed
+- **GUI Icons Misplaced**: Updated InventoryFramework from 0.11.5 to 0.11.6 to fix potential GUI rendering issues
+  - Reported: Menu icons appearing in wrong positions
+  - May also fix issues with ProtocolLib conflicts
+- **Vault Spam-Click Race Condition at 5-Second Boundary**: Fixed race condition where multiple vault opens could occur when spam protection lock expires
+  - Root cause: The `delay(5000); remove(lockKey)` in the coroutine's finally block races with new events at exactly 5 seconds
+  - At T+5s, the old coroutine removes the lock while new events are checking it, allowing multiple events through
+  - Fix: Removed explicit lock removal; rely on timestamp-based expiration check instead
+  - Added periodic cleanup (when map size > 100) to prevent memory leaks
+
+### Technical Details
+- Updated `com.github.stefvanschie.inventoryframework:IF` dependency from 0.11.5 to 0.11.6
+- `VaultInteractListener`: Removed `finally { delay(5000); remove() }` block that caused race condition
+- Spam protection lock now uses timestamp expiration only (checked on each event)
+- Memory leak prevention: Old entries (>30s) cleaned up when map exceeds 100 entries
+
+## [1.2.19] - 2026-01-09
+### Added
+- **Plugin Info Command**: `/tcp info` now shows plugin information when used without arguments
+  - Displays version, authors, database type, chamber count, platform (Paper/Folia)
+  - Shows integration status: WorldEdit/FAWE, WorldGuard, PlaceholderAPI, Vault
+  - Shows feature status: Per-Player Loot, Spawner Waves, Spectator Mode, Statistics
+  - Requires `tcp.admin` permission
+  - `/tcp info <chamber>` still shows chamber info (existing behavior)
+
+### Fixed
+- **GUI Item Drag Exploit**: Fixed players being able to drag items inside GUI menus
+  - Root cause: `setOnGlobalDrag` was missing from all 17 GUI views
+  - Players could drag items by holding click and moving, bypassing click handlers
+  - Now all views have both `setOnGlobalClick` and `setOnGlobalDrag` handlers
+- **Vault Spam-Click Exploit**: Fixed players being able to spam-click vaults to get multiple loot drops
+  - Root cause: The in-memory lock check was inside the async coroutine, not the sync event handler
+  - Multiple clicks could launch multiple coroutines before any of them checked/set the lock
+  - Fix: Lock check now happens SYNCHRONOUSLY in the event handler before any async work
+  - Uses location-based lock key (player + coordinates + vault type) for immediate protection
+- **Keys Consumed Without Loot**: Fixed trial keys being consumed even when no loot is generated
+  - Now checks if loot table exists BEFORE attempting to open vault
+  - If loot generation fails (empty result), key is NOT consumed and vault is NOT marked as opened
+  - Player receives error message explaining the configuration issue
+  - Common cause: TAB characters in loot.yml (YAML requires spaces, not tabs!)
+
+### Technical Details
+- Added `gui.setOnGlobalDrag { it.isCancelled = true }` to all 17 GUI view files
+- `VaultInteractListener.onVaultInteract()` now checks/sets the spam protection lock before launching coroutine
+- Lock key format changed from `{uuid}:{vaultId}` to `{uuid}:{x}:{y}:{z}:{type}` for sync access (no DB lookup needed)
+- Debug logging shows "Vault interaction ignored - already opening (spam protection)" when spam detected
+- New messages in messages.yml: `plugin-info-*` for plugin info display
+
 ## [1.2.18] - 2026-01-07
 ### Fixed
 - **Wild Spawner Cooldown Not Working**: Fixed cooldown setting having no effect on wild spawners
@@ -825,6 +874,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.18...v1.2.19
 [1.2.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.17...v1.2.18
 [1.2.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.16...v1.2.17
 [1.2.16]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.15...v1.2.16
