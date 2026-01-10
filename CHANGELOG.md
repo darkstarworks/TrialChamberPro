@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.22] - 2026-01-10
+### Fixed
+- **GUI Teleport Right-Click**: Fixed teleport button in ChamberDetailView ignoring click type
+  - Right-click was teleporting to chamber center instead of exit location
+  - Root cause: `handleTeleport()` didn't check for left vs right click - always teleported to center
+  - Fix: Added `isLeftClick` and `isRightClick` parameters to handler
+  - Left click: Teleport to chamber center (as before)
+  - Right click: Teleport to exit location (now works correctly)
+  - Shows "No exit location set" message if exit not configured
+
+### Technical Details
+- `ChamberDetailView.handleTeleport()` now accepts `left: Boolean, right: Boolean` parameters
+- Uses `when` expression to differentiate click types
+- Existing messages `gui-teleport-to-center`, `gui-teleport-to-exit`, and `gui-no-exit-location` used
+
 ## [1.2.21] - 2026-01-10
 ### Fixed
 - **Vault Cooldown Not Working**: Fixed permanent vault cooldown not being enforced after the 5-second spam protection expires
@@ -907,6 +922,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.21...v1.2.22
+[1.2.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.20...v1.2.21
+[1.2.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.19...v1.2.20
 [1.2.19]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.18...v1.2.19
 [1.2.18]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.17...v1.2.18
 [1.2.17]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.16...v1.2.17

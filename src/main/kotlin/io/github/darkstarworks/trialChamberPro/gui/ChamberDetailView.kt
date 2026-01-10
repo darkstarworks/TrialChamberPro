@@ -59,7 +59,7 @@ class ChamberDetailView(
 
         pane.addItem(GuiItem(createTeleportItem(player)) { event ->
             event.isCancelled = true
-            handleTeleport(player)
+            handleTeleport(player, event.isLeftClick, event.isRightClick)
         }, 6, 2)
 
         // Row 3: Reset and exit controls
@@ -345,20 +345,34 @@ class ChamberDetailView(
         }
     }
 
-    private fun handleTeleport(player: Player) {
+    private fun handleTeleport(player: Player, left: Boolean, right: Boolean) {
         val world = chamber.getWorld()
         if (world == null) {
             player.sendMessage(plugin.getMessage("gui-chamber-world-not-loaded"))
             return
         }
 
-        val centerX = (chamber.minX + chamber.maxX) / 2.0
-        val centerY = (chamber.minY + chamber.maxY) / 2.0
-        val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
-
-        val location = org.bukkit.Location(world, centerX, centerY, centerZ)
-        player.teleport(location)
-        player.sendMessage(plugin.getMessage("gui-teleport-to-center", "chamber" to chamber.name))
+        when {
+            right -> {
+                // Right click: Teleport to exit location
+                val exitLoc = chamber.getExitLocation()
+                if (exitLoc == null) {
+                    player.sendMessage(plugin.getMessage("gui-no-exit-location"))
+                    return
+                }
+                player.teleport(exitLoc)
+                player.sendMessage(plugin.getMessage("gui-teleport-to-exit", "chamber" to chamber.name))
+            }
+            else -> {
+                // Left click (default): Teleport to center
+                val centerX = (chamber.minX + chamber.maxX) / 2.0
+                val centerY = (chamber.minY + chamber.maxY) / 2.0
+                val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
+                val location = org.bukkit.Location(world, centerX, centerY, centerZ)
+                player.teleport(location)
+                player.sendMessage(plugin.getMessage("gui-teleport-to-center", "chamber" to chamber.name))
+            }
+        }
         player.closeInventory()
     }
 

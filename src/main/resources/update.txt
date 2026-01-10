@@ -1,4 +1,7 @@
 <black>.
+<aqua>[1.2.22] <gray>- <white>2026-01-10
+<yellow>! <white>FIXED: <red>GUI teleport right-click <yellow>- now correctly teleports to exit location.
+<gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 <aqua>[1.2.21] <gray>- <white>2026-01-10
 <yellow>! <white>FIXED: <red>Vault cooldowns not working <yellow>- now uses native Paper API.
 <lime>+ <white>IMPROVED: Vault reset commands now properly clear cooldowns.
