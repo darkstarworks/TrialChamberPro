@@ -83,8 +83,17 @@ class TrialChamberPro : JavaPlugin() {
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
+    // Listeners with coroutine scopes (stored for proper shutdown)
+    private lateinit var playerMovementListener: PlayerMovementListener
+    private lateinit var playerDeathListener: PlayerDeathListener
+    private lateinit var pasteConfirmListener: PasteConfirmListener
+
     // Update checker
     private lateinit var updateChecker: UpdateChecker
+
+    // Cached messages configuration (invalidated on reload)
+    @Volatile
+    private var cachedMessages: org.bukkit.configuration.file.YamlConfiguration? = null
 
     // Coroutine scope for async operations
     private val pluginScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -175,14 +184,8 @@ class TrialChamberPro : JavaPlugin() {
                 // Start reset scheduler
                 resetManager.startResetScheduler()
 
-                // Register command, tab completer, listeners and log readiness on main thread
+                // Register listeners and log readiness on main thread
                 scheduler.runTask(Runnable {
-                    // Register command executor and tab completer
-                    val tcpCommand = TCPCommand(this@TrialChamberPro)
-                    val tabCompleter = TCPTabCompleter(this@TrialChamberPro)
-                    getCommand("tcp")?.setExecutor(tcpCommand)
-                    getCommand("tcp")?.tabCompleter = tabCompleter
-
                     // Register listeners
                     vaultInteractListener = VaultInteractListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
@@ -193,20 +196,23 @@ class TrialChamberPro : JavaPlugin() {
                         ProtectionListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    playerMovementListener = PlayerMovementListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
-                        PlayerMovementListener(this@TrialChamberPro),
+                        playerMovementListener,
                         this@TrialChamberPro
                     )
+                    playerDeathListener = PlayerDeathListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
-                        PlayerDeathListener(this@TrialChamberPro),
+                        playerDeathListener,
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
                         UndoListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    pasteConfirmListener = PasteConfirmListener(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
-                        PasteConfirmListener(this@TrialChamberPro),
+                        pasteConfirmListener,
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
@@ -344,6 +350,15 @@ class TrialChamberPro : JavaPlugin() {
         if (::vaultInteractListener.isInitialized) {
             vaultInteractListener.shutdown()
         }
+        if (::playerMovementListener.isInitialized) {
+            playerMovementListener.shutdown()
+        }
+        if (::playerDeathListener.isInitialized) {
+            playerDeathListener.shutdown()
+        }
+        if (::pasteConfirmListener.isInitialized) {
+            pasteConfirmListener.shutdown()
+        }
 
         // Close database connections
         if (::databaseManager.isInitialized) {
@@ -358,6 +373,7 @@ class TrialChamberPro : JavaPlugin() {
      */
     fun reloadPluginConfig() {
         reloadConfig()
+        cachedMessages = null // Force reload on next getMessage() call
         if (::lootManager.isInitialized) {
             lootManager.loadLootTables()
         }
@@ -368,8 +384,11 @@ class TrialChamberPro : JavaPlugin() {
      * Gets a message from messages.yml with optional placeholders.
      */
     fun getMessage(key: String, vararg replacements: Pair<String, Any?>): String {
-        val messagesFile = File(dataFolder, "messages.yml")
-        val messages = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(messagesFile)
+        val messages = cachedMessages ?: run {
+            val loaded = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(File(dataFolder, "messages.yml"))
+            cachedMessages = loaded
+            loaded
+        }
 
         val prefix = messages.getString("prefix", "&8[&6TCP&8]&r ")
         var message = messages.getString(key, "&cMessage not found: $key")!!

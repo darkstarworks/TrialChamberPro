@@ -359,7 +359,7 @@ When used without arguments, shows plugin-wide information:
 **Example output:**
 ```
 [TCP] === TrialChamberPro Plugin Info ===
-[TCP] Version: 1.2.19
+[TCP] Version: 1.2.22
 [TCP] Authors: DarkStarWorks
 [TCP] Database: SQLITE
 [TCP] Registered Chambers: 5

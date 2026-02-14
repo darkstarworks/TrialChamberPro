@@ -4,7 +4,6 @@ import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.utils.UndoTracker
 import io.papermc.paper.event.player.AsyncChatEvent
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -52,25 +51,25 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
             "confirm" -> {
                 event.isCancelled = true
                 UndoTracker.clearPending(player.uniqueId)
-                // Perform deletion asynchronously, then message on entity's region thread (Folia compatible)
-                plugin.scheduler.runTaskAsync(Runnable {
+                // Perform deletion asynchronously via coroutine (no runBlocking)
+                plugin.launchAsync {
                     val success = try {
-                        // suspend function; call via runBlocking? We'll use blocking bridge
-                        kotlinx.coroutines.runBlocking {
-                            plugin.chamberManager.deleteChamber(pending.chamberName)
-                        }
-                    } catch (_: Exception) {
+                        plugin.chamberManager.deleteChamber(pending.chamberName)
+                    } catch (e: Exception) {
+                        plugin.logger.warning("Failed to delete chamber: ${e.message}")
                         false
                     }
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        if (success) {
-                            player.sendMessage(plugin.getMessage("undo-deleted", "chamber" to pending.chamberName))
-                            UndoTracker.clearLast(player.uniqueId)
-                        } else {
-                            player.sendMessage(plugin.getMessage("undo-failed", "chamber" to pending.chamberName))
+                        if (player.isOnline) {
+                            if (success) {
+                                player.sendMessage(plugin.getMessage("undo-deleted", "chamber" to pending.chamberName))
+                                UndoTracker.clearLast(player.uniqueId)
+                            } else {
+                                player.sendMessage(plugin.getMessage("undo-failed", "chamber" to pending.chamberName))
+                            }
                         }
                     })
-                })
+                }
             }
             "cancel" -> {
                 event.isCancelled = true

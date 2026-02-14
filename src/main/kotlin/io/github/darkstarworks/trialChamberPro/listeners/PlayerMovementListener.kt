@@ -3,10 +3,7 @@ package io.github.darkstarworks.trialChamberPro.listeners
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.scheduler.ScheduledTask
 import io.github.darkstarworks.trialChamberPro.utils.AdvancementUtil
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.bukkit.GameMode
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -177,4 +174,38 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
      * Checks if a player is currently in a chamber.
      */
     fun isPlayerInChamber(uuid: UUID): Boolean = playersInChambers.contains(uuid)
+
+    /**
+     * Flushes all pending time data and cancels the coroutine scope on plugin shutdown.
+     */
+    fun shutdown() {
+        // Flush remaining player times before shutting down
+        val currentTime = System.currentTimeMillis()
+        val updates = mutableMapOf<UUID, Long>()
+
+        playersInChambers.forEach { uuid ->
+            val entryTime = playerEntryTimes.remove(uuid)
+            if (entryTime != null) {
+                val timeSpent = (currentTime - entryTime) / 1000
+                if (timeSpent > 0) {
+                    updates[uuid] = timeSpent
+                }
+            }
+        }
+
+        if (updates.isNotEmpty()) {
+            try {
+                runBlocking {
+                    plugin.statisticsManager.batchAddTimeSpent(updates)
+                }
+                plugin.logger.info("Flushed final time tracking for ${updates.size} players on shutdown")
+            } catch (e: Exception) {
+                plugin.logger.warning("Failed to flush time tracking on shutdown: ${e.message}")
+            }
+        }
+
+        movementScope.cancel()
+        playersInChambers.clear()
+        playerEntryTimes.clear()
+    }
 }

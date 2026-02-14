@@ -1,10 +1,6 @@
 package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import org.bukkit.Location
 import org.bukkit.entity.Monster
 import org.bukkit.event.EventHandler
@@ -21,8 +17,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
 
-    private val deathScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-
     // Track pending spectator offers keyed by player UUID
     private data class PendingOffer(val chamberId: Int, val chamberName: String, val deathLocation: Location)
     private val pendingOffers = ConcurrentHashMap<UUID, PendingOffer>()
@@ -34,31 +28,31 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
         val player = event.entity
         val location = player.location
 
-        // Check if player died in a chamber
-        deathScope.launch {
-            val chamber = plugin.chamberManager.getChamberAt(location)
-            if (chamber != null) {
-                plugin.statisticsManager.incrementDeaths(player.uniqueId)
+        // Use synchronous cache lookup so we can modify the event before it's processed
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
 
-                plugin.logger.info("Player ${player.name} died in chamber ${chamber.name}")
+        // Track death statistics asynchronously
+        plugin.launchAsync {
+            plugin.statisticsManager.incrementDeaths(player.uniqueId)
+        }
 
-                // Optional: Send custom death message
-                if (plugin.config.getBoolean("messages.custom-death-message", false)) {
-                    event.deathMessage(
-                        net.kyori.adventure.text.Component.text(
-                            plugin.getMessage("player-died-in-chamber",
-                                "player" to player.name,
-                                "chamber" to chamber.name
-                            )
-                        )
+        plugin.logger.info("Player ${player.name} died in chamber ${chamber.name}")
+
+        // Set custom death message synchronously (while event is still being processed)
+        if (plugin.config.getBoolean("messages.custom-death-message", false)) {
+            event.deathMessage(
+                net.kyori.adventure.text.Component.text(
+                    plugin.getMessage("player-died-in-chamber",
+                        "player" to player.name,
+                        "chamber" to chamber.name
                     )
-                }
+                )
+            )
+        }
 
-                // Queue spectator offer for when player respawns (more reliable than fixed delay)
-                if (plugin.config.getBoolean("spectator-mode.enabled", true)) {
-                    pendingOffers[player.uniqueId] = PendingOffer(chamber.id, chamber.name, location.clone())
-                }
-            }
+        // Queue spectator offer for when player respawns
+        if (plugin.config.getBoolean("spectator-mode.enabled", true)) {
+            pendingOffers[player.uniqueId] = PendingOffer(chamber.id, chamber.name, location.clone())
         }
     }
 
@@ -96,15 +90,17 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
         val killer = entity.killer ?: return
         val location = entity.location
 
-        // Check if mob was killed in a chamber
-        deathScope.launch {
-            val chamber = plugin.chamberManager.getChamberAt(location)
-            if (chamber != null) {
-                plugin.statisticsManager.incrementMobsKilled(killer.uniqueId)
-            }
+        // Use synchronous cache lookup, then track stats asynchronously
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        plugin.launchAsync {
+            plugin.statisticsManager.incrementMobsKilled(killer.uniqueId)
         }
     }
 
     // Note: Chamber completion tracking can be implemented later with more sophisticated logic
     // For now, we focus on death and mob kill statistics
+
+    fun shutdown() {
+        pendingOffers.clear()
+    }
 }

@@ -57,6 +57,14 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             VaultType.NORMAL
         }
 
+        // Skip plugin logic for vaults outside registered chambers — allow vanilla behavior
+        if (!plugin.chamberManager.isInChamber(block.location)) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("Vault at ${block.location.toVector()} is outside registered chambers - allowing vanilla behavior")
+            }
+            return
+        }
+
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("Vault interaction: blockData='$blockDataString', detected type=$vaultType")

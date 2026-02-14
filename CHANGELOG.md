@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.23] - 2026-02-14
+### Fixed
+- **Vanilla Vaults Broken**: Unregistered/vanilla vaults now work correctly when plugin is installed
+  - Root cause: `VaultInteractListener` intercepted ALL vault interactions server-wide, cancelling the event for vaults not in the plugin's database
+  - Fix: Early-return check skips plugin logic for vaults outside registered chambers
+- **Custom Death Message Not Working**: Death messages set from async thread had no effect (event already processed)
+  - Fix: Use synchronous cache lookup (`getCachedChamberAt`) so death message is set while event is still being processed
+- **Async Block Data Access**: `saveVault()` accessed `block.blockData.asString` on IO thread (unsafe Bukkit API access)
+  - Fix: Block data string is now read on the main thread and passed as a parameter
+- **`runBlocking` in Async Thread**: `UndoListener` used `runBlocking` inside `runTaskAsync`, blocking Bukkit's async thread pool
+  - Fix: Replaced with `plugin.launchAsync {}` coroutine pattern
+- **JDBC Resource Leaks**: `StatisticsManager` had 5 methods with `PreparedStatement`/`ResultSet` not wrapped in `.use{}`
+  - Fix: All JDBC resources now use `.use{}` for automatic cleanup
+- **`loadingLocks` Memory Leak**: Per-player mutex map in `StatisticsManager` grew without bound
+  - Fix: Entries now cleaned up alongside cache invalidation
+
+### Improved
+- **Messages Performance**: `getMessage()` now caches the parsed `messages.yml` instead of re-reading and re-parsing the file on every call; cache invalidated on `/tcp reload`
+- **Shutdown Reliability**: `PlayerMovementListener`, `PlayerDeathListener`, and `PasteConfirmListener` coroutine scopes now properly cancelled on plugin disable
+- **Time Tracking Data Preservation**: Player time-in-chamber data is flushed to database on plugin shutdown (previously up to 5 minutes of data could be lost)
+- **Duplicate Command Handlers**: Removed redundant `TCPCommand`/`TCPTabCompleter` creation during async initialization (already registered at startup)
+
 ## [1.2.22] - 2026-01-10
 ### Fixed
 - **GUI Teleport Right-Click**: Fixed teleport button in ChamberDetailView ignoring click type

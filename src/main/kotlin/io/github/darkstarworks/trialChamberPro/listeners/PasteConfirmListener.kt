@@ -2,10 +2,7 @@ package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.papermc.paper.event.player.AsyncChatEvent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -72,5 +69,9 @@ class PasteConfirmListener(private val plugin: TrialChamberPro) : Listener {
     fun onQuit(event: PlayerQuitEvent) {
         // Clean up pending pastes when player quits
         plugin.pasteConfirmationManager.cancelPending(event.player, silent = true)
+    }
+
+    fun shutdown() {
+        listenerScope.cancel()
     }
 }

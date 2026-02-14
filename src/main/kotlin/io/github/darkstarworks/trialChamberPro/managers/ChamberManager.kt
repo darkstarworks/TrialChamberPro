@@ -379,9 +379,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
                                 when (block.type) {
                                     Material.VAULT -> {
-                                        // Save vault with its block state (normal or ominous)
+                                        // Read block data on main thread, pass string to async
+                                        val blockDataString = block.blockData.asString
                                         plugin.launchAsync {
-                                            saveVault(chamber.id, x, y, z, block)
+                                            saveVault(chamber.id, x, y, z, blockDataString)
                                         }
                                         vaultCount++
                                     }
@@ -413,19 +414,18 @@ class ChamberManager(private val plugin: TrialChamberPro) {
 
     /**
      * Saves a vault to the database.
-     * Checks block state to determine if it's ominous or normal.
+     * Block data string is read on the main thread and passed in to avoid async Bukkit API access.
      */
-    private suspend fun saveVault(chamberId: Int, x: Int, y: Int, z: Int, block: org.bukkit.block.Block) = withContext(Dispatchers.IO) {
-        // Determine current vault type from block state string
-        val blockStateString = block.blockData.asString
-        val currentType = if (blockStateString.contains("ominous=true", ignoreCase = true)) {
+    private suspend fun saveVault(chamberId: Int, x: Int, y: Int, z: Int, blockDataString: String) = withContext(Dispatchers.IO) {
+        // Determine current vault type from block state string (already read on main thread)
+        val currentType = if (blockDataString.contains("ominous=true", ignoreCase = true)) {
             VaultType.OMINOUS
         } else {
             VaultType.NORMAL
         }
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
-            plugin.logger.info("Saving vault at ($x,$y,$z): blockData='$blockStateString', currentType=$currentType")
+            plugin.logger.info("Saving vault at ($x,$y,$z): blockData='$blockDataString', currentType=$currentType")
         }
 
         try {

@@ -161,16 +161,16 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                     """.trimIndent()
                 }
 
-                val stmt = conn.prepareStatement(sql)
+                conn.prepareStatement(sql).use { stmt ->
+                    updates.forEach { (uuid, seconds) ->
+                        stmt.setString(1, uuid.toString())
+                        stmt.setLong(2, seconds)
+                        stmt.setLong(3, System.currentTimeMillis())
+                        stmt.addBatch()
+                    }
 
-                updates.forEach { (uuid, seconds) ->
-                    stmt.setString(1, uuid.toString())
-                    stmt.setLong(2, seconds)
-                    stmt.setLong(3, System.currentTimeMillis())
-                    stmt.addBatch()
+                    stmt.executeBatch()
                 }
-
-                stmt.executeBatch()
                 conn.commit()
 
                 // Invalidate cache for all updated players
@@ -200,21 +200,22 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
         }
 
         plugin.databaseManager.connection.use { conn ->
-            val stmt = conn.prepareStatement(
+            conn.prepareStatement(
                 "SELECT player_uuid, $column FROM player_stats ORDER BY $column DESC LIMIT ?"
-            )
-            stmt.setInt(1, limit)
+            ).use { stmt ->
+                stmt.setInt(1, limit)
 
-            val results = mutableListOf<Pair<UUID, Int>>()
-            val rs = stmt.executeQuery()
+                val results = mutableListOf<Pair<UUID, Int>>()
+                stmt.executeQuery().use { rs ->
+                    while (rs.next()) {
+                        val uuid = UUID.fromString(rs.getString("player_uuid"))
+                        val value = rs.getInt(column)
+                        results.add(uuid to value)
+                    }
+                }
 
-            while (rs.next()) {
-                val uuid = UUID.fromString(rs.getString("player_uuid"))
-                val value = rs.getInt(column)
-                results.add(uuid to value)
+                results
             }
-
-            results
         }
     }
 
@@ -223,11 +224,12 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      */
     suspend fun resetStats(playerUuid: UUID) = withContext(Dispatchers.IO) {
         plugin.databaseManager.connection.use { conn ->
-            val stmt = conn.prepareStatement(
+            conn.prepareStatement(
                 "DELETE FROM player_stats WHERE player_uuid = ?"
-            )
-            stmt.setString(1, playerUuid.toString())
-            stmt.executeUpdate()
+            ).use { stmt ->
+                stmt.setString(1, playerUuid.toString())
+                stmt.executeUpdate()
+            }
         }
         invalidateCache(playerUuid)
     }
@@ -238,29 +240,30 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
      */
     private fun loadStatsFromDatabase(playerUuid: UUID): PlayerStats {
         plugin.databaseManager.connection.use { conn ->
-            val stmt = conn.prepareStatement(
+            conn.prepareStatement(
                 "SELECT * FROM player_stats WHERE player_uuid = ?"
-            )
-            stmt.setString(1, playerUuid.toString())
+            ).use { stmt ->
+                stmt.setString(1, playerUuid.toString())
 
-            val rs = stmt.executeQuery()
-
-            return if (rs.next()) {
-                PlayerStats(
-                    playerUuid = playerUuid,
-                    chambersCompleted = rs.getInt("chambers_completed"),
-                    normalVaultsOpened = rs.getInt("normal_vaults_opened"),
-                    ominousVaultsOpened = rs.getInt("ominous_vaults_opened"),
-                    mobsKilled = rs.getInt("mobs_killed"),
-                    deaths = rs.getInt("deaths"),
-                    timeSpent = rs.getLong("time_spent"),
-                    lastUpdated = rs.getLong("last_updated")
-                )
-            } else {
-                // Create new stats entry
-                val newStats = PlayerStats(playerUuid = playerUuid)
-                saveStats(newStats)
-                newStats
+                stmt.executeQuery().use { rs ->
+                    return if (rs.next()) {
+                        PlayerStats(
+                            playerUuid = playerUuid,
+                            chambersCompleted = rs.getInt("chambers_completed"),
+                            normalVaultsOpened = rs.getInt("normal_vaults_opened"),
+                            ominousVaultsOpened = rs.getInt("ominous_vaults_opened"),
+                            mobsKilled = rs.getInt("mobs_killed"),
+                            deaths = rs.getInt("deaths"),
+                            timeSpent = rs.getLong("time_spent"),
+                            lastUpdated = rs.getLong("last_updated")
+                        )
+                    } else {
+                        // Create new stats entry
+                        val newStats = PlayerStats(playerUuid = playerUuid)
+                        saveStats(newStats)
+                        newStats
+                    }
+                }
             }
         }
     }
@@ -298,16 +301,17 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
                 """
             }
 
-            val stmt = conn.prepareStatement(sql)
-            stmt.setString(1, stats.playerUuid.toString())
-            stmt.setInt(2, stats.chambersCompleted)
-            stmt.setInt(3, stats.normalVaultsOpened)
-            stmt.setInt(4, stats.ominousVaultsOpened)
-            stmt.setInt(5, stats.mobsKilled)
-            stmt.setInt(6, stats.deaths)
-            stmt.setLong(7, stats.timeSpent)
-            stmt.setLong(8, stats.lastUpdated)
-            stmt.executeUpdate()
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, stats.playerUuid.toString())
+                stmt.setInt(2, stats.chambersCompleted)
+                stmt.setInt(3, stats.normalVaultsOpened)
+                stmt.setInt(4, stats.ominousVaultsOpened)
+                stmt.setInt(5, stats.mobsKilled)
+                stmt.setInt(6, stats.deaths)
+                stmt.setLong(7, stats.timeSpent)
+                stmt.setLong(8, stats.lastUpdated)
+                stmt.executeUpdate()
+            }
         }
     }
 
@@ -317,6 +321,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     private fun invalidateCache(playerUuid: UUID) {
         statsCache.remove(playerUuid)
         cacheExpiry.remove(playerUuid)
+        loadingLocks.remove(playerUuid)
     }
 
     /**
@@ -325,6 +330,7 @@ class StatisticsManager(private val plugin: TrialChamberPro) {
     fun clearCache() {
         statsCache.clear()
         cacheExpiry.clear()
+        loadingLocks.clear()
     }
 
     /**
