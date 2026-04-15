@@ -473,28 +473,20 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
     /**
      * Resolves a sound from either enum name (BLOCK_VAULT_OPEN_SHUTTER) or namespaced key (block.vault.open_shutter).
-     * Properly handles compound names like NOTE_BLOCK that should stay as note_block.
+     * Uses the Registry API (Sound.valueOf is deprecated in Paper 26.x).
      */
     private fun resolveSound(soundName: String): org.bukkit.Sound? {
         return try {
-            // First try: direct enum lookup (works if user specifies BLOCK_VAULT_OPEN_SHUTTER)
-            org.bukkit.Sound.valueOf(soundName.uppercase())
-        } catch (_: Exception) {
-            try {
-                // Second try: if already a namespaced key format (block.vault.open_shutter)
-                val key = if (soundName.contains('.')) {
-                    soundName.lowercase()
-                } else {
-                    // Convert enum-style to namespaced: BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
-                    // Split by underscore, then intelligently join:
-                    // - Use dots between major categories (BLOCK, ENTITY, ITEM, etc.)
-                    // - Keep underscores within names (NOTE_BLOCK -> note_block)
-                    convertEnumToNamespacedKey(soundName)
-                }
-                org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
-            } catch (_: Exception) {
-                null
+            // Convert to namespaced key format: BLOCK_VAULT_OPEN_SHUTTER -> block.vault.open_shutter
+            // or pass through if already namespaced: block.vault.open_shutter
+            val key = if (soundName.contains('.')) {
+                soundName.lowercase()
+            } else {
+                convertEnumToNamespacedKey(soundName)
             }
+            org.bukkit.Registry.SOUNDS.get(org.bukkit.NamespacedKey.minecraft(key))
+        } catch (_: Exception) {
+            null
         }
     }
 

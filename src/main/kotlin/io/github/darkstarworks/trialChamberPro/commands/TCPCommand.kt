@@ -300,9 +300,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
      * Shows plugin information including version, authors, integrations, and status.
      */
     private fun showPluginInfo(sender: CommandSender) {
-        val desc = plugin.description
-        val version = desc.version
-        val authors = desc.authors.joinToString(", ")
+        val meta = plugin.pluginMeta
+        val version = meta.version
+        val authors = meta.authors.joinToString(", ")
 
         // Check integrations
         val worldEdit = plugin.server.pluginManager.getPlugin("WorldEdit") != null ||

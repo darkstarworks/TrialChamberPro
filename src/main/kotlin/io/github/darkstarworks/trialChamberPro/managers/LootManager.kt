@@ -535,9 +535,6 @@ class LootManager(private val plugin: TrialChamberPro) {
                 })
             }
 
-            // Apply custom model data
-            lootItem.customModelData?.let { setCustomModelData(it) }
-
             // Handle OMINOUS_BOTTLE separately (uses OminousBottleMeta, not PotionMeta)
             if (this is org.bukkit.inventory.meta.OminousBottleMeta) {
                 // Set Bad Omen amplifier for ominous bottles
@@ -713,6 +710,16 @@ class LootManager(private val plugin: TrialChamberPro) {
                     }
                 }
             }
+        }
+
+        // Apply custom model data via the component API (ItemMeta.setCustomModelData(Int) is deprecated in Paper 26.x)
+        lootItem.customModelData?.let { cmd ->
+            itemStack.setData(
+                io.papermc.paper.datacomponent.DataComponentTypes.CUSTOM_MODEL_DATA,
+                io.papermc.paper.datacomponent.item.CustomModelData.customModelData()
+                    .addFloat(cmd.toFloat())
+                    .build()
+            )
         }
 
         // Add fixed enchantments (legacy format)

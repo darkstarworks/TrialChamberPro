@@ -117,7 +117,7 @@ class HelpMenuView(
                     .decoration(TextDecoration.BOLD, true))
                 lore(listOf(
                     Component.text("TrialChamberPro", NamedTextColor.WHITE),
-                    Component.text("Version: ${plugin.description.version}", NamedTextColor.GRAY),
+                    Component.text("Version: ${plugin.pluginMeta.version}", NamedTextColor.GRAY),
                     Component.empty(),
                     Component.text("Transform Trial Chambers into", NamedTextColor.GRAY),
                     Component.text("renewable multiplayer content!", NamedTextColor.GRAY)

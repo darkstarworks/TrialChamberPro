@@ -90,7 +90,7 @@ class MainMenuView(
                         .decoration(TextDecoration.BOLD, true)
                 )
                 lore(listOf(
-                    Component.text("Version ${plugin.description.version}", NamedTextColor.GRAY),
+                    Component.text("Version ${plugin.pluginMeta.version}", NamedTextColor.GRAY),
                     Component.empty(),
                     Component.text("Registered Chambers: ", NamedTextColor.YELLOW)
                         .append(Component.text("$chamberCount", NamedTextColor.WHITE)),
