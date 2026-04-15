@@ -1,10 +1,6 @@
 <black>.
-<aqua>[1.2.23] <gray>- <white>2026-02-14
-<yellow>! <white>FIXED: <red>Vanilla vaults broken <yellow>- unregistered vaults now work normally.
-<yellow>! <white>FIXED: <red>Custom death message not working <yellow>- was set from async thread.
-<yellow>! <white>FIXED: <red>Async block data access <yellow>- vault scan no longer accesses Bukkit API off-thread.
-<yellow>! <white>FIXED: <red>JDBC resource leaks <yellow>- StatisticsManager now properly closes statements.
-<lime>+ <white>IMPROVED: Messages performance - YAML cached instead of re-parsed per call.
-<lime>+ <white>IMPROVED: Shutdown reliability - all listener coroutine scopes properly cancelled.
-<lime>+ <white>IMPROVED: Time tracking data preserved on shutdown (no more data loss).
+<aqua>[1.2.24] <gray>- <white>2026-04-15
+<lime>+ <white>NEW: <green>Custom plugin items in loot.yml <white>- drop Nexo, ItemsAdder, and Oraxen items from vaults.
+<white>  <gray>Use <yellow>type: CUSTOM_ITEM <gray>with <yellow>plugin: <gray>and <yellow>item-id: <gray>fields.
+<lime>+ <white>NEW: <green>custom-model-data field <white>- set custom model data on any vanilla loot item.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _

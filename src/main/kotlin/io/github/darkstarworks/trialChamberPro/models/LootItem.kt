@@ -47,6 +47,14 @@ data class LootItem(
     // Goat Horn instrument support (8 variants)
     val instrument: String? = null, // PONDER, SING, SEEK, FEEL, ADMIRE, CALL, YEARN, DREAM
 
+    // Custom item plugin support (Nexo, ItemsAdder, Oraxen)
+    // When set, 'type' is ignored and the item is resolved from the named plugin.
+    val customItemPlugin: String? = null,  // "Nexo", "ItemsAdder", or "Oraxen"
+    val customItemId: String? = null,      // plugin-specific item ID (e.g. "trial_chamber:legendary_sword")
+
+    // Custom model data for vanilla items
+    val customModelData: Int? = null,
+
     val enabled: Boolean = true
 )
 

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.24] - 2026-04-15
+### Added
+- **Custom Plugin Item Support in loot.yml**: Nexo, ItemsAdder, and Oraxen items can now be used as loot drops
+  - Use `type: CUSTOM_ITEM` with `plugin: Nexo/ItemsAdder/Oraxen` and `item-id: "..."` fields
+  - Resolved at runtime via reflection — no compile-time dependency on any custom item plugin
+  - If the plugin is not installed, the item is skipped with a console warning
+  - Extra `name:`, `lore:`, and `enchantments:` fields are applied on top of the resolved item
+- **`custom-model-data` field for vanilla items**: Set custom model data (resource pack texture override) on any vanilla item in loot.yml
+  - Works with all other item fields (enchantments, lore, durability ranges, etc.)
+
 ## [1.2.23] - 2026-02-14
 ### Fixed
 - **Vanilla Vaults Broken**: Unregistered/vanilla vaults now work correctly when plugin is installed

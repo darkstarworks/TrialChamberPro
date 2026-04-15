@@ -818,42 +818,46 @@ loot-tables:
 
 Got Vault + an economy plugin? Give money as loot!
 
+Command rewards go in a **separate `command-rewards` list** — they are NOT items in `weighted-items`.
+
 ```yaml
-weighted-items:
-  - type: COMMAND
-    weight: 15.0
-    commands:
-      - "eco give {player} 1000"
-    display-name: "&a$1,000"
-    display-material: GOLD_INGOT  # What the player "sees" in inventory
+loot-tables:
+  default:
+    min-rolls: 3
+    max-rolls: 5
+    weighted-items:
+      - type: DIAMOND
+        amount-min: 1
+        amount-max: 3
+        weight: 10.0
+    command-rewards:
+      - weight: 25.0
+        commands:
+          - "eco give {player} 1000"
+        display-name: "&6+1000 Coins"
 ```
 
-**Placeholders:**
-- `{player}`: Player's name
-- `{uuid}`: Player's UUID
+See the full [💰 COMMAND Rewards](#-command-rewards-economy--permissions) section below for complete documentation and examples.
 
-**Multiple commands:**
-```yaml
-- type: COMMAND
-  weight: 5.0
-  commands:
-    - "eco give {player} 5000"
-    - "lp user {player} permission set special.perk true"
-    - "give {player} diamond 10"
-  display-name: "&6&lJackpot Package"
-  display-material: NETHER_STAR
-```
-
-All commands run as console. Perfect for bundles of rewards!
+{% hint style="danger" %}
+**`type: COMMAND` inside `weighted-items` is NOT valid** and will log an error. Always use the `command-rewards` list instead.
+{% endhint %}
 
 ---
 
 ## 🎨 Custom Plugin Items
 
-### ItemsAdder, Oraxen, MMOItems, etc.
+### Nexo, ItemsAdder, Oraxen
+
+Use `type: CUSTOM_ITEM` with `plugin:` and `item-id:` to drop custom items from supported plugins:
 
 ```yaml
 weighted-items:
+  - type: CUSTOM_ITEM
+    plugin: Nexo
+    item-id: "my_namespace:legendary_sword"
+    weight: 2.0
+
   - type: CUSTOM_ITEM
     plugin: ItemsAdder
     item-id: "trial_chamber:legendary_sword"
@@ -865,18 +869,38 @@ weighted-items:
     weight: 3.0
 ```
 
-TrialChamberPro detects which custom item plugin you're using and fetches the item automatically.
+TrialChamberPro resolves custom items at runtime using the plugin's API, so the custom item plugin must be installed and enabled on the server.
 
 **Supported plugins:**
-- ItemsAdder
-- Oraxen
-- MMOItems
-- ExecutableItems
-- Nova
+- **Nexo** — use the namespaced item ID (e.g. `"namespace:item_name"`)
+- **ItemsAdder** — use the namespaced item ID (e.g. `"namespace:item_name"`)
+- **Oraxen** — use the plain item ID (e.g. `"item_name"`)
+
+You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the resolved item—they will be applied over the custom item's base properties.
 
 {% hint style="warning" %}
-**Make sure the item IDs are correct!** If the plugin can't find the item, it'll drop nothing. Test your loot tables after adding custom items.
+**Make sure the item IDs are correct!** If the plugin can't find the item, it'll be skipped silently and nothing will drop. Test your loot tables after adding custom items.
 {% endhint %}
+
+---
+
+### 🖼️ Custom Model Data (Vanilla Items)
+
+To give a vanilla item a custom model (for resource pack textures), add `custom-model-data:`:
+
+```yaml
+weighted-items:
+  - type: DIAMOND_SWORD
+    amount-min: 1
+    amount-max: 1
+    weight: 5.0
+    custom-model-data: 1042
+    name: "&6Special Sword"
+    lore:
+      - "&7A sword with a unique appearance"
+```
+
+`custom-model-data` works on any vanilla item type and can be combined with enchantments, lore, durability ranges, etc.
 
 ---
 

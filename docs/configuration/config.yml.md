@@ -475,7 +475,13 @@ How many players to show on leaderboards. Increase to 25 or 50 if you want bigge
 ```yaml
 loot:
   apply-luck-effect: false
+  max-pools-per-table: 5
 ```
+
+### `max-pools-per-table`
+**Default:** `5`
+
+Maximum number of pools allowed per loot table when using the [multi-pool format](loot.yml.md#-multi-pool-loot-system-new). Pools beyond this limit are silently ignored at load time. Increase it if you need more pools per table; lower it to cap table complexity.
 
 ### `apply-luck-effect`
 **Default:** `false`

@@ -294,7 +294,7 @@ Helpers can:
 ```yaml
 group: builder
 permissions:
-  - tcp.admin.create
+  - tcp.admin.generate
   - tcp.admin.scan
   - tcp.admin.snapshot
   - tcp.admin.reset
@@ -349,7 +349,7 @@ Full access to everything. Simple!
 ### Create a Builder Group
 ```
 /lp creategroup builder
-/lp group builder permission set tcp.admin.create
+/lp group builder permission set tcp.admin.generate
 /lp group builder permission set tcp.admin.scan
 /lp group builder permission set tcp.admin.snapshot
 /lp group builder permission set tcp.bypass.protection
@@ -381,7 +381,7 @@ Steve can only create/scan chambers in the nether.
 
 ```
 tcp.admin.*
-  ├─ tcp.admin.create      (Register, delete, set exit)
+  ├─ tcp.admin.generate    (Register, delete, set exit)
   ├─ tcp.admin.scan        (Scan chambers)
   ├─ tcp.admin.snapshot    (Manage snapshots)
   ├─ tcp.admin.reset       (Force resets)
@@ -436,7 +436,7 @@ default:
   - tcp.leaderboard
 
 builder:
-  - tcp.admin.create
+  - tcp.admin.generate
   - tcp.admin.scan
   - tcp.admin.snapshot
   - tcp.bypass.protection
@@ -546,7 +546,7 @@ Protection settings and their interaction with bypass permissions.
 | **VIP** | Same + `tcp.bypass.cooldown` | Faster loot (optional) |
 | **Helper** | `tcp.admin.key`, `tcp.admin.vault`, `tcp.admin.reset` | Help players, manage events |
 | **Mod** | Helper + `tcp.admin.stats` | Monitor players |
-| **Builder** | `tcp.admin.create`, `tcp.admin.scan`, `tcp.admin.snapshot`, `tcp.bypass.protection` | Register chambers |
+| **Builder** | `tcp.admin.generate`, `tcp.admin.scan`, `tcp.admin.snapshot`, `tcp.bypass.protection` | Register chambers |
 | **Admin** | `tcp.admin.*` | Full control |
 
 Use this as a starting point and adjust to your server's needs!

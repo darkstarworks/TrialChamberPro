@@ -176,12 +176,33 @@ class LootManager(private val plugin: TrialChamberPro) {
             return null
         }
 
-        val material = try {
-            Material.valueOf(typeStr.uppercase())
-        } catch (_: IllegalArgumentException) {
-            plugin.logger.warning("Invalid material: $typeStr")
+        // Custom item plugin support — type: CUSTOM_ITEM with plugin + item-id fields
+        val customItemPlugin = data["plugin"] as? String
+        val customItemId = data["item-id"] as? String
+
+        if (typeStr.equals("CUSTOM_ITEM", ignoreCase = true) && customItemPlugin == null) {
+            plugin.logger.warning(
+                "type: CUSTOM_ITEM requires 'plugin:' and 'item-id:' fields. Example:\n" +
+                "  - type: CUSTOM_ITEM\n" +
+                "    plugin: Nexo\n" +
+                "    item-id: \"my_item\"\n" +
+                "    weight: 5.0"
+            )
             return null
         }
+
+        val material = if (typeStr.equals("CUSTOM_ITEM", ignoreCase = true) || customItemPlugin != null) {
+            Material.AIR // sentinel — real item resolved at generation time via plugin API
+        } else {
+            try {
+                Material.valueOf(typeStr.uppercase())
+            } catch (_: IllegalArgumentException) {
+                plugin.logger.warning("Invalid material: $typeStr (if this is a custom item, use 'type: CUSTOM_ITEM' with 'plugin:' and 'item-id:')")
+                return null
+            }
+        }
+
+        val customModelData = (data["custom-model-data"] as? Number)?.toInt()
 
         val amountMin = (data["amount-min"] as? Number)?.toInt() ?: 1
         val amountMax = (data["amount-max"] as? Number)?.toInt() ?: 1
@@ -284,6 +305,9 @@ class LootManager(private val plugin: TrialChamberPro) {
             durabilityMin = durabilityMin,
             durabilityMax = durabilityMax,
             instrument = instrument,
+            customItemPlugin = customItemPlugin,
+            customItemId = customItemId,
+            customModelData = customModelData,
             enabled = enabled
         )
     }
@@ -454,6 +478,36 @@ class LootManager(private val plugin: TrialChamberPro) {
     private fun createItemStack(lootItem: LootItem, player: Player): ItemStack {
         val amount = Random.nextInt(lootItem.amountMin, lootItem.amountMax + 1)
 
+        // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen)
+        if (lootItem.customItemPlugin != null && lootItem.customItemId != null) {
+            val resolved = resolveCustomItem(lootItem.customItemPlugin, lootItem.customItemId)
+            if (resolved == null) {
+                plugin.logger.warning("Skipping unresolvable custom item '${lootItem.customItemId}' (plugin: ${lootItem.customItemPlugin})")
+                return ItemStack(Material.AIR, 0)
+            }
+            val itemStack = resolved.clone().also { it.amount = amount }
+            // Apply any name/lore/enchantments specified on top of the custom item base
+            itemStack.itemMeta = itemStack.itemMeta?.apply {
+                lootItem.name?.let {
+                    displayName(net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(it, player))))
+                }
+                lootItem.lore?.let { loreLines ->
+                    lore(loreLines.map { line ->
+                        net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(line, player)))
+                    })
+                }
+            }
+            lootItem.enchantments?.forEach { (ench, level) -> itemStack.addUnsafeEnchantment(ench, level) }
+            lootItem.enchantmentRanges?.values?.forEach { range ->
+                itemStack.addUnsafeEnchantment(range.enchantment, Random.nextInt(range.minLevel, range.maxLevel + 1))
+            }
+            if (!lootItem.randomEnchantmentPool.isNullOrEmpty()) {
+                val r = lootItem.randomEnchantmentPool.random()
+                itemStack.addUnsafeEnchantment(r.enchantment, Random.nextInt(r.minLevel, r.maxLevel + 1))
+            }
+            return itemStack
+        }
+
         // Determine actual material type (handle ominous potions)
         val actualMaterial = if (lootItem.isOminousPotion && lootItem.type == Material.POTION) {
             Material.OMINOUS_BOTTLE
@@ -480,6 +534,9 @@ class LootManager(private val plugin: TrialChamberPro) {
                     net.kyori.adventure.text.Component.text(colorize(replacePlaceholders(line, player)))
                 })
             }
+
+            // Apply custom model data
+            lootItem.customModelData?.let { setCustomModelData(it) }
 
             // Handle OMINOUS_BOTTLE separately (uses OminousBottleMeta, not PotionMeta)
             if (this is org.bukkit.inventory.meta.OminousBottleMeta) {
@@ -680,6 +737,71 @@ class LootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Resolves a custom item from a supported plugin (Nexo, ItemsAdder, Oraxen).
+     * Uses reflection so no compile-time dependency on any of these plugins is needed.
+     */
+    private fun resolveCustomItem(pluginName: String, itemId: String): ItemStack? {
+        if (!org.bukkit.Bukkit.getPluginManager().isPluginEnabled(pluginName)) {
+            plugin.logger.warning("Custom item plugin '$pluginName' is not enabled — cannot resolve item '$itemId'")
+            return null
+        }
+        return when (pluginName.lowercase()) {
+            "nexo" -> resolveNexoItem(itemId)
+            "itemsadder" -> resolveItemsAdderItem(itemId)
+            "oraxen" -> resolveOraxenItem(itemId)
+            else -> {
+                plugin.logger.warning("Unsupported custom item plugin: '$pluginName'. Supported: Nexo, ItemsAdder, Oraxen")
+                null
+            }
+        }
+    }
+
+    /** Resolves a Nexo item via NexoItems.itemFromId(id).build() */
+    private fun resolveNexoItem(itemId: String): ItemStack? = try {
+        val cls = Class.forName("com.nexomc.nexo.api.NexoItems")
+        val wrapper = cls.getMethod("itemFromId", String::class.java).invoke(null, itemId)
+        if (wrapper == null) {
+            plugin.logger.warning("Nexo item not found: '$itemId'")
+            null
+        } else {
+            wrapper.javaClass.getMethod("build").invoke(wrapper) as? ItemStack
+        }
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to resolve Nexo item '$itemId': ${e.message}")
+        null
+    }
+
+    /** Resolves an ItemsAdder item via CustomStack.getInstance(id).itemStack */
+    private fun resolveItemsAdderItem(itemId: String): ItemStack? = try {
+        val cls = Class.forName("dev.lone.itemsadder.api.CustomStack")
+        val instance = cls.getMethod("getInstance", String::class.java).invoke(null, itemId)
+        if (instance == null) {
+            plugin.logger.warning("ItemsAdder item not found: '$itemId'")
+            null
+        } else {
+            instance.javaClass.getMethod("getItemStack").invoke(instance) as? ItemStack
+        }
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to resolve ItemsAdder item '$itemId': ${e.message}")
+        null
+    }
+
+    /** Resolves an Oraxen item via OraxenItems.getItemById(id).build() */
+    private fun resolveOraxenItem(itemId: String): ItemStack? = try {
+        val cls = Class.forName("io.th0rgal.oraxen.api.OraxenItems")
+        val builder = cls.getMethod("getItemById", String::class.java).invoke(null, itemId)
+        if (builder == null) {
+            plugin.logger.warning("Oraxen item not found: '$itemId'")
+            null
+        } else {
+            builder.javaClass.getMethod("build").invoke(builder) as? ItemStack
+        }
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to resolve Oraxen item '$itemId': ${e.message}")
+        null
+    }
+
+    /**
      * Executes command rewards.
      * Folia compatible: Uses global scheduler for console command execution.
      */
@@ -783,12 +905,19 @@ class LootManager(private val plugin: TrialChamberPro) {
      */
     private fun serializeLootItem(li: LootItem): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
-        map["type"] = li.type.name
+        if (li.customItemPlugin != null) {
+            map["type"] = "CUSTOM_ITEM"
+            map["plugin"] = li.customItemPlugin
+            li.customItemId?.let { map["item-id"] = it }
+        } else {
+            map["type"] = li.type.name
+        }
         map["amount-min"] = li.amountMin
         map["amount-max"] = li.amountMax
         map["weight"] = li.weight
         li.name?.let { map["name"] = it }
         li.lore?.let { map["lore"] = it }
+        li.customModelData?.let { map["custom-model-data"] = it }
         li.enchantments?.let { ench ->
             map["enchantments"] = ench.map { (k, v) -> "${k.key.key.uppercase()}:$v" }
         }
