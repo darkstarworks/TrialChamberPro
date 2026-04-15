@@ -1,6 +1,8 @@
+import org.gradle.api.attributes.java.TargetJvmVersion
+
 plugins {
-    kotlin("jvm") version "2.3.0-Beta1"
-    id("com.gradleup.shadow") version "8.3.0"
+    kotlin("jvm") version "2.3.20"
+    id("com.gradleup.shadow") version "8.3.6"
     id("xyz.jpenilla.run-paper") version "2.3.1"
 }
 
@@ -25,7 +27,7 @@ repositories {
 
 dependencies {
     // Paper API
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
@@ -69,13 +71,35 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21")
+        minecraftVersion("26.1.2")
     }
 }
 
-val targetJavaVersion = 21
+// Use JDK 25 to compile against the Paper 26.x API, but output Java 21 bytecode so
+// the Shadow jar packager (which bundles an older ASM) can process the class files.
+// api-version: '26.1' in plugin.yml is what prevents this jar from loading on 1.21.x servers.
 kotlin {
-    jvmToolchain(targetJavaVersion)
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+tasks.withType<JavaCompile> {
+    sourceCompatibility = JavaVersion.VERSION_21.toString()
+    targetCompatibility = JavaVersion.VERSION_21.toString()
+}
+
+// Tell Gradle's dependency resolution to accept JVM 25 libraries (Paper 26.x requires it),
+// while still outputting JVM 21 bytecode above (so Shadow's bundled ASM can process it).
+configurations.matching {
+    it.name in setOf("compileClasspath", "runtimeClasspath")
+}.configureEach {
+    attributes {
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
+    }
 }
 
 tasks {
