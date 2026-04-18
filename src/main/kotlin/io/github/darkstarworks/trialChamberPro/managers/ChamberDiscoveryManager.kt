@@ -61,6 +61,59 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }, 100L) // initial 5-second delay so nearby chunks settle
     }
 
+    /**
+     * Sweeps all currently-loaded chunks in every loaded Overworld, seeding
+     * discovery for any VAULT / TRIAL_SPAWNER tile-entities found.
+     *
+     * Covers chunks that were already loaded before the listener was registered
+     * (e.g. spawn regions on fresh server start). Chunks that become loaded
+     * later are handled by [ChamberDiscoveryListener] via ChunkLoadEvent.
+     *
+     * Safe to call on startup or from a command. Per-region debounce and the
+     * existing-chamber check prevent duplicate registrations.
+     */
+    fun runStartupSweep() {
+        if (!plugin.config.getBoolean("discovery.enabled", false)) return
+
+        val worlds = plugin.server.worlds
+        var scheduled = 0
+        for (world in worlds) {
+            if (world.environment != World.Environment.NORMAL) continue
+            val chunks = world.loadedChunks
+            for (chunk in chunks) {
+                val centerLoc = Location(
+                    world,
+                    (chunk.x shl 4) + 8.0,
+                    world.minHeight.toDouble(),
+                    (chunk.z shl 4) + 8.0
+                )
+                plugin.scheduler.runAtLocation(centerLoc, Runnable {
+                    try {
+                        sweepChunk(world, chunk)
+                    } catch (e: Exception) {
+                        plugin.logger.warning("[Discovery] Startup sweep failed at chunk ${chunk.x},${chunk.z}: ${e.message}")
+                    }
+                })
+                scheduled++
+            }
+        }
+        if (scheduled > 0) {
+            plugin.logger.info("[Discovery] Startup sweep queued across $scheduled loaded chunk(s)")
+        }
+    }
+
+    private fun sweepChunk(world: World, chunk: org.bukkit.Chunk) {
+        val tileEntities = chunk.tileEntities
+        if (tileEntities.isEmpty()) return
+        for (state in tileEntities) {
+            if (!isSeedBlock(state.type)) continue
+            val loc = Location(world, state.x + 0.5, state.y + 0.5, state.z + 0.5)
+            if (plugin.chamberManager.getCachedChamberAt(loc) != null) continue
+            seed(world, state.x, state.y, state.z)
+            return // one seed per chunk is enough
+        }
+    }
+
     private fun attemptDiscovery(seed: PendingSeed, key: String) {
         // Runs on region thread owning the seed location.
         try {

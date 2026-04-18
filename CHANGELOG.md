@@ -13,6 +13,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Partial-load handling: if BFS hits an unloaded chunk, the seed is re-queued with a retry budget so the AABB grows as adjacent chunks load naturally
   - Per-region debounce (128-block buckets) prevents re-triggering from the same area
   - Auto-name format: `auto_<world>_<centerX>_<centerZ>` (deterministic, collision-safe)
+  - Works on both freshly-generated AND existing worlds — `ChunkLoadEvent` fires on every chunk load, regardless of whether the chunk was generated now or pre-existed on disk
+  - **Startup sweep**: on plugin enable, iterates every currently-loaded chunk across all Overworld worlds and seeds discovery for any `VAULT`/`TRIAL_SPAWNER` tile-entities found — covers chambers in chunks that were already loaded before the `ChunkLoadEvent` listener was registered (e.g. spawn regions, pre-loaded worlds)
   - Reuses existing `ChamberManager.createChamber` + `scanChamber` to register and populate vaults/spawners
   - Optional auto-snapshot on registration (`discovery.auto-snapshot`, default off because snapshots are expensive)
   - Broadcasts registration to players with new `tcp.discovery.notify` permission
