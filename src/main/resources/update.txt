@@ -1,6 +1,5 @@
 <black>.
-<aqua>[1.2.24] <gray>- <white>2026-04-15
-<lime>+ <white>NEW: <green>Custom plugin items in loot.yml <white>- drop Nexo, ItemsAdder, and Oraxen items from vaults.
-<white>  <gray>Use <yellow>type: CUSTOM_ITEM <gray>with <yellow>plugin: <gray>and <yellow>item-id: <gray>fields.
-<lime>+ <white>NEW: <green>custom-model-data field <white>- set custom model data on any vanilla loot item.
+<aqua>[1.2.25] <gray>- <white>2026-04-19
+<lime>+ <white>NEW: <green>Auto-discovery of Trial Chambers <white>- opt-in system that auto-registers naturally-generated chambers when their chunks load.
+<white>  <gray>Enable with <yellow>discovery.enabled: true <gray>in config.yml. Also sweeps already-loaded chunks on plugin startup.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
