@@ -147,6 +147,22 @@ spectator-mode:
   boundary-buffer: 10           # Extra blocks allowed outside chamber
   allow-solo-spectate: false    # Allow spectating empty chambers
 
+# Auto-discovery of naturally-generated Trial Chambers
+# When enabled, the plugin watches for chunk loads and auto-registers
+# chambers the first time one of their vaults/spawners enters a loaded chunk.
+# Opt-in because it's a behavioral change; players' worlds may have
+# pre-1.21 builds that resemble chamber structural blocks.
+discovery:
+  enabled: false                   # Master switch - opt-in
+  max-radius-xz: 60                # BFS expansion cap on horizontal axes
+  max-radius-y: 45                 # BFS expansion cap on vertical axis
+  min-vaults-plus-spawners: 2      # Reject AABBs with fewer total vaults + spawners
+  max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
+  auto-snapshot: false             # Snapshot on registration (expensive for large chambers)
+  notify-ops: true                 # Broadcast registration to players with tcp.discovery.notify
+  cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
+  pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
+
 # Debug mode
 debug:
   verbose-logging: false

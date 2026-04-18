@@ -80,6 +80,10 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var spectatorManager: SpectatorManager
         private set
 
+    // Chamber auto-discovery manager
+    lateinit var chamberDiscoveryManager: ChamberDiscoveryManager
+        private set
+
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
@@ -174,6 +178,7 @@ class TrialChamberPro : JavaPlugin() {
                 pasteConfirmationManager = PasteConfirmationManager(this@TrialChamberPro)
                 spawnerWaveManager = SpawnerWaveManager(this@TrialChamberPro)
                 spectatorManager = SpectatorManager(this@TrialChamberPro)
+                chamberDiscoveryManager = ChamberDiscoveryManager(this@TrialChamberPro)
 
                 // Load loot tables
                 lootManager.loadLootTables()
@@ -221,6 +226,10 @@ class TrialChamberPro : JavaPlugin() {
                     )
                     server.pluginManager.registerEvents(
                         SpectatorListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    server.pluginManager.registerEvents(
+                        ChamberDiscoveryListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
 
