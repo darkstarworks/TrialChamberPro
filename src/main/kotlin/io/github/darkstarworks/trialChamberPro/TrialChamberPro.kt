@@ -304,6 +304,10 @@ class TrialChamberPro : JavaPlugin() {
                     // Mark plugin as fully ready after all sync registrations are done
                     this@TrialChamberPro.isReady = true
                     logger.info("✓ TrialChamberPro is fully initialized and ready!")
+
+                    // Sweep already-loaded chunks for chambers that existed before the
+                    // ChunkLoadEvent listener was registered (spawn regions, pre-loaded worlds).
+                    chamberDiscoveryManager.runStartupSweep()
                 })
             } catch (e: Exception) {
                 logger.severe("Failed to initialize plugin: ${e.message}")
