@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.25] - 2026-04-19
+### Added
+- **Auto-Discovery of Trial Chambers**: Opt-in system that automatically registers naturally-generated Trial Chambers the first time a player loads one of its chunks
+  - New `ChamberDiscoveryListener` hooks `ChunkLoadEvent` and checks `chunk.tileEntities` for `VAULT` or `TRIAL_SPAWNER` — cheap, no block iteration on the hot path
+  - New `ChamberDiscoveryManager` runs a BFS flood-fill over chamber structural blocks (tuff brick family, polished/chiseled tuff, copper bulb/grate/chiseled/door/trapdoor incl. all oxidation + waxed variants, heavy core, vaults, trial spawners) to compute a tight bounding box
+  - Radius-capped BFS (configurable `max-radius-xz` / `max-radius-y`) prevents runaway scans and cannot merge neighboring chambers (generation places them 544+ blocks apart)
+  - Partial-load handling: if BFS hits an unloaded chunk, the seed is re-queued with a retry budget so the AABB grows as adjacent chunks load naturally
+  - Per-region debounce (128-block buckets) prevents re-triggering from the same area
+  - Auto-name format: `auto_<world>_<centerX>_<centerZ>` (deterministic, collision-safe)
+  - Reuses existing `ChamberManager.createChamber` + `scanChamber` to register and populate vaults/spawners
+  - Optional auto-snapshot on registration (`discovery.auto-snapshot`, default off because snapshots are expensive)
+  - Broadcasts registration to players with new `tcp.discovery.notify` permission
+- **New config section `discovery:`**: `enabled` (default `false`, opt-in), `max-radius-xz`, `max-radius-y`, `min-vaults-plus-spawners`, `max-center-y`, `auto-snapshot`, `notify-ops`, `cooldown-seconds`, `pending-retry-seconds`
+- **New permission `tcp.discovery.notify`** (default `op`): receive in-game notifications when discovery registers a chamber
+- **New message `discovery-registered`** in messages.yml
+
+### Technical Details
+- BFS bounds checked against the `generation.max-volume` cap so a malformed run cannot produce an oversized chamber
+- Overworld-only (`World.Environment.NORMAL`) — trial chambers do not generate in Nether/End
+- Center-Y validation (`max-center-y: 10`, default) rejects above-ground tuff/copper builds that would false-positive
+- All block reads scheduled via `plugin.scheduler.runAtLocation` for Folia compatibility
+- Listener runs at `EventPriority.MONITOR` and short-circuits if disabled, wrong environment, empty tile-entity list, or location already inside a registered chamber
+- Recently-processed region set uses a bounded cleanup pass to avoid unbounded memory growth
+
 ## [1.2.24] - 2026-04-15
 ### Added
 - **Custom Plugin Item Support in loot.yml**: Nexo, ItemsAdder, and Oraxen items can now be used as loot drops
@@ -954,6 +978,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.25]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.24...v1.2.25
+[1.2.24]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.23...v1.2.24
+[1.2.23]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.22...v1.2.23
 [1.2.22]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.21...v1.2.22
 [1.2.21]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.20...v1.2.21
 [1.2.20]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.19...v1.2.20

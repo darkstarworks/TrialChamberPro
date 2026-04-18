@@ -74,3 +74,6 @@ permissions:
   tcp.spectate:
     description: Use spectator mode after death in chambers
     default: true
+  tcp.discovery.notify:
+    description: Receive notifications when auto-discovery registers a new chamber
+    default: op

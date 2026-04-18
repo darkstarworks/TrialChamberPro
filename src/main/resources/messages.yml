@@ -13,6 +13,7 @@ initializing: "&eTrialChamberPro is still starting up. Please try again in a mom
 
 # Chamber management
 chamber-created: "&aChamber &e{chamber}&a created successfully!"
+discovery-registered: "&aAuto-discovered chamber &e{name}&a with &f{vaults}&a vaults and &f{spawners}&a spawners."
 chamber-already-exists: "&cA chamber with that name already exists."
 generation-cancelled-name-in-use: "&eGeneration cancelled: &cname {name} is already in use."
 chamber-not-found: "&cChamber &e{chamber}&c not found."
