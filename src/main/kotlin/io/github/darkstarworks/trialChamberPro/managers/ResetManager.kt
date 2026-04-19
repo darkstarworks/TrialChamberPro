@@ -143,6 +143,9 @@ class ResetManager(private val plugin: TrialChamberPro) {
             // Step 2: Clear entities
             clearEntities(chamber)
 
+            // Step 2b: Clear any active spawner waves (removes lingering boss bars)
+            plugin.spawnerWaveManager.clearWavesInChamber(chamber)
+
             // Step 3: Restore from snapshot
             val snapshotFile = chamber.getSnapshotFile()
             if (snapshotFile != null && snapshotFile.exists()) {

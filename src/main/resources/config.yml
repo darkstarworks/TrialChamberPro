@@ -135,6 +135,10 @@ spawner-waves:
   enabled: true
   show-boss-bar: true           # Show boss bar with wave progress
   detection-radius: 20          # Radius to detect players for boss bar display
+  # Distance at which a player is REMOVED from a boss bar they were previously added to.
+  # Should be larger than detection-radius to provide hysteresis (prevents flicker at the edge).
+  # Default: 32 blocks — the boss bar will hide when you walk this far from the spawner.
+  remove-distance: 32
   award-stats: true             # Track wave kills in player statistics
   completion-message: true      # Send message when wave is complete
 

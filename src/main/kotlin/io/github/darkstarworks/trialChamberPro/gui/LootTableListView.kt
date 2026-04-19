@@ -35,11 +35,13 @@ class LootTableListView(
             val table = plugin.lootManager.getTable(tableName)
             tablePane.addItem(GuiItem(createTableItem(tableName, table)) { event ->
                 event.isCancelled = true
-                // Show info about how to edit
-                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-1", "table" to tableName))
-                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-2"))
-                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-3"))
-                player.sendMessage(plugin.getMessage("gui-loot-table-edit-hint-4"))
+                // Open the global editor directly. Multi-pool tables route through the
+                // pool selector; legacy tables go straight to the loot editor.
+                if (table != null && !table.isLegacyFormat()) {
+                    menu.openGlobalPoolSelect(player, tableName)
+                } else {
+                    menu.openGlobalLootEditor(player, tableName)
+                }
             })
         }
         gui.addPane(tablePane)
@@ -98,7 +100,9 @@ class LootTableListView(
                 lore(listOf(
                     Component.text("$tableCount tables loaded", NamedTextColor.GRAY),
                     Component.empty(),
-                    Component.text("Click a table for info", NamedTextColor.YELLOW)
+                    Component.text("Click a table to edit it", NamedTextColor.YELLOW),
+                    Component.text("Changes save to loot.yml and apply", NamedTextColor.GRAY),
+                    Component.text("to every chamber using this table.", NamedTextColor.GRAY)
                 ))
             }
         }
@@ -135,7 +139,7 @@ class LootTableListView(
                         Component.text("Format: Multi-pool", NamedTextColor.YELLOW)
                     },
                     Component.empty(),
-                    Component.text("Click for edit info", NamedTextColor.GREEN)
+                    Component.text("Click to edit this table", NamedTextColor.GREEN)
                 ))
             }
         }

@@ -13,13 +13,19 @@ import org.bukkit.inventory.ItemStack
 
 class AmountEditorView(
     private val menu: MenuService,
-    private val chamber: Chamber,
+    private val chamber: Chamber?,
     private val kind: MenuService.LootKind,
     private val poolName: String? = null,
     private val itemIndex: Int,
     private val isWeighted: Boolean,
-    private val draft: LootEditorView.Draft
+    private val draft: LootEditorView.Draft,
+    private val globalTableName: String? = null
 ) {
+    init {
+        require(chamber != null || globalTableName != null) {
+            "AmountEditorView requires either a chamber or a globalTableName"
+        }
+    }
     private lateinit var gui: ChestGui
     private lateinit var mainPane: StaticPane
     private var currentItem: LootItem
@@ -230,12 +236,21 @@ class AmountEditorView(
         draft.dirty = true
 
         // Save the draft and return to loot editor
-        menu.saveDraft(player, chamber, kind, poolName, draft)
-        menu.openLootEditor(player, chamber, kind, poolName)
+        if (chamber != null) {
+            menu.saveDraft(player, chamber, kind, poolName, draft)
+            menu.openLootEditor(player, chamber, kind, poolName)
+        } else {
+            menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
+            menu.openGlobalLootEditor(player, globalTableName, poolName)
+        }
     }
 
     private fun discardAndReturn(player: Player) {
         // Just return to loot editor without saving
-        menu.openLootEditor(player, chamber, kind, poolName)
+        if (chamber != null) {
+            menu.openLootEditor(player, chamber, kind, poolName)
+        } else {
+            menu.openGlobalLootEditor(player, globalTableName!!, poolName)
+        }
     }
 }
