@@ -24,6 +24,13 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
     // Detection radius for nearby trial spawners (to add players to boss bar)
     private val detectionRadius = plugin.config.getInt("spawner-waves.detection-radius", 20)
 
+    // Distance at which a player is removed from an existing boss bar.
+    // Must be > detectionRadius to provide hysteresis (avoid flicker at the boundary).
+    private val removeDistance = plugin.config.getDouble(
+        "spawner-waves.remove-distance",
+        (detectionRadius * 1.6).coerceAtLeast(32.0)
+    )
+
     /**
      * Handles mob spawns from trial spawners.
      * Tracks spawns from both registered chambers and wild spawners.
@@ -148,6 +155,9 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         findNearbyTrialSpawners(location, detectionRadius).forEach { spawnerLocation ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
         }
+
+        // Drop any boss bars for spawners the player has walked away from.
+        plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
     }
 
     /**

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.26] - 2026-04-19
+### Added
+- **Edit default (global) loot tables from the GUI**: Clicking a table in the Loot Tables menu now opens the full editor directly — no need to open each chamber one by one
+  - Multi-pool tables route through the pool selector first; legacy single-pool tables open the editor directly
+  - Edits persist to `loot.yml` via `LootManager.saveAllToFile()` and apply automatically to every chamber that references the table (i.e. every chamber without a per-chamber override)
+  - The full editor feature set works in global mode: weight/amount/rolls adjustments, add-from-hand, toggle enabled, discard draft
+- **Spawner-wave boss bar now hides when you leave the area**: Walking past `spawner-waves.remove-distance` (default 32 blocks, hysteresis above `detection-radius`) from a spawner removes the player from that wave's boss bar so it no longer lingers on screen after you exit a chamber
+- **Chamber reset clears active wave boss bars**: `ResetManager.resetChamber` now calls `SpawnerWaveManager.clearWavesInChamber` so boss bars for any in-progress wave inside the chamber are force-removed alongside the block/entity cleanup — fixes boss bars persisting after admin-initiated resets
+
+### Changed
+- `LootEditorView`, `PoolSelectorView`, and `AmountEditorView` now accept either a `Chamber` *or* a `globalTableName` so the same editor powers both chamber-scoped and global table editing
+- `MenuService` gained `openGlobalPoolSelect`, `openGlobalLootEditor`, `openGlobalAmountEditor`, and `saveGlobalDraft`; session restoration via `Session.globalLootEdit` routes the user back to the right flow after reopen
+
+### Config
+- New `spawner-waves.remove-distance: 32` — distance at which a player is removed from a boss bar they were previously added to. Must be greater than `detection-radius` to prevent flicker at the boundary.
+
 ## [1.2.25] - 2026-04-19
 ### Added
 - **Auto-Discovery of Trial Chambers**: Opt-in system that automatically registers naturally-generated Trial Chambers the first time a player loads one of its chunks
@@ -980,6 +996,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.26]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.25...v1.2.26
 [1.2.25]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.24...v1.2.25
 [1.2.24]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.23...v1.2.24
 [1.2.23]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.22...v1.2.23

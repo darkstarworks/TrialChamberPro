@@ -205,6 +205,54 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Removes the player from any wave whose spawner is farther than [removeDistance] blocks.
+     * Prevents the boss bar from lingering after a player leaves the chamber area.
+     */
+    fun removePlayerFromDistantWaves(player: Player, removeDistance: Double) {
+        val playerUUID = player.uniqueId
+        val tracked = playerBossBars[playerUUID] ?: return
+        if (tracked.isEmpty()) return
+
+        val playerLoc = player.location
+        val removeDistSq = removeDistance * removeDistance
+
+        // Iterate a snapshot to avoid CME
+        tracked.toList().forEach { key ->
+            val wave = activeWaves[key] ?: run {
+                tracked.remove(key)
+                return@forEach
+            }
+            val waveLoc = wave.location
+            // Ignore cross-world cases (also stale)
+            if (waveLoc.world != playerLoc.world ||
+                playerLoc.distanceSquared(waveLoc) > removeDistSq
+            ) {
+                wave.bossBar?.removeViewer(player)
+                wave.participatingPlayers.remove(playerUUID)
+                tracked.remove(key)
+            }
+        }
+
+        if (tracked.isEmpty()) {
+            playerBossBars.remove(playerUUID)
+        }
+    }
+
+    /**
+     * Force-clears all active waves inside a chamber. Called on chamber reset so boss bars
+     * don't linger after blocks/entities have been wiped.
+     */
+    fun clearWavesInChamber(chamber: io.github.darkstarworks.trialChamberPro.models.Chamber) {
+        val toRemove = activeWaves.entries.filter { chamber.contains(it.value.location) }
+        toRemove.forEach { (key, wave) ->
+            removeBossBar(wave)
+            // Drop any tracked mob UUIDs pointing at this wave
+            mobToSpawner.entries.removeIf { it.value == key }
+            activeWaves.remove(key)
+        }
+    }
+
+    /**
      * Gets the active wave at a spawner location.
      */
     fun getWaveAt(spawnerLocation: Location): WaveState? {

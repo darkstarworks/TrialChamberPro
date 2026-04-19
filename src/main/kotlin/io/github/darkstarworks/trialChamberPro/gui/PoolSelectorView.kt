@@ -20,9 +20,16 @@ import org.bukkit.inventory.ItemStack
 class PoolSelectorView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService,
-    private val chamber: Chamber,
-    private val kind: MenuService.LootKind
+    private val chamber: Chamber?,
+    private val kind: MenuService.LootKind,
+    private val globalTableName: String? = null
 ) {
+    init {
+        require(chamber != null || globalTableName != null) {
+            "PoolSelectorView requires either a chamber or a globalTableName"
+        }
+    }
+
     fun build(player: Player): ChestGui {
         val gui = ChestGui(6, title())
         val pane = StaticPane(0, 0, 9, 6)
@@ -33,7 +40,11 @@ class PoolSelectorView(
 
         if (table == null || table.isLegacyFormat()) {
             // Table doesn't exist or is legacy format - edit directly
-            menu.openLootEditor(player, chamber, kind, null)
+            if (chamber != null) {
+                menu.openLootEditor(player, chamber, kind, null)
+            } else {
+                menu.openGlobalLootEditor(player, globalTableName!!, null)
+            }
             return gui
         }
 
@@ -49,7 +60,11 @@ class PoolSelectorView(
 
             pane.addItem(GuiItem(item) { event ->
                 event.isCancelled = true
-                menu.openLootEditor(player, chamber, kind, pool.name)
+                if (chamber != null) {
+                    menu.openLootEditor(player, chamber, kind, pool.name)
+                } else {
+                    menu.openGlobalLootEditor(player, globalTableName!!, pool.name)
+                }
             }, col, row)
         }
 
@@ -79,7 +94,11 @@ class PoolSelectorView(
         }
         pane.addItem(GuiItem(back) { event ->
             event.isCancelled = true
-            menu.openLootKindSelect(player, chamber)
+            if (chamber != null) {
+                menu.openLootKindSelect(player, chamber)
+            } else {
+                menu.openLootTableList(player)
+            }
         }, 0, 5)
 
         gui.addPane(pane)
@@ -89,17 +108,21 @@ class PoolSelectorView(
         return gui
     }
 
-    private fun title(): String = when (kind) {
-        MenuService.LootKind.NORMAL -> "${chamber.name}: Select Normal Pool"
-        MenuService.LootKind.OMINOUS -> "${chamber.name}: Select Ominous Pool"
+    private fun title(): String = if (chamber != null) {
+        when (kind) {
+            MenuService.LootKind.NORMAL -> "${chamber.name}: Select Normal Pool"
+            MenuService.LootKind.OMINOUS -> "${chamber.name}: Select Ominous Pool"
+        }
+    } else {
+        "Select Pool: ${globalTableName}"
     }
 
     private fun getTableName(): String {
-        val baseName = when (kind) {
+        if (chamber == null) return globalTableName!!
+        return when (kind) {
             MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
             MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
         }
-        return baseName
     }
 
     private fun createPoolItem(pool: LootPool, index: Int): ItemStack {

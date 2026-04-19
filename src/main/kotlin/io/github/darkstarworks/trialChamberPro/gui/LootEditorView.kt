@@ -20,11 +20,17 @@ import org.bukkit.inventory.ItemStack
 class LootEditorView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService,
-    private val chamber: Chamber,
+    private val chamber: Chamber?,
     private val kind: MenuService.LootKind,
     private val poolName: String? = null,
-    private val existingDraft: Draft? = null
+    private val existingDraft: Draft? = null,
+    private val globalTableName: String? = null
 ) {
+    init {
+        require(chamber != null || globalTableName != null) {
+            "LootEditorView requires either a chamber or a globalTableName"
+        }
+    }
     data class Draft(
         var tableName: String,
         val guaranteed: MutableList<LootItem>,
@@ -56,7 +62,11 @@ class LootEditorView(
         // Persist draft on close (unless user discarded)
         gui.setOnClose { _ ->
             if (!discardRequested) {
-                menu.saveDraft(player, chamber, kind, poolName, draft)
+                if (chamber != null) {
+                    menu.saveDraft(player, chamber, kind, poolName, draft)
+                } else {
+                    menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
+                }
             }
         }
 
@@ -79,9 +89,14 @@ class LootEditorView(
     }
 
     private fun title(): String {
-        val baseTitle = when (kind) {
-            MenuService.LootKind.NORMAL -> "${chamber.name}: Normal Loot"
-            MenuService.LootKind.OMINOUS -> "${chamber.name}: Ominous Loot"
+        val baseTitle = if (chamber != null) {
+            when (kind) {
+                MenuService.LootKind.NORMAL -> "${chamber.name}: Normal Loot"
+                MenuService.LootKind.OMINOUS -> "${chamber.name}: Ominous Loot"
+            }
+        } else {
+            // Global table edit
+            "Edit: ${globalTableName}"
         }
         return if (poolName != null) {
             "$baseTitle - $poolName"
@@ -100,16 +115,23 @@ class LootEditorView(
     )
 
     private fun loadInitialDraft(): Draft {
-        val baseName = when (kind) {
-            MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
-            MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+        val baseName: String
+        val source: LootTable?
+        if (chamber != null) {
+            baseName = when (kind) {
+                MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
+                MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
+            }
+            val fallback = when (kind) {
+                MenuService.LootKind.NORMAL -> "default"
+                MenuService.LootKind.OMINOUS -> "ominous-default"
+            }
+            source = plugin.lootManager.getTable(baseName) ?: plugin.lootManager.getTable(fallback)
+        } else {
+            // Global edit - always target the requested table name directly
+            baseName = globalTableName!!
+            source = plugin.lootManager.getTable(baseName)
         }
-        val fallback = when (kind) {
-            MenuService.LootKind.NORMAL -> "default"
-            MenuService.LootKind.OMINOUS -> "ominous-default"
-        }
-
-        val source = plugin.lootManager.getTable(baseName) ?: plugin.lootManager.getTable(fallback)
 
         // If editing a specific pool, extract that pool's data
         if (poolName != null && source != null && !source.isLegacyFormat()) {
@@ -241,7 +263,11 @@ class LootEditorView(
             }
             ClickType.RIGHT, ClickType.WINDOW_BORDER_RIGHT -> {
                 // Right: Open amount editor
-                menu.openAmountEditor(player, chamber, kind, index, weighted)
+                if (chamber != null) {
+                    menu.openAmountEditor(player, chamber, kind, index, weighted)
+                } else {
+                    menu.openGlobalAmountEditor(player, globalTableName!!, poolName, index, weighted)
+                }
             }
             else -> {
                 // Ignore other click types
@@ -276,12 +302,21 @@ class LootEditorView(
             it.isCancelled = true
             saveDraft(player)
             draft.dirty = false
-            menu.saveDraft(player, chamber, kind, poolName, draft)
-            // Navigate back to pool selector if editing a pool, otherwise to loot kind select
-            if (poolName != null) {
-                menu.openPoolSelect(player, chamber, kind)
+            if (chamber != null) {
+                menu.saveDraft(player, chamber, kind, poolName, draft)
+                // Navigate back to pool selector if editing a pool, otherwise to loot kind select
+                if (poolName != null) {
+                    menu.openPoolSelect(player, chamber, kind)
+                } else {
+                    menu.openLootKindSelect(player, chamber)
+                }
             } else {
-                menu.openLootKindSelect(player, chamber)
+                menu.saveGlobalDraft(player, globalTableName!!, poolName, draft)
+                if (poolName != null) {
+                    menu.openGlobalPoolSelect(player, globalTableName)
+                } else {
+                    menu.openLootTableList(player)
+                }
             }
         }, 0, 1)
 
@@ -298,11 +333,18 @@ class LootEditorView(
             it.isCancelled = true
             // Mark discard so onClose won't save the cloned draft
             discardRequested = true
-            // Navigate back to pool selector if editing a pool, otherwise to loot kind select
-            if (poolName != null) {
-                menu.openPoolSelect(player, chamber, kind)
+            if (chamber != null) {
+                if (poolName != null) {
+                    menu.openPoolSelect(player, chamber, kind)
+                } else {
+                    menu.openLootKindSelect(player, chamber)
+                }
             } else {
-                menu.openLootKindSelect(player, chamber)
+                if (poolName != null) {
+                    menu.openGlobalPoolSelect(player, globalTableName!!)
+                } else {
+                    menu.openLootTableList(player)
+                }
             }
         }, 8, 1)
 
@@ -437,13 +479,15 @@ class LootEditorView(
         // Persist to loot.yml
         plugin.lootManager.saveAllToFile()
 
-        // Update DB vaults for this chamber/type to use this table name
-        val type = if (kind == MenuService.LootKind.OMINOUS) VaultType.OMINOUS else VaultType.NORMAL
-        plugin.launchAsync {
-            try {
-                plugin.vaultManager.setLootTableForChamber(chamber.id, type, draft.tableName)
-            } catch (e: Exception) {
-                plugin.logger.warning("Failed to update vault loot table: ${e.message}")
+        // Update DB vaults for this chamber/type to use this table name (only in chamber mode)
+        if (chamber != null) {
+            val type = if (kind == MenuService.LootKind.OMINOUS) VaultType.OMINOUS else VaultType.NORMAL
+            plugin.launchAsync {
+                try {
+                    plugin.vaultManager.setLootTableForChamber(chamber.id, type, draft.tableName)
+                } catch (e: Exception) {
+                    plugin.logger.warning("Failed to update vault loot table: ${e.message}")
+                }
             }
         }
 
