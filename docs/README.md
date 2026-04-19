@@ -1,91 +1,86 @@
-# 🏛️ TrialChamberPro
+# TrialChamberPro
 
-> _Transform your Trial Chambers from dusty, one-time dungeons into thriving content that players actually want to revisit!_
+Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player vault loot, custom rewards, griefing protection — and it works on every natural chamber in your world without any setup per-chamber.
 
-Welcome, fellow dungeon master! You've stumbled upon the ultimate solution for Trial Chambers on multiplayer servers. Whether you're running a small vanilla+ server or a massive network, TrialChamberPro breathes new life into Minecraft 1.21's Trial Chambers.
+---
 
-## 🎮 What's the Problem?
+## The problem it solves
 
-Picture this: A player discovers their first Trial Chamber. Heart racing, they battle through waves of mobs, unlock vaults, and claim their rewards. Epic moment, right?
+Vanilla Trial Chambers weren't designed for multiplayer. The first player takes everything, vaults stay locked forever, and griefers can destroy spawners. On a server with more than one player, chambers become single-use content almost immediately.
 
-But then... nothing. The chamber sits there, looted and lifeless. Other players arrive to find empty vaults and disappointment. Not exactly the replayable content you want on your server.
+TrialChamberPro fixes all of that: every player gets their own loot roll, chambers reset on a schedule, spawners are protected, and progression is tracked. The plugin can find and manage natural chambers automatically — no WorldEdit, no commands per chamber.
 
-**Enter TrialChamberPro.**
+---
 
-## ✨ What Does This Thing Do?
+## What you can do
 
-This plugin turns Trial Chambers into **living, breathing content** that keeps players coming back for more:
+* **Automatic resets** — chambers restore on schedule, with warnings before the reset fires.
+* **Per-player vaults** — every player gets their own loot roll with their own cooldown.
+* **Full protection** — block break / place, container access, mob griefing, WorldGuard-aware.
+* **Statistics & leaderboards** — track vaults opened, mobs killed, chambers completed, time spent.
+* **Custom loot** — multi-pool tables, command rewards, potions, tipped arrows, custom plugin items (Nexo / ItemsAdder / Oraxen), resource-pack items via `custom-model-data`.
+* **Auto-discovery** — opt-in; the plugin finds and registers every natural chamber on its own.
+* **Admin GUI** — `/tcp menu` handles everything. No YAML editing required.
+* **Spawner wave tracking** — boss bar shows progress as players fight.
+* **Spectator mode** — dead players can watch teammates finish the chamber.
+* **PlaceholderAPI** — 20+ placeholders for scoreboards, holograms, tab lists.
+* **Full translation support** — every user-facing string lives in `messages.yml`.
 
-- 🔄 **Automatic resets** - Chambers restore themselves on a schedule
-- 👥 **Per-player loot** - Everyone gets their own vault rewards (no more fighting!)
-- 💎 **Custom rewards** - Integrate with your economy, custom items, whatever
-- 🛡️ **Protection** - No more griefing your carefully crafted dungeons
-- 🎯 **Statistics** - Track completions, deaths, and create leaderboards
-- 🌑 **Ominous support** - Full support for both Normal and Ominous variants
-- 🔑 **Key management** - Fixes Paper bugs and adds quality-of-life features
+---
 
-## 🚀 Quick Start
+## Requirements
 
-Ready to jump in? Here's what you need:
+* **Minecraft 1.21.1+** (use the `-mc26` build for Minecraft 26.x)
+* **Paper, Folia, Purpur, or Pufferfish**
+* **Java 21+**
+* *Optional:* WorldEdit / FAWE, WorldGuard, PlaceholderAPI, Vault, LuckPerms, Nexo / ItemsAdder / Oraxen
 
-1. **Paper 1.21.x** (or any fork like Purpur, Pufferfish)
-2. **Java 21** or newer
-3. **Optional:** WorldEdit (for easy chamber creation)
+---
+
+## Where to go next
 
 {% content-ref url="getting-started/installation.md" %}
 [installation.md](getting-started/installation.md)
 {% endcontent-ref %}
 
-## 📚 Documentation Structure
+Install the JAR and get the server running. Two minutes.
 
-{% content-ref url="getting-started/" %}
-[getting-started](getting-started/)
+{% content-ref url="getting-started/your-first-chamber.md" %}
+[your-first-chamber.md](getting-started/your-first-chamber.md)
 {% endcontent-ref %}
 
-Start here if you're new! Installation, first chamber setup, and basic configuration.
+Manually register and configure a chamber. Recommended if you want fine control over specific chambers.
 
-{% content-ref url="guides/" %}
-[guides](guides/)
+{% content-ref url="getting-started/basic-configuration.md" %}
+[basic-configuration.md](getting-started/basic-configuration.md)
 {% endcontent-ref %}
 
-Deep dives into specific features like loot tables, automatic resets, and protection systems.
+Walk through the config settings most servers actually tweak.
 
-{% content-ref url="reference/" %}
-[reference](reference/)
+{% content-ref url="configuration/config.yml.md" %}
+[config.yml.md](configuration/config.yml.md)
 {% endcontent-ref %}
 
-Complete command list, permissions, configuration options, and API documentation.
+Full `config.yml` reference. Includes the auto-discovery plug-and-play setup.
+
+{% content-ref url="configuration/loot.yml.md" %}
+[loot.yml.md](configuration/loot.yml.md)
+{% endcontent-ref %}
+
+Everything about loot tables — pools, custom items, command rewards.
 
 {% content-ref url="troubleshooting.md" %}
 [troubleshooting.md](troubleshooting.md)
 {% endcontent-ref %}
 
-Something broken? Check here first!
-
-## 🎯 Who's This For?
-
-- **Server Owners** who want engaging, replayable PvE content
-- **Admins** tired of manually resetting Trial Chambers
-- **Network Operators** running hub servers with minigame-style chambers
-- **Players** who love the challenge but hate the "one and done" limitation
-
-## 💬 Need Help?
-
-- 📖 Check the docs (you're here!)
-- 🐛 [Report bugs on GitHub](https://github.com/darkstarworks/TrialChamberPro/issues)
-- 💬 Join our Discord (coming soon!)
-- ⭐ [Star us on GitHub](https://github.com/darkstarworks/TrialChamberPro) if you love the plugin!
-
-## 🎓 Fun Fact
-
-Did you know Trial Chambers were originally designed as single-player content? The devs didn't account for multiplayer servers where hundreds of players might visit the same chamber. That's why vault loot is "first come, first served" in vanilla.
-
-We fixed that. You're welcome. 😎
+Something not working? Most issues have a known cause. Check here first.
 
 ---
 
-Ready to transform your Trial Chambers? Let's get started!
+## Support
 
-{% content-ref url="getting-started/installation.md" %}
-[installation.md](getting-started/installation.md)
-{% endcontent-ref %}
+* **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — bug reports, feature requests
+* **[Discord](https://discord.gg/qwYcTpHsNC)** — community support, announcements
+* **[Modrinth](https://modrinth.com/plugin/trialchamberpro)** — downloads and release notes
+
+Open source under CC-BY-NC-ND 4.0. Made with Kotlin by [darkstarworks](https://github.com/darkstarworks).

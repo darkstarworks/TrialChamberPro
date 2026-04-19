@@ -158,8 +158,8 @@ loot-tables:
 **Legacy Format Still Works!** The old single-pool format (without `pools:`) is fully supported and will keep working. This is purely optional!
 {% endhint %}
 
-{% hint style="warning" %}
-**GUI Limitation:** The loot editor GUI currently only supports the legacy single-pool format. To use multi-pool, you must edit `loot.yml` directly and reload with `/tcp reload`.
+{% hint style="success" %}
+**Edit from the GUI** *(1.2.26+)*: open `/tcp menu` → **Loot Tables**, click any table to edit it. Multi-pool tables open a pool selector; single-pool tables open the editor directly. Changes save to `loot.yml` and apply to every chamber using that table.
 {% endhint %}
 
 ### Config Option
@@ -1144,12 +1144,17 @@ loot-tables:
           - "RIPTIDE:3"
 ```
 
-Then use `/tcp setloot <chamber> <table>` to assign the table to a specific chamber!
+Then assign the table to a specific chamber with `/tcp loot set <chamber> <normal|ominous> <table>`:
 
 ```
-/tcp setloot NetherChamber nether-chamber
-/tcp setloot OceanChamber ocean-chamber
+/tcp loot set NetherChamber normal nether-chamber
+/tcp loot set NetherChamber ominous nether-chamber-ominous
+/tcp loot set OceanChamber normal ocean-chamber
 ```
+
+Clear per-chamber overrides with `/tcp loot clear <chamber> [normal|ominous|all]` — after clearing, the chamber falls back to the default tables in `loot.yml`.
+
+You can also set these overrides from the GUI: `/tcp menu` → pick the chamber → **Loot** → pick **Normal** or **Ominous**.
 
 ---
 

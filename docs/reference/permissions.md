@@ -238,6 +238,25 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+### Notification Permissions
+
+#### `tcp.discovery.notify`
+**Description:** Receive broadcast when auto-discovery registers a new chamber *(1.2.25+)*
+**Default:** Operators only
+**Effect:**
+- Get a chat message whenever `discovery.enabled: true` causes a natural chamber to be auto-registered
+- Shows the chamber's auto-generated name and center coordinates
+
+**Use this for:**
+- Admins monitoring auto-discovery rollout on existing worlds
+- Catching false-positive registrations early so you can fine-tune `discovery.*` thresholds
+
+{% hint style="info" %}
+Only fires when `discovery.notify-ops: true` (the default) in config.yml. You can also see every registration in the server log if `debug.verbose-logging: true`.
+{% endhint %}
+
+---
+
 ## 🎭 Permission Groups Examples
 
 ### Example 1: Player Rank
