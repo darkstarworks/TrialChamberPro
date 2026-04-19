@@ -39,41 +39,17 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 ## Where to go next
 
-{% content-ref url="getting-started/installation.md" %}
-[installation.md](getting-started/installation.md)
-{% endcontent-ref %}
+[installation.md](getting-started/installation.md) -> Install the JAR and get the server running. Two minutes.
 
-Install the JAR and get the server running. Two minutes.
+[your-first-chamber.md](getting-started/your-first-chamber.md) -> Manually register and configure a chamber. Recommended if you want fine control over specific chambers.
 
-{% content-ref url="getting-started/your-first-chamber.md" %}
-[your-first-chamber.md](getting-started/your-first-chamber.md)
-{% endcontent-ref %}
+[basic-configuration.md](getting-started/basic-configuration.md) -> Walk through the config settings most servers actually tweak.
 
-Manually register and configure a chamber. Recommended if you want fine control over specific chambers.
+[config.yml.md](configuration/config.yml.md) -> Full `config.yml` reference. Includes the auto-discovery plug-and-play setup.
 
-{% content-ref url="getting-started/basic-configuration.md" %}
-[basic-configuration.md](getting-started/basic-configuration.md)
-{% endcontent-ref %}
+[loot.yml.md](configuration/loot.yml.md) -> Everything about loot tables — pools, custom items, command rewards.
 
-Walk through the config settings most servers actually tweak.
-
-{% content-ref url="configuration/config.yml.md" %}
-[config.yml.md](configuration/config.yml.md)
-{% endcontent-ref %}
-
-Full `config.yml` reference. Includes the auto-discovery plug-and-play setup.
-
-{% content-ref url="configuration/loot.yml.md" %}
-[loot.yml.md](configuration/loot.yml.md)
-{% endcontent-ref %}
-
-Everything about loot tables — pools, custom items, command rewards.
-
-{% content-ref url="troubleshooting.md" %}
-[troubleshooting.md](troubleshooting.md)
-{% endcontent-ref %}
-
-Something not working? Most issues have a known cause. Check here first.
+[troubleshooting.md](troubleshooting.md) -> Something not working? Most issues have a known cause. Check here first.
 
 ---
 
