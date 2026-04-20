@@ -43,7 +43,8 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         val participatingPlayers: MutableSet<UUID> = ConcurrentHashMap.newKeySet(),
         var bossBar: BossBar? = null,
         var waveNumber: Int = 1,
-        @Volatile var completed: Boolean = false
+        @Volatile var completed: Boolean = false,
+        @Volatile var glowEntityId: UUID? = null
     ) {
         fun getProgress(): Float {
             val expected = totalMobsExpected.get()
@@ -105,6 +106,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         }
 
         activeWaves[key] = wave
+
+        // Spawn glow outline on active spawner (v1.2.27)
+        spawnGlowDisplay(wave)
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             plugin.logger.info("[SpawnerWave] Started wave at $key: expected $expectedMobs mobs, ominous=$isOminous")
@@ -275,6 +279,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     private fun completeWave(wave: WaveState) {
         if (wave.completed) return
         wave.completed = true
+
+        // Remove glow immediately on completion (don't wait for boss bar's 3s delay)
+        removeGlowDisplay(wave)
 
         val durationMs = System.currentTimeMillis() - wave.startTime
         val durationSeconds = durationMs / 1000
@@ -524,6 +531,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      * Removes the boss bar from all viewers.
      */
     private fun removeBossBar(wave: WaveState) {
+        // Always attempt glow cleanup, even if there's no boss bar to remove
+        removeGlowDisplay(wave)
+
         val bar = wave.bossBar ?: return
 
         // Remove from all players
@@ -535,6 +545,86 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         }
 
         wave.bossBar = null
+    }
+
+    /**
+     * Spawns an invisible Interaction entity at the spawner with the GLOWING effect applied,
+     * producing a colored outline on the spawner block that is visible through walls.
+     * Opt-in via `spawner-waves.glow-active-spawners`. Colors configurable per-type.
+     */
+    private fun spawnGlowDisplay(wave: WaveState) {
+        if (!plugin.config.getBoolean("spawner-waves.glow-active-spawners", false)) return
+        val world = wave.location.world ?: return
+        // Center the interaction box on the spawner block
+        val center = wave.location.clone().add(0.5, 0.5, 0.5)
+
+        plugin.scheduler.runAtLocation(wave.location, Runnable {
+            try {
+                val colorHex = if (wave.isOminous) {
+                    plugin.config.getString("spawner-waves.glow-color-ominous", "#A020F0") ?: "#A020F0"
+                } else {
+                    plugin.config.getString("spawner-waves.glow-color-normal", "#FFFF55") ?: "#FFFF55"
+                }
+                val color = parseGlowColor(colorHex)
+
+                val entity = world.spawn(center, org.bukkit.entity.Interaction::class.java) { e ->
+                    // Interaction entities are invisible; hitbox sized to wrap the 1x1x1 spawner
+                    e.interactionWidth = 1.2f
+                    e.interactionHeight = 1.2f
+                    e.isResponsive = false
+                    e.isPersistent = false
+                    e.isGlowing = true
+                    if (color != null) {
+                        try {
+                            // Invoke reflectively so we don't hard-bind to a specific Paper API revision
+                            e.javaClass.getMethod("setGlowColorOverride", org.bukkit.Color::class.java)
+                                .invoke(e, color)
+                        } catch (_: Throwable) {
+                            // Some server forks or older API revisions may not support this; fall back
+                            // to the default team-less glow color (white)
+                        }
+                    }
+                }
+                wave.glowEntityId = entity.uniqueId
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("[SpawnerWave] Spawned glow entity ${entity.uniqueId} at ${wave.spawnerId}")
+                }
+            } catch (e: Exception) {
+                plugin.logger.warning("[SpawnerWave] Failed to spawn glow entity: ${e.message}")
+            }
+        })
+    }
+
+    /**
+     * Removes the glow Interaction entity previously spawned for this wave, if any.
+     * Safe to call multiple times — no-op once the entity id is cleared.
+     */
+    private fun removeGlowDisplay(wave: WaveState) {
+        val id = wave.glowEntityId ?: return
+        wave.glowEntityId = null
+        val world = wave.location.world ?: return
+        plugin.scheduler.runAtLocation(wave.location, Runnable {
+            try {
+                world.getEntity(id)?.remove()
+            } catch (_: Throwable) {
+                // Entity may already be unloaded/removed; harmless
+            }
+        })
+    }
+
+    /**
+     * Parses a hex color string (e.g., "#FFFF55" or "FFFF55") into a Bukkit Color.
+     * Returns null on parse failure so the caller can fall back to the default outline color.
+     */
+    private fun parseGlowColor(hex: String): org.bukkit.Color? {
+        return try {
+            val clean = hex.trim().removePrefix("#")
+            org.bukkit.Color.fromRGB(clean.toInt(16))
+        } catch (_: Exception) {
+            plugin.logger.warning("[SpawnerWave] Invalid glow color '$hex' — expected hex like #FFFF55")
+            null
+        }
     }
 
     /**

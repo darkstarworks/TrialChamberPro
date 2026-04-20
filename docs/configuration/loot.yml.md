@@ -1530,16 +1530,18 @@ Hands-on guide to creating themed loot tables with examples.
 
 ## 💎 Pro Tips
 
+.
 {% hint style="success" %}
 **Create loot tiers:** Make tables named `tier1`, `tier2`, `tier3` with progressively better loot. Assign them to chambers in different regions of your world!
 {% endhint %}
-
+.
 {% hint style="info" %}
 **Seasonal events:** Copy your `loot.yml`, modify it for the event (Halloween, Christmas), swap it in, reload. Easy seasonal loot!
 {% endhint %}
-
+.
 {% hint style="warning" %}
 **Backup before experimenting!** Copy `loot.yml` before making drastic changes. Easy to restore if you mess up the YAML formatting.
 {% endhint %}
+.
 
 Happy looting! ⚔️

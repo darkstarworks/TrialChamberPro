@@ -12,9 +12,11 @@ First things first—you need a Trial Chamber to manage. Got one already? Great!
 
 Teleport to it and explore until you find the main vault room. You'll want to register the entire chamber structure, not just one room.
 
+.
 {% hint style="info" %}
 **Pro tip:** Trial Chambers can be MASSIVE. Some span 100+ blocks in each direction. Bring blocks to mark corners!
 {% endhint %}
+.
 
 ## 📐 Step 2: Select the Chamber
 
@@ -28,9 +30,11 @@ TrialChamberPro needs to know which blocks belong to your chamber. The easiest w
 
 Your selection should encompass the entire chamber—all rooms, hallways, spawners, and vaults.
 
+.
 {% hint style="warning" %}
 **Important:** Make sure your selection includes a bit of padding around the structure. If spawners or vaults are right on the edge, they might not get detected in the scan.
 {% endhint %}
+.
 
 ### Without WorldEdit
 
@@ -63,13 +67,15 @@ You'll see:
 [TCP] Next step: Run /tcp scan MyChamber to detect vaults and spawners
 ```
 
+.
 {% hint style="success" %}
 **Naming conventions:** Use clear names like `MainChamber`, `NetherPortalTC`, or `SpawnChamber1`. You'll thank yourself later when managing multiple chambers.
 {% endhint %}
-
+.
 {% hint style="info" %}
 **Note:** `/tcp generate wand` registers **existing** Trial Chambers from your WorldEdit selection for management. It doesn't create or modify blocks—it just tells the plugin to start managing the selected region.
 {% endhint %}
+.
 
 ## 🔍 Step 4: Scan for Vaults and Spawners
 
@@ -91,9 +97,11 @@ You'll get a summary:
 [TCP] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
+.
 {% hint style="info" %}
 **What if it finds 0 vaults?** Either your selection didn't include the vaults, or you're in a decorative Trial Chamber variant without vaults. Expand your selection and scan again!
 {% endhint %}
+.
 
 ## 📸 Step 5: Create a Snapshot
 
@@ -115,9 +123,11 @@ This might take 5-30 seconds depending on chamber size. You'll see:
 [TCP] Snapshot created successfully! (12,847 blocks, 1.2 MB)
 ```
 
+.
 {% hint style="warning" %}
 **Keep it pristine!** Create snapshots when your chamber is in perfect condition. This is what the chamber will reset back to.
 {% endhint %}
+.
 
 ## 🚪 Step 6: Set an Exit Point
 
@@ -129,9 +139,11 @@ When the chamber resets, players inside need somewhere to go. Stand where you wa
 
 This saves your exact position (including look direction). Usually, you'll want this just outside the entrance.
 
+.
 {% hint style="info" %}
 **No exit set?** If you don't set one, players will teleport to the world spawn instead. Not the worst thing, but a dedicated exit is cleaner.
 {% endhint %}
+.
 
 ## 🎉 Step 7: Test It Out!
 
@@ -159,9 +171,11 @@ This forces an immediate reset. You should:
 - See the chamber fully restored
 - Notice all vaults are locked again
 
+.
 {% hint style="success" %}
 **Perfect!** Your chamber is now on autopilot. It will automatically reset based on the interval in your config (default: 48 hours).
 {% endhint %}
+.
 
 ## ⚙️ Step 8: Configure Reset Schedule (Optional)
 
@@ -214,21 +228,27 @@ Here's everything in one place:
 
 You've got a working chamber! Now let's make it awesome:
 
+.
 {% content-ref url="../guides/custom-loot.md" %}
 [custom-loot.md](../guides/custom-loot.md)
 {% endcontent-ref %}
+.
 
 Learn how to replace boring vanilla loot with custom rewards, economy integration, and more!
 
+.
 {% content-ref url="../guides/automatic-resets.md" %}
 [automatic-resets.md](../guides/automatic-resets.md)
 {% endcontent-ref %}
+.
 
 Configure reset schedules, warnings, and player handling.
 
+.
 {% content-ref url="../guides/per-player-vaults.md" %}
 [per-player-vaults.md](../guides/per-player-vaults.md)
 {% endcontent-ref %}
+.
 
 Understand how per-player loot works and configure cooldowns.
 
@@ -236,17 +256,21 @@ Understand how per-player loot works and configure cooldowns.
 
 ## 💡 Pro Tips
 
+.
 {% hint style="info" %}
 **Multiple chambers?** Just repeat the process! Each chamber is independent with its own settings, loot tables, and reset schedules.
 {% endhint %}
+.
 
 {% hint style="info" %}
 **Update the snapshot:** Made changes to your chamber? Run `/tcp snapshot create MyChamber` again to update it. The old snapshot is overwritten.
 {% endhint %}
 
+.
 {% hint style="warning" %}
 **Don't delete snapshots manually!** The `.dat` files in `snapshots/` are critical. If you delete them, you can't reset that chamber anymore.
 {% endhint %}
+.
 
 ## ❓ Common Issues
 
