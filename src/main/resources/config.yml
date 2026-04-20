@@ -141,6 +141,14 @@ spawner-waves:
   remove-distance: 32
   award-stats: true             # Track wave kills in player statistics
   completion-message: true      # Send message when wave is complete
+  # Glow outline on active trial spawners (v1.2.27)
+  # When true, spawns an invisible entity at each active spawner with the GLOWING effect
+  # applied, producing a colored block outline that's visible through walls — helps players
+  # locate the remaining active spawners in large chambers. Cleared automatically when the
+  # wave completes, the spawner enters cooldown, or the chamber is reset.
+  glow-active-spawners: false
+  glow-color-normal: "#FFFF55"  # Outline color for normal trial spawners (hex RGB)
+  glow-color-ominous: "#A020F0" # Outline color for ominous trial spawners (hex RGB)
 
 # Spectator Mode
 # Allows players to spectate chambers after death

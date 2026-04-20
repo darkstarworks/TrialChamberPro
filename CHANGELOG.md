@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.27] - 2026-04-20
+### Added
+- **Glow outline on active trial spawners** (opt-in): when a spawner activates, a colored outline is rendered around it that is visible through walls, making it easy to find the remaining active spawners in large chambers
+  - Implemented by spawning a non-responsive, non-persistent `Interaction` entity sized to wrap the spawner (1.2x1.2), with `isGlowing = true` and `glowColorOverride` set per wave type
+  - Cleared automatically when the wave completes, immediately (does not wait for the boss bar's 3s outro), and also on chamber reset via the existing `clearWavesInChamber` cleanup path
+  - Folia-safe: entity spawn and removal both run via `scheduler.runAtLocation` on the owning region thread
+
+### Config
+- New `spawner-waves.glow-active-spawners: false` — master switch for the glow outline (opt-in)
+- New `spawner-waves.glow-color-normal: "#FFFF55"` — hex RGB outline color for normal trial spawners (default: yellow)
+- New `spawner-waves.glow-color-ominous: "#A020F0"` — hex RGB outline color for ominous trial spawners (default: purple)
+
 ## [1.2.26] - 2026-04-19
 ### Added
 - **Edit default (global) loot tables from the GUI**: Clicking a table in the Loot Tables menu now opens the full editor directly — no need to open each chamber one by one

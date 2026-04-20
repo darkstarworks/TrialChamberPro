@@ -2,11 +2,13 @@
 
 TrialChamberPro uses a hierarchical permission system. Grant broad access with wildcards or fine-tune with specific permissions.
 
+.
 {% hint style="info" %}
 **Permission Plugin Required:** Use LuckPerms, PermissionsEx, or any Bukkit-compatible permissions plugin.
 
 **Default OP Permissions:** All `tcp.admin.*` permissions default to operators. Players get `tcp.stats` and `tcp.leaderboard` by default.
 {% endhint %}
+.
 
 ---
 
@@ -148,9 +150,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Use this for:** Read-only access to chamber data
 
+.
 {% hint style="info" %}
 **Note:** `tcp.admin` is NOT a wildcard. Use `tcp.admin.*` for all admin permissions.
 {% endhint %}
+.
 
 ---
 
@@ -194,9 +198,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 **Typical usage:** Default permission for all players (enhances multiplayer experience)
 
+.
 {% hint style="info" %}
 **Spectator Mode Feature:** When a player dies in a chamber, they're offered the chance to spectate instead of immediately respawning. This lets them watch teammates complete the challenge.
 {% endhint %}
+.
 
 ---
 
@@ -214,9 +220,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 - Staff testing chambers
 - Special event participants
 
+.
 {% hint style="warning" %}
 **Balance Warning:** Giving this to regular players removes cooldown mechanics entirely. Consider carefully!
 {% endhint %}
+.
 
 ---
 
@@ -232,9 +240,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 - Staff building/modifying chambers
 - WorldEdit operations inside chambers
 
+.
 {% hint style="danger" %}
 **DO NOT give to regular players!** This allows complete modification of protected chambers.
 {% endhint %}
+.
 
 ---
 
@@ -251,9 +261,11 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 - Admins monitoring auto-discovery rollout on existing worlds
 - Catching false-positive registrations early so you can fine-tune `discovery.*` thresholds
 
+.
 {% hint style="info" %}
 Only fires when `discovery.notify-ops: true` (the default) in config.yml. You can also see every registration in the server log if `debug.verbose-logging: true`.
 {% endhint %}
+.
 
 ---
 
@@ -523,15 +535,19 @@ Yes! If a group has `tcp.admin.*`, all members inherit all child permissions aut
 
 ## 🔗 Related Pages
 
+.
 {% content-ref url="commands.md" %}
 [commands.md](commands.md)
 {% endcontent-ref %}
+.
 
 See which commands require which permissions.
 
+.
 {% content-ref url="../configuration/config.yml.md" %}
 [config.yml.md](../configuration/config.yml.md)
 {% endcontent-ref %}
+.
 
 Protection settings and their interaction with bypass permissions.
 
@@ -539,21 +555,26 @@ Protection settings and their interaction with bypass permissions.
 
 ## 🛡️ Security Best Practices
 
+.
 {% hint style="success" %}
 **Use the least privilege principle:** Only grant permissions users actually need. Don't give `tcp.admin.*` to everyone.
 {% endhint %}
 
+.
 {% hint style="warning" %}
 **Be careful with bypass permissions:** `tcp.bypass.cooldown` removes progression. `tcp.bypass.protection` allows chamber destruction.
 {% endhint %}
 
+.
 {% hint style="info" %}
 **Separate builder and admin permissions:** Builders need `tcp.admin.create` + `tcp.bypass.protection`. They don't need `tcp.admin.reload` or key management.
 {% endhint %}
 
+.
 {% hint style="danger" %}
 **Never give regular players `tcp.bypass.protection`** unless you want them modifying chambers freely!
 {% endhint %}
+.
 
 ---
 

@@ -789,17 +789,17 @@ Reloads the plugin configuration without restarting the server.
 **Use tab completion!** Press `Tab` while typing commands to autocomplete chamber names, player names, and arguments.
 {% endhint %}
 .
-.
+
 {% hint style="info" %}
 **Aliases:** All leaderboard commands work with `/tcp lb` and `/tcp top` for quick access.
 {% endhint %}
 .
-.
+
 {% hint style="warning" %}
 **Chamber names are case-sensitive** in some commands. Use tab completion to ensure correct capitalization.
 {% endhint %}
 .
-.
+
 {% hint style="info" %}
 **Offline player support:** Most commands work with offline players (like `/tcp vault reset`), but `/tcp key give` requires the player to be online.
 {% endhint %}
