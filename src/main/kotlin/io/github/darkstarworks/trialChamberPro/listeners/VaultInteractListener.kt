@@ -16,6 +16,9 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.inventory.ItemStack
+import org.bukkit.persistence.PersistentDataType
+import org.bukkit.util.Vector
 
 /**
  * Listens for vault interactions and handles per-player loot system.
@@ -337,17 +340,22 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                         return@Runnable
                     }
 
-                    // Give items to player
-                    val leftover = player.inventory.addItem(*loot.toTypedArray())
+                    val dropAtVault = plugin.config.getBoolean("vaults.drop-loot-at-vault", false)
+                    if (dropAtVault) {
+                        ejectLootAtVault(loot, player, location)
+                    } else {
+                        // Give items to player
+                        val leftover = player.inventory.addItem(*loot.toTypedArray())
 
-                    // Drop leftover items if inventory is full
-                    if (leftover.isNotEmpty()) {
-                        // Double-check still online
-                        if (player.isOnline) {
-                            leftover.values.forEach { item ->
-                                player.world.dropItemNaturally(player.location, item)
+                        // Drop leftover items if inventory is full
+                        if (leftover.isNotEmpty()) {
+                            // Double-check still online
+                            if (player.isOnline) {
+                                leftover.values.forEach { item ->
+                                    player.world.dropItemNaturally(player.location, item)
+                                }
+                                player.sendMessage(plugin.getMessage("inventory-full"))
                             }
-                            player.sendMessage(plugin.getMessage("inventory-full"))
                         }
                     }
 
@@ -527,6 +535,47 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         result = result.replace('\u0000', '_')
 
         return result
+    }
+
+    /**
+     * Ejects loot as dropped items at the vault block (vanilla-style), tagging
+     * each with the owner UUID and a drop timestamp when owner-only pickup is
+     * enabled. Assumes caller is already on the correct region thread.
+     */
+    private fun ejectLootAtVault(
+        loot: List<ItemStack>,
+        player: org.bukkit.entity.Player,
+        vaultLocation: Location
+    ) {
+        val world = vaultLocation.world ?: return
+        val spawn = vaultLocation.clone().add(0.5, 1.15, 0.5)
+        val ownerOnly = plugin.config.getBoolean("vaults.drop-loot-owner-only", true)
+        val droppedAt = System.currentTimeMillis()
+
+        loot.forEach { stack ->
+            world.dropItem(spawn, stack) { entity ->
+                entity.velocity = Vector(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                )
+                entity.pickupDelay = 10 // ~0.5s so players see the pop
+                if (ownerOnly) {
+                    entity.owner = player.uniqueId
+                    val pdc = entity.persistentDataContainer
+                    pdc.set(
+                        VaultDropOwnerListener.OWNER_KEY,
+                        PersistentDataType.STRING,
+                        player.uniqueId.toString()
+                    )
+                    pdc.set(
+                        VaultDropOwnerListener.DROPPED_AT_KEY,
+                        PersistentDataType.LONG,
+                        droppedAt
+                    )
+                }
+            }
+        }
     }
 
     /**

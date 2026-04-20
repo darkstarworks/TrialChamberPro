@@ -232,6 +232,11 @@ class TrialChamberPro : JavaPlugin() {
                         ChamberDiscoveryListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
+                    io.github.darkstarworks.trialChamberPro.listeners.VaultDropOwnerListener.init(this@TrialChamberPro)
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.VaultDropOwnerListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
 
                     logger.info("✓ Phase 1 Foundation: Initialized successfully")
                     logger.info("  - Database: Connected")

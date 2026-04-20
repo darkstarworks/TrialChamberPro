@@ -59,6 +59,16 @@ vaults:
     ominous-open: BLOCK_VAULT_OPEN_SHUTTER
     cooldown: BLOCK_NOTE_BLOCK_BASS
 
+  # Vanilla-style loot ejection: drop items from the vault block instead of
+  # placing them directly into the player's inventory.
+  drop-loot-at-vault: false
+  # If true, only the player who opened the vault can pick up the dropped
+  # items. After drop-loot-owner-grace-seconds, anyone can pick them up so
+  # items don't linger forever if the owner logs off. 0 = owner-locked until
+  # the item despawns.
+  drop-loot-owner-only: true
+  drop-loot-owner-grace-seconds: 30
+
 # Protection settings
 protection:
   enabled: true
