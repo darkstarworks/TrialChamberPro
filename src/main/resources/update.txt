@@ -1,7 +1,9 @@
 <black>.
+<aqua>[1.2.28] <gray>- <white>2026-04-20
+<lime>+ <white>FIX: <green>Vault cooldowns now properly clear on chamber reset (no more permanent "vault locked").
+<lime>+ <white>NEW: <green>Opt-in vanilla-style vault loot ejection with owner-only pickup (<yellow>vaults.drop-loot-at-vault<green>).
+<aqua>[1.2.27] <gray>- <white>2026-04-20
+<lime>+ <white>NEW: <green>Opt-in glow outline on active trial spawners, visible through walls.
 <aqua>[1.2.26] <gray>- <white>2026-04-19
-<lime>+ <white>NEW: <green>Edit default loot tables from the GUI <white>- click any table in the Loot Tables menu to edit it directly.
-<white>  <gray>Changes save to <yellow>loot.yml <gray>and apply to every chamber using that table.
-<lime>+ <white>FIX: <green>Boss bars now hide when you leave the spawner area <white>(default 32 blocks).
-<lime>+ <white>FIX: <green>Chamber reset clears lingering wave boss bars.
+<lime>+ <white>NEW: <green>Edit default loot tables directly from the GUI.
 <gray>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
