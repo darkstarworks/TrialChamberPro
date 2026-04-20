@@ -149,12 +149,10 @@ class ResetManager(private val plugin: TrialChamberPro) {
             // Step 3: Restore from snapshot
             val snapshotFile = chamber.getSnapshotFile()
             if (snapshotFile != null && snapshotFile.exists()) {
+                // restoreFromSnapshot now suspends until every region-thread batch
+                // finishes, so spawner reset (Step 4) and vault cooldown clear
+                // (Step 6) are guaranteed to act on the restored blocks.
                 restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
-
-                // Small delay to ensure all scheduled block restoration tasks complete
-                // before we modify spawner state. This is important because restoreBlocks()
-                // schedules tasks asynchronously and returns before they complete.
-                delay(200)
             } else {
                 plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
             }
