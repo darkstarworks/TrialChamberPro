@@ -2,6 +2,7 @@ package io.github.darkstarworks.trialChamberPro.utils
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.BlockSnapshot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
@@ -61,6 +62,18 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
         // Use atomic counter for thread-safe progress tracking across multiple region threads (Folia)
         val processedBlocks = java.util.concurrent.atomic.AtomicInteger(0)
 
+        // Track pending region-thread batches so we can await actual completion.
+        // runAtLocation is fire-and-forget; without this, restoreBlocks returned
+        // before vault tile entities were actually rewritten, which meant the
+        // post-restore vault rewarded_players clear ran against stale blocks.
+        val pendingBatches = java.util.concurrent.atomic.AtomicInteger(0)
+        val completionSignal = CompletableDeferred<Unit>()
+        fun batchFinished() {
+            if (pendingBatches.decrementAndGet() == 0) {
+                completionSignal.complete(Unit)
+            }
+        }
+
         // Process each chunk
         blocksByChunk.forEach { (chunk, blockEntries) ->
             // Ensure chunk is loaded
@@ -72,26 +85,31 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
                 val representativeLocation = batch.firstOrNull()?.key
 
                 if (representativeLocation != null) {
+                    pendingBatches.incrementAndGet()
                     // Schedule on the region thread that owns this location
                     plugin.scheduler.runAtLocation(representativeLocation, Runnable {
-                        batch.forEach { (location, blockSnapshot) ->
-                            try {
-                                // Use WorldEdit if available, otherwise direct Bukkit API
-                                if (weSession != null) {
-                                    restoreBlockWithWorldEdit(location, blockSnapshot, weSession)
-                                } else {
-                                    restoreBlock(location, blockSnapshot)
+                        try {
+                            batch.forEach { (location, blockSnapshot) ->
+                                try {
+                                    // Use WorldEdit if available, otherwise direct Bukkit API
+                                    if (weSession != null) {
+                                        restoreBlockWithWorldEdit(location, blockSnapshot, weSession)
+                                    } else {
+                                        restoreBlock(location, blockSnapshot)
+                                    }
+                                    processedBlocks.incrementAndGet()
+                                } catch (e: Exception) {
+                                    plugin.logger.warning(
+                                        "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
+                                    )
                                 }
-                                processedBlocks.incrementAndGet()
-                            } catch (e: Exception) {
-                                plugin.logger.warning(
-                                    "Failed to restore block at ${location.blockX},${location.blockY},${location.blockZ}: ${e.message}"
-                                )
                             }
-                        }
 
-                        // Call progress callback
-                        onProgress?.invoke(processedBlocks.get(), totalBlocks)
+                            // Call progress callback
+                            onProgress?.invoke(processedBlocks.get(), totalBlocks)
+                        } finally {
+                            batchFinished()
+                        }
                     })
                 }
 
@@ -99,6 +117,16 @@ class BlockRestorer(private val plugin: TrialChamberPro) {
                 delay(50)
             }
         }
+
+        // If nothing was scheduled (empty snapshot), complete immediately.
+        if (pendingBatches.get() == 0) {
+            completionSignal.complete(Unit)
+        }
+
+        // Wait for every scheduled batch to actually finish on its region thread
+        // before returning. Callers rely on this (e.g. ResetManager clears vault
+        // rewarded_players and resets spawner state immediately after).
+        completionSignal.await()
 
         // Finalize WorldEdit session if used
         if (weSession != null) {
