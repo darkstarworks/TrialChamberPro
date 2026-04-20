@@ -104,7 +104,7 @@ configurations.matching {
 
 tasks {
     shadowJar {
-        archiveClassifier.set("")
+        archiveClassifier.set("mc26")
         // Do not relocate Kotlin stdlib or kotlinx-coroutines to ensure Bukkit can find them
         // They will be shaded into the jar with their original package names
         // This avoids NoClassDefFoundError for kotlinx.coroutines.Dispatchers during plugin bootstrap
