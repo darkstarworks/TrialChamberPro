@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.28] - 2026-04-20
+### Fixed
+- **Vault cooldown not cleared on chamber reset** (long-standing, surfaced on any chamber larger than a few thousand blocks): players kept seeing "You have already opened this Vault! It will unlock when the chamber resets" even after an automatic reset
+  - Root cause: `BlockRestorer.restoreBlocks` scheduled region-thread batches via `runAtLocation` (fire-and-forget) and returned as soon as every batch was *queued*, not when they had *run*. `ResetManager.resetChamber` then waited just `delay(200)` before running Step 4 (spawner reset) and Step 6 (`resetAllCooldowns` → `clearAllVaultRewardedPlayers`). For anything beyond a trivially small chamber, those steps fired against blocks that had not yet been restored — `clearAllVaultRewardedPlayers` saw `block.type != VAULT` and returned without touching `rewarded_players`, so the native Vault API kept reporting the player as already rewarded forever
+  - Fix: `BlockRestorer.restoreBlocks` now tracks pending batches with an `AtomicInteger` + `CompletableDeferred` and `await()`s actual completion before returning. `ResetManager.resetChamber` drops the `delay(200)` hack — Steps 4 and 6 now always run against fully-restored blocks
+
+### Added
+- **Vanilla-style vault loot ejection** (opt-in): When enabled, vault loot pops out of the vault block with a short upward velocity instead of teleporting straight into the opener's inventory
+  - New `VaultDropOwnerListener` enforces owner-only pickup via `EntityPickupItemEvent` — dropped items are tagged with the opener's UUID in their `PersistentDataContainer` plus a drop timestamp. After the grace window elapses the tag is ignored and any player can pick up, preventing loot from lingering forever if the owner logs off
+  - Command rewards and status-effect rewards (Bad Omen etc.) still apply directly to the player — only itemized loot drops from the vault
+  - Defaults preserve existing behavior (feature is off by default)
+
+### Config
+- New `vaults.drop-loot-at-vault: false` — master switch for vanilla-style ejection
+- New `vaults.drop-loot-owner-only: true` — restrict pickup to the opener during the grace window
+- New `vaults.drop-loot-owner-grace-seconds: 30` — how long owner-only enforcement lasts (`0` = until item despawns)
+
+### Permissions
+- New `tcp.bypass.droplock` (default `op`) — bypass owner-only pickup restrictions on vault drops
+
 ## [1.2.27] - 2026-04-20
 ### Added
 - **Glow outline on active trial spawners** (opt-in): when a spawner activates, a colored outline is rendered around it that is visible through walls, making it easy to find the remaining active spawners in large chambers

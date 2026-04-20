@@ -228,6 +228,20 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.bypass.droplock`
+**Description:** Bypass owner-only pickup restriction on vault loot drops *(1.2.28+)*
+**Default:** Operators only
+**Effect:**
+- Pick up vault loot dropped by other players even while `drop-loot-owner-only: true` is active and the grace period has not elapsed
+
+**Use this for:**
+- Staff retrieving items from AFK/offline players' vault openings
+- Recovery operations
+
+**Only relevant when** `vaults.drop-loot-at-vault: true` **and** `vaults.drop-loot-owner-only: true` in config.yml.
+
+---
+
 #### `tcp.bypass.protection`
 **Description:** Bypass chamber protection
 **Default:** Operators only
