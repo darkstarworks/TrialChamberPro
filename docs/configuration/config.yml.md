@@ -254,6 +254,23 @@ Play sounds when vaults open or when someone tries to open during cooldown.
 
 Change sounds if you want custom feedback. See [Spigot's Sound enum](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html).
 
+### `drop-loot-at-vault` *(v1.2.28+)*
+**Default:** `false`
+
+When `true`, loot pops out of the vault block (vanilla-style) with a short upward velocity instead of being placed directly into the player's inventory. The opener still gets the advancement, the "vault opened" message, and the key is still consumed.
+
+Command rewards and status-effect rewards (e.g. Bad Omen) always apply directly to the player — only itemized loot drops from the vault.
+
+### `drop-loot-owner-only` *(v1.2.28+)*
+**Default:** `true`
+
+Only applies when `drop-loot-at-vault: true`. When enabled, only the player who opened the vault can pick up the dropped items — other players' pickup events are cancelled. Admins with the `tcp.bypass.droplock` permission can always pick up dropped vault loot.
+
+### `drop-loot-owner-grace-seconds` *(v1.2.28+)*
+**Default:** `30`
+
+How many seconds the owner-only restriction applies after a drop. After this window, anyone can pick up the items, so gear doesn't linger forever if the opener logs off. Set to `0` to lock items to the owner until they naturally despawn.
+
 ---
 
 ## 🛡️ Protection Settings
