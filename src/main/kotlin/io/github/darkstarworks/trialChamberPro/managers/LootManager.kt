@@ -478,7 +478,7 @@ class LootManager(private val plugin: TrialChamberPro) {
     private fun createItemStack(lootItem: LootItem, player: Player): ItemStack {
         val amount = Random.nextInt(lootItem.amountMin, lootItem.amountMax + 1)
 
-        // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen)
+        // Resolve custom plugin item (Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible)
         if (lootItem.customItemPlugin != null && lootItem.customItemId != null) {
             val resolved = resolveCustomItem(lootItem.customItemPlugin, lootItem.customItemId)
             if (resolved == null) {
@@ -737,20 +737,32 @@ class LootManager(private val plugin: TrialChamberPro) {
     }
 
     /**
-     * Resolves a custom item from a supported plugin (Nexo, ItemsAdder, Oraxen).
+     * Resolves a custom item from a supported plugin (Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible).
      * Uses reflection so no compile-time dependency on any of these plugins is needed.
+     *
+     * Note: MythicCrucible is an addon of MythicMobs and registers its items into the Mythic item manager,
+     * so the gate check uses "MythicMobs" rather than "MythicCrucible".
      */
     private fun resolveCustomItem(pluginName: String, itemId: String): ItemStack? {
-        if (!org.bukkit.Bukkit.getPluginManager().isPluginEnabled(pluginName)) {
-            plugin.logger.warning("Custom item plugin '$pluginName' is not enabled — cannot resolve item '$itemId'")
+        val gatePluginName = when (pluginName.lowercase()) {
+            "mythiccrucible", "crucible" -> "MythicMobs"
+            else -> pluginName
+        }
+        if (!org.bukkit.Bukkit.getPluginManager().isPluginEnabled(gatePluginName)) {
+            plugin.logger.warning("Custom item plugin '$gatePluginName' is not enabled — cannot resolve item '$itemId'")
             return null
         }
         return when (pluginName.lowercase()) {
             "nexo" -> resolveNexoItem(itemId)
             "itemsadder" -> resolveItemsAdderItem(itemId)
             "oraxen" -> resolveOraxenItem(itemId)
+            "craftengine" -> resolveCraftEngineItem(itemId)
+            "mythiccrucible", "crucible" -> resolveMythicCrucibleItem(itemId)
             else -> {
-                plugin.logger.warning("Unsupported custom item plugin: '$pluginName'. Supported: Nexo, ItemsAdder, Oraxen")
+                plugin.logger.warning(
+                    "Unsupported custom item plugin: '$pluginName'. " +
+                    "Supported: Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible"
+                )
                 null
             }
         }
@@ -798,6 +810,68 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
     } catch (e: Exception) {
         plugin.logger.warning("Failed to resolve Oraxen item '$itemId': ${e.message}")
+        null
+    }
+
+    /**
+     * Resolves a CraftEngine item via CraftEngineItems.byId(Key) → buildItemStack().
+     *
+     * Notes on the CraftEngine API (verified against Xiao-MoMi/craft-engine main):
+     * - `CraftEngineItems.byId` takes a `net.momirealms.craftengine.core.util.Key`, not a String.
+     *   We build the Key via its public `Key.from(String)` factory (accepts `"namespace:value"` or bare
+     *   value, defaulting to the `minecraft` namespace — CraftEngine's own items use the `craftengine`
+     *   namespace, so pack items should be referenced as e.g. `"my_pack:item_name"`).
+     * - `CustomItem<ItemStack>` exposes a no-arg `buildItemStack()` which returns the Bukkit ItemStack
+     *   directly. Player-context overloads exist but take CraftEngine's own `Player` abstraction, not
+     *   Bukkit's — intentionally skipped here; static vault loot doesn't need player-context placeholders.
+     */
+    private fun resolveCraftEngineItem(itemId: String): ItemStack? = try {
+        val keyCls = Class.forName("net.momirealms.craftengine.core.util.Key")
+        val key = keyCls.getMethod("from", String::class.java).invoke(null, itemId)
+        val itemsCls = Class.forName("net.momirealms.craftengine.bukkit.api.CraftEngineItems")
+        val customItem = itemsCls.getMethod("byId", keyCls).invoke(null, key)
+        if (customItem == null) {
+            plugin.logger.warning("CraftEngine item not found: '$itemId'")
+            null
+        } else {
+            customItem.javaClass.getMethod("buildItemStack").invoke(customItem) as? ItemStack
+        }
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to resolve CraftEngine item '$itemId': ${e.message}")
+        null
+    }
+
+    /**
+     * Resolves a MythicCrucible item via the MythicMobs API chain:
+     *   MythicBukkit.inst().getItemManager().getItem(String) -> Optional<MythicItem>
+     *     -> MythicItem.generateItemStack(int) -> AbstractItemStack (BukkitItemStack at runtime)
+     *     -> BukkitItemStack.build() -> org.bukkit.inventory.ItemStack
+     *
+     * MythicCrucible is an addon of MythicMobs — Crucible items are registered into the Mythic item
+     * manager, so we query through the MythicBukkit API rather than a Crucible-specific entry point.
+     * Amount is always generated as 1; the outer caller scales to the configured amount range.
+     */
+    private fun resolveMythicCrucibleItem(itemId: String): ItemStack? = try {
+        val mythicBukkitCls = Class.forName("io.lumine.mythic.bukkit.MythicBukkit")
+        val instance = mythicBukkitCls.getMethod("inst").invoke(null)
+        val itemManager = instance.javaClass.getMethod("getItemManager").invoke(instance)
+        val optional = itemManager.javaClass.getMethod("getItem", String::class.java).invoke(itemManager, itemId) as java.util.Optional<*>
+        val mythicItem = optional.orElse(null)
+        if (mythicItem == null) {
+            plugin.logger.warning("MythicCrucible item not found: '$itemId' (is the item defined in a Mythic/Crucible item file?)")
+            null
+        } else {
+            // generateItemStack(int) -> AbstractItemStack; on Bukkit it's BukkitItemStack which has build() -> ItemStack
+            val abstractStack = mythicItem.javaClass.getMethod("generateItemStack", Int::class.javaPrimitiveType).invoke(mythicItem, 1)
+            if (abstractStack == null) {
+                plugin.logger.warning("MythicCrucible.generateItemStack returned null for '$itemId'")
+                null
+            } else {
+                abstractStack.javaClass.getMethod("build").invoke(abstractStack) as? ItemStack
+            }
+        }
+    } catch (e: Exception) {
+        plugin.logger.warning("Failed to resolve MythicCrucible item '$itemId': ${e.message}")
         null
     }
 

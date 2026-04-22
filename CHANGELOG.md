@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.29] - 2026-04-22
+### Added
+- **CraftEngine custom-item support** in loot tables: `type: CUSTOM_ITEM` with `plugin: CraftEngine` and `item-id: <namespace:item>`. Items are resolved via `Key.from(id)` → `CraftEngineItems.byId(key)` → `CustomItem.buildItemStack()`. IDs accept the standard namespaced form (e.g. `"my_pack:legendary_sword"`); a bare id defaults to the `minecraft` namespace per CraftEngine's `Key.from` contract, so namespaced IDs are strongly recommended
+- **MythicCrucible custom-item support** in loot tables: `type: CUSTOM_ITEM` with `plugin: MythicCrucible` (alias `Crucible`) and `item-id: <your_item>`. Crucible items are registered into the MythicMobs item manager, so the gate check uses `MythicMobs` — install MythicMobs + MythicCrucible, define the item in Crucible, then reference it by id
+
+### Changed
+- `CUSTOM_ITEM` supported-plugin warning now lists all five supported plugins: Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible
+
+### Notes
+- No new compile-time dependencies — both integrations use reflection behind an `isPluginEnabled` gate, consistent with the existing Nexo/ItemsAdder/Oraxen pattern. Plugins ship zero runtime cost when the target plugin isn't installed
+
 ## [1.2.28] - 2026-04-20
 ### Fixed
 - **Vault cooldown not cleared on chamber reset** (long-standing, surfaced on any chamber larger than a few thousand blocks): players kept seeing "You have already opened this Vault! It will unlock when the chamber resets" even after an automatic reset
@@ -1028,6 +1039,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.2.29]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.28...v1.2.29
+[1.2.28]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.27...v1.2.28
+[1.2.27]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.26...v1.2.27
 [1.2.26]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.25...v1.2.26
 [1.2.25]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.24...v1.2.25
 [1.2.24]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.23...v1.2.24
