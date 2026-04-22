@@ -847,7 +847,7 @@ See the full [💰 COMMAND Rewards](#-command-rewards-economy--permissions) sect
 
 ## 🎨 Custom Plugin Items
 
-### Nexo, ItemsAdder, Oraxen
+### Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible
 
 Use `type: CUSTOM_ITEM` with `plugin:` and `item-id:` to drop custom items from supported plugins:
 
@@ -867,6 +867,16 @@ weighted-items:
     plugin: Oraxen
     item-id: "mythic_helmet"
     weight: 3.0
+
+  - type: CUSTOM_ITEM
+    plugin: CraftEngine
+    item-id: "my_pack:enchanted_blade"
+    weight: 2.0
+
+  - type: CUSTOM_ITEM
+    plugin: MythicCrucible       # alias: Crucible
+    item-id: "LegendarySword"
+    weight: 1.0
 ```
 
 TrialChamberPro resolves custom items at runtime using the plugin's API, so the custom item plugin must be installed and enabled on the server.
@@ -875,11 +885,17 @@ TrialChamberPro resolves custom items at runtime using the plugin's API, so the 
 - **Nexo** — use the namespaced item ID (e.g. `"namespace:item_name"`)
 - **ItemsAdder** — use the namespaced item ID (e.g. `"namespace:item_name"`)
 - **Oraxen** — use the plain item ID (e.g. `"item_name"`)
+- **CraftEngine** — use the namespaced ID as configured in your CraftEngine pack (e.g. `"my_pack:item_name"`). A bare id without a namespace defaults to the `minecraft` namespace (CraftEngine's own `Key.from` behavior), so always prefix with your pack's namespace for custom items.
+- **MythicCrucible** — use the internal Mythic item name (e.g. `"LegendarySword"`). Requires **MythicMobs** installed (Crucible registers its items into the Mythic item manager). Accepts `plugin: MythicCrucible` or the shorter alias `plugin: Crucible`.
 
 You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the resolved item—they will be applied over the custom item's base properties.
 
 {% hint style="warning" %}
 **Make sure the item IDs are correct!** If the plugin can't find the item, it'll be skipped silently and nothing will drop. Test your loot tables after adding custom items.
+{% endhint %}
+
+{% hint style="info" %}
+**Heads up — custom item plugins are optional integrations.** TrialChamberPro talks to Nexo, ItemsAdder, Oraxen, CraftEngine, and MythicCrucible through their own APIs at runtime. If one of those plugins releases a big update that changes how their API works, the integration here might stop working until TrialChamberPro is updated to match. If that happens, the worst case is that the custom item is skipped and a warning appears in the server log — your chamber won't break or crash. Just let me know (open an issue / ping on Modrinth) and I'll push a fix.
 {% endhint %}
 
 ---

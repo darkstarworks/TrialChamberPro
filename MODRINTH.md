@@ -5,7 +5,7 @@
 ### Recently improved
 - **Plug-and-play auto-discovery** — the plugin now finds and registers every natural Trial Chamber by itself. No WorldEdit, no commands.
 - **GUI-editable loot tables** — edit your default loot tables from `/tcp menu` and changes apply to every chamber using that table. No YAML editing required.
-- **Custom plugin items** — drop Nexo, ItemsAdder, or Oraxen items from vaults, plus `custom-model-data` support for resource pack items.
+- **Custom plugin items** — drop Nexo, ItemsAdder, Oraxen, CraftEngine, or MythicCrucible items from vaults, plus `custom-model-data` support for resource pack items.
 - **Fully translatable** — every user-facing string lives in `messages.yml`. Localize to any language.
 - **Minecraft 26.x support** — use the `-mc26` version (Paper 26.1.2+).
 - Better boss bars, fewer bugs, tighter GUIs, and much more.
@@ -71,7 +71,7 @@ Prefer manual control? You can still register chambers with WorldEdit (`/tcp gen
 - **Custom Plugin Items** — drop Nexo, ItemsAdder, or Oraxen items directly from vaults:
   ```yaml
   - type: CUSTOM_ITEM
-    plugin: nexo        # or itemsadder / oraxen
+    plugin: nexo        # or itemsadder / oraxen / craftengine / mythiccrucible
     item-id: mythic_sword
     weight: 5
   ```
@@ -166,7 +166,7 @@ Prefer not to use auto-discovery? Classic workflow still works:
 - **WorldGuard** — additional region protection.
 - **PlaceholderAPI** — scoreboard / hologram placeholders.
 - **Vault** — economy command rewards.
-- **Nexo / ItemsAdder / Oraxen** — custom items in loot tables.
+- **Nexo / ItemsAdder / Oraxen / CraftEngine / MythicCrucible** — custom items in loot tables.
 - **LuckPerms** — permission command rewards.
 
 ---
