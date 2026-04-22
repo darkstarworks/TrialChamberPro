@@ -189,12 +189,13 @@ global:
   default-reset-interval: 172800  # 48 hours in seconds
 ```
 
-Or set it per-chamber in the database (advanced users only).
+Or override it per-chamber from the GUI: `/tcp menu` → pick the chamber → **Settings** → **Reset Interval**.
 
 **Common intervals:**
 - Daily: `86400` (24 hours)
 - Twice daily: `43200` (12 hours)
 - Weekly: `604800` (7 days)
+- Manual only: `0` (disable automatic resets — use `/tcp reset` or the GUI button)
 - Custom: Use an [online converter](https://www.timecalculator.net/) to get seconds
 
 ## 📚 Quick Reference

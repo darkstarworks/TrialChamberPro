@@ -545,6 +545,7 @@ spawner-waves:
   enabled: true
   show-boss-bar: true
   detection-radius: 20
+  remove-distance: 32
   award-stats: true
   completion-message: true
 ```
@@ -563,6 +564,11 @@ Display a boss bar showing wave progress (mobs killed / total mobs) to nearby pl
 **Default:** `20` blocks
 
 How far from a trial spawner players can be and still see the boss bar / be considered participants.
+
+### `remove-distance`
+**Default:** `32` blocks *(added in 1.2.26)*
+
+Distance at which a player is **removed** from a spawner's boss bar. Acts as hysteresis above `detection-radius`: players are added to the bar at 20 blocks, removed at 32. Prevents the bar flickering on/off when players walk near the edge, and fixes the old behaviour where boss bars lingered after leaving a chamber.
 
 ### `award-stats`
 **Default:** `true`
@@ -625,6 +631,76 @@ Allow spectating empty chambers (when no other players are inside). Usually `fal
 2. After respawn, offered to spectate (if other players are inside)
 3. Type "spectate" to accept → GameMode.SPECTATOR, teleport to center
 4. Type "exit" to leave → restored to previous game mode, teleported to exit
+{% endhint %}
+.
+
+---
+
+## 🔎 Auto-Discovery of Natural Trial Chambers
+
+*Added in 1.2.25 — opt-in.*
+
+Automatically registers naturally-generated Trial Chambers the first time anyone loads their chunks. No `/tcp generate` needed — the plugin detects vaults and spawners as chunks enter memory, flood-fills the chamber's structural blocks (tuff/copper variants) to compute a bounding box, and registers it under a deterministic auto-name like `auto_world_123_456`.
+
+On plugin enable, a startup sweep also scans every already-loaded Overworld chunk, so chambers in pre-loaded spawn regions get picked up on restart.
+
+```yaml
+discovery:
+  enabled: false                   # Master switch — opt-in
+  max-radius-xz: 60                # BFS expansion cap on horizontal axes
+  max-radius-y: 45                 # BFS expansion cap on vertical axis
+  min-vaults-plus-spawners: 2      # Reject regions with fewer total vaults + spawners
+  max-center-y: 10                 # Reject if AABB center Y > this (chambers gen deep underground)
+  auto-snapshot: false             # Snapshot on registration (expensive; enable if you want resets to work)
+  notify-ops: true                 # Broadcast registration to tcp.discovery.notify holders
+  cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
+  pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
+```
+
+### `enabled`
+**Default:** `false`
+
+Master switch. Off by default because it's a behaviour change — old worlds with player-built tuff/copper structures can look like chambers to the detector. Turn on if your world is freshly generated, or if you've verified the false-positive guards below are tight enough for your server.
+
+### `max-radius-xz` / `max-radius-y`
+**Defaults:** `60` / `45` blocks
+
+Hard caps on the flood-fill. Prevents a runaway scan if the predicate accidentally matches a structure larger than any vanilla chamber. Tune down if you're seeing over-registration; leave alone otherwise.
+
+### `min-vaults-plus-spawners`
+**Default:** `2`
+
+A candidate region must contain at least this many vaults + trial spawners combined, or it's rejected. Stops single-vault structures from getting registered as full chambers.
+
+### `max-center-y`
+**Default:** `10`
+
+Reject if the AABB's center Y is above this. Trial chambers generate deep underground, so anything near the surface is almost certainly a player build. Raise this only if you have a modded world that generates chambers higher up.
+
+### `auto-snapshot`
+**Default:** `false`
+
+Snapshot blocks on registration. Disabled by default because snapshotting a large chamber costs a few seconds of I/O per registration, which adds up if you're running a world pregenerator. **Enable this if you want auto-discovered chambers to be restorable on reset** — without a snapshot, the chamber gets per-player loot and protection, but resets can't rebuild broken blocks.
+
+### `notify-ops`
+**Default:** `true`
+
+Broadcast a message to anyone with the `tcp.discovery.notify` permission when a chamber is registered.
+
+### `cooldown-seconds` / `pending-retry-seconds`
+**Defaults:** `300` / `30`
+
+Internal debounce and retry timers. `cooldown-seconds` prevents re-scanning the same 128-block region right after a successful or failed discovery. `pending-retry-seconds` is how long the plugin waits for neighbouring chunks to load before finalizing a partial-load chamber. Defaults are fine for almost everyone.
+
+.
+{% hint style="info" %}
+**Plug-and-play setup:** if you want the plugin to "just work" on every chamber in your world without running any commands, set:
+```yaml
+discovery:
+  enabled: true
+  auto-snapshot: true
+```
+That's it. Walk/fly around the world and chambers will register themselves as you load their chunks.
 {% endhint %}
 .
 

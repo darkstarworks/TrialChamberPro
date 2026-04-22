@@ -19,12 +19,14 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp menu` | Open admin GUI | `tcp.admin.menu` |
 | `/tcp generate <value|coords|wand|blocks>` | Register chamber from saved var, coords, WE wand, or by block amount | `tcp.admin.generate` |
 | `/tcp scan <chamber>` | Scan for vaults/spawners | `tcp.admin.scan` |
-| `/tcp setexit <chamber>` | Set exit location | `tcp.admin.create` |
+| `/tcp setexit <chamber>` | Set exit location | `tcp.admin.generate` |
 | `/tcp snapshot <action> <chamber>` | Manage snapshots | `tcp.admin.snapshot` |
 | `/tcp reset <chamber>` | Force chamber reset | `tcp.admin.reset` |
 | `/tcp list` | List all chambers | `tcp.admin` |
 | `/tcp info [chamber]` | Show plugin info, or chamber details if specified | `tcp.admin` |
-| `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.create` |
+| `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
+| `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
+| `/tcp loot clear <chamber> [normal\|ominous\|all]` | Remove per-chamber loot override | `tcp.admin.loot` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |
@@ -199,7 +201,7 @@ Sets the exit location for a chamber. Players inside when the chamber resets wil
 /tcp setexit <chamber_name>
 ```
 
-**Permission:** `tcp.admin.create`
+**Permission:** `tcp.admin.generate`
 
 **Requirements:**
 - Must be a player (not console)
@@ -420,7 +422,7 @@ Permanently deletes a chamber and all associated data.
 /tcp delete <chamber_name>
 ```
 
-**Permission:** `tcp.admin.create`
+**Permission:** `tcp.admin.generate`
 
 **Arguments:**
 - `<chamber_name>` - Name of the chamber to delete
