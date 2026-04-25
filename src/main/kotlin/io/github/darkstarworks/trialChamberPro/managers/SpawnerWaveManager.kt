@@ -298,6 +298,15 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         }
         configureWildSpawnerCooldownAtCompletion(wave)
 
+        // v1.3.0: Plugin-driven key drops for non-vanilla providers.
+        // Vanilla trial spawners drop their own keys via the spawner state machine; when we've
+        // replaced the spawns with provider mobs the spawner still enters cooldown but will not
+        // eject keys (it's tracking UUIDs that no longer exist). We compensate here.
+        //
+        // wave.isOminous is captured at wave creation (WaveState ctor) — it cannot flip mid-wave,
+        // so it is safe to use here as the "ominous-at-start" snapshot.
+        maybeDropProviderKeys(wave)
+
         // Award bonus stats to participants
         if (plugin.config.getBoolean("spawner-waves.award-stats", true)) {
             wave.participatingPlayers.forEach { playerUUID ->
@@ -338,6 +347,87 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
             // No boss bar, clean up immediately
             activeWaves.remove(wave.spawnerId)
         }
+
+        // Fire post-event for downstream consumers (stat plugins, custom rewards, etc).
+        // Resolved chamber may be null for wild spawners — listeners must tolerate that.
+        plugin.server.pluginManager.callEvent(
+            io.github.darkstarworks.trialChamberPro.api.events.SpawnerWaveCompleteEvent(
+                spawnerLocation = wave.location,
+                chamber = plugin.chamberManager.getCachedChamberAt(wave.location),
+                ominous = wave.isOminous,
+                participants = wave.participatingPlayers.toSet(),
+                durationMs = durationMs
+            )
+        )
+    }
+
+    /**
+     * Drops Trial Keys / Ominous Trial Keys for participants when a wave was driven by a
+     * non-vanilla [io.github.darkstarworks.trialChamberPro.providers.TrialMobProvider].
+     *
+     * Vanilla trial spawners eject keys through their own state machine; when we substituted
+     * custom mobs, the spawner enters cooldown but can't find its tracked entities and won't
+     * drop anything. This method mirrors vanilla behavior: one key per unique participating
+     * player, dropped above the spawner block with a small upward velocity, tagged with the
+     * participant's UUID + timestamp so [io.github.darkstarworks.trialChamberPro.listeners.SpawnerKeyDropOwnerListener]
+     * can enforce owner-only pickup during the grace window.
+     *
+     * No-op for vanilla-driven waves. No-op for wild spawners not in a registered chamber —
+     * we can't determine the configured provider there and vanilla still handles them correctly.
+     */
+    private fun maybeDropProviderKeys(wave: WaveState) {
+        val chamber = plugin.chamberManager.getCachedChamberAt(wave.location) ?: return
+        if (!chamber.hasCustomMobProvider(wave.isOminous)) return
+        if (wave.participatingPlayers.isEmpty()) return
+
+        val keyMaterial = if (wave.isOminous) Material.OMINOUS_TRIAL_KEY else Material.TRIAL_KEY
+        val dropLoc = wave.location.clone().add(0.5, 1.2, 0.5)
+        val participants = wave.participatingPlayers.toList() // snapshot
+        val now = System.currentTimeMillis()
+
+        plugin.scheduler.runAtLocation(wave.location, Runnable {
+            val world = dropLoc.world ?: return@Runnable
+            try {
+                participants.forEach { uuid ->
+                    // Fire pre-drop event; listeners may suppress an individual key.
+                    val dropEvent = io.github.darkstarworks.trialChamberPro.api.events.TrialKeyDropEvent(
+                        location = dropLoc,
+                        keyType = keyMaterial,
+                        ownerUuid = uuid
+                    )
+                    plugin.server.pluginManager.callEvent(dropEvent)
+                    if (dropEvent.isCancelled) return@forEach
+
+                    val stack = org.bukkit.inventory.ItemStack(keyMaterial, 1)
+                    val itemEntity = world.dropItem(dropLoc, stack)
+                    // Small upward pop to approximate vanilla vault/spawner ejection
+                    itemEntity.velocity = org.bukkit.util.Vector(
+                        (Math.random() - 0.5) * 0.15,
+                        0.3,
+                        (Math.random() - 0.5) * 0.15
+                    )
+                    // Tag for owner-only pickup enforcement
+                    itemEntity.persistentDataContainer.set(
+                        io.github.darkstarworks.trialChamberPro.listeners.SpawnerKeyDropOwnerListener.OWNER_KEY,
+                        org.bukkit.persistence.PersistentDataType.STRING,
+                        uuid.toString()
+                    )
+                    itemEntity.persistentDataContainer.set(
+                        io.github.darkstarworks.trialChamberPro.listeners.SpawnerKeyDropOwnerListener.DROPPED_AT_KEY,
+                        org.bukkit.persistence.PersistentDataType.LONG,
+                        now
+                    )
+                    // Pickup-hint visual
+                    try { itemEntity.owner = uuid } catch (_: Throwable) { /* owner setter unavailable on some forks */ }
+                }
+
+                if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                    plugin.logger.info("[SpawnerWave] Dropped ${participants.size} ${keyMaterial.name} for provider-driven wave at ${wave.spawnerId}")
+                }
+            } catch (e: Exception) {
+                plugin.logger.warning("[SpawnerWave] Failed to drop provider keys: ${e.message}")
+            }
+        })
     }
 
     /**

@@ -536,6 +536,17 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             null // Column doesn't exist yet
         }
 
+        // v1.3.0: custom mob provider columns (nullable via backward-compat try/catch)
+        val customProvider = try {
+            rs.getString("custom_mob_provider")
+        } catch (_: Exception) { null }
+        val customNormal = try {
+            decodeMobIds(rs.getString("custom_mob_ids_normal"))
+        } catch (_: Exception) { emptyList() }
+        val customOminous = try {
+            decodeMobIds(rs.getString("custom_mob_ids_ominous"))
+        } catch (_: Exception) { emptyList() }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -557,8 +568,34 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             createdAt = rs.getLong("created_at"),
             normalLootTable = rs.getString("normal_loot_table"),
             ominousLootTable = rs.getString("ominous_loot_table"),
-            spawnerCooldownMinutes = spawnerCooldown
+            spawnerCooldownMinutes = spawnerCooldown,
+            customMobProvider = customProvider,
+            customMobIdsNormal = customNormal,
+            customMobIdsOminous = customOminous
         )
+    }
+
+    /**
+     * Encodes a list of mob ids as a JSON array for storage in a single TEXT column.
+     * Empty lists are stored as null to make "no override" distinguishable from "empty list".
+     */
+    private fun encodeMobIds(ids: List<String>): String? {
+        if (ids.isEmpty()) return null
+        return com.google.gson.Gson().toJson(ids)
+    }
+
+    /**
+     * Decodes a JSON array of mob ids. Returns an empty list for null / blank / malformed input
+     * so a corrupt value never crashes chamber loading.
+     */
+    private fun decodeMobIds(raw: String?): List<String> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            val arr = com.google.gson.JsonParser.parseString(raw).asJsonArray
+            arr.mapNotNull { it.asString?.takeIf { s -> s.isNotBlank() } }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     /**
@@ -804,6 +841,69 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             }
         } catch (e: Exception) {
             plugin.logger.severe("Failed to update spawner cooldown: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Updates the custom mob provider configuration for a chamber.
+     *
+     * @param chamberId The chamber ID
+     * @param providerId Provider id ("vanilla", "mythicmobs", ...). Pass null or "vanilla" to clear.
+     * @param normalIds Mob ids drawn from for normal waves (null = keep existing)
+     * @param ominousIds Mob ids drawn from for ominous waves (null = keep existing, empty list = clear)
+     * @return True if successful
+     */
+    suspend fun updateCustomMobProvider(
+        chamberId: Int,
+        providerId: String?,
+        normalIds: List<String>? = null,
+        ominousIds: List<String>? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val normalizedProvider = providerId?.lowercase()?.takeUnless { it == "vanilla" || it.isBlank() }
+
+            plugin.databaseManager.connection.use { conn ->
+                // Build dynamic SQL — only touch columns the caller passed.
+                val setClauses = mutableListOf("custom_mob_provider = ?")
+                if (normalIds != null) setClauses += "custom_mob_ids_normal = ?"
+                if (ominousIds != null) setClauses += "custom_mob_ids_ominous = ?"
+
+                val sql = "UPDATE chambers SET ${setClauses.joinToString(", ")} WHERE id = ?"
+                conn.prepareStatement(sql).use { stmt ->
+                    var idx = 1
+                    if (normalizedProvider == null) stmt.setNull(idx++, java.sql.Types.VARCHAR)
+                    else stmt.setString(idx++, normalizedProvider)
+
+                    if (normalIds != null) {
+                        val encoded = encodeMobIds(normalIds)
+                        if (encoded == null) stmt.setNull(idx++, java.sql.Types.VARCHAR)
+                        else stmt.setString(idx++, encoded)
+                    }
+                    if (ominousIds != null) {
+                        val encoded = encodeMobIds(ominousIds)
+                        if (encoded == null) stmt.setNull(idx++, java.sql.Types.VARCHAR)
+                        else stmt.setString(idx++, encoded)
+                    }
+                    stmt.setInt(idx, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        plugin.logger.info("Updated custom mob provider for chamber $chamberId: provider=${normalizedProvider ?: "vanilla"}")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update custom mob provider: ${e.message}")
             false
         }
     }

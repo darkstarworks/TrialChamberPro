@@ -4,6 +4,71 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.3.0] - 2026-04-23
+### Added
+- **Custom Mob Provider API** — new pluggable `TrialMobProvider` interface (`providers/TrialMobProvider.kt`) lets trial-spawner waves source mobs from external plugins instead of vanilla. Two built-in providers ship in this release: `vanilla` (default, unchanged behavior) and `mythicmobs` (reflection-based soft-dep on MythicMobs — no compile-time binding).
+- **Replace-after-spawn strategy** — when a chamber is configured with a non-vanilla provider, `SpawnerWaveListener` lets the vanilla trial spawner spawn its mob, then removes that entity the same tick and asks the provider to spawn its replacement at the same location. The vanilla spawner's state machine (tracked UUIDs, wave counter, cooldown) is preserved, so boss bars, glow outlines, and cooldown management all continue to work with custom mobs.
+- **Plugin-driven Trial Key drops** — vanilla's key-ejection path relies on tracked mob UUIDs that no longer exist when we replace the spawns, so `SpawnerWaveManager.maybeDropProviderKeys` drops `TRIAL_KEY` / `OMINOUS_TRIAL_KEY` itself: one per unique participant, above the spawner block, with a small upward velocity that approximates vanilla's pop. The key type is captured at wave start (`WaveState.isOminous` is a `val`) and cannot flip mid-wave.
+- **Owner-only spawner-key pickup** — new `SpawnerKeyDropOwnerListener` sibling of `VaultDropOwnerListener` (v1.2.28). Drops are PDC-tagged with `tcp:spawner_key_owner` + `tcp:spawner_key_dropped_at`; non-owner pickups are cancelled during the grace window. Config: `reset.spawner-key-drop-owner-grace-seconds` (default `30`, `0` = owner-locked until despawn). Shared `tcp.bypass.droplock` permission with vault drops.
+- **Per-chamber provider configuration** — new DB columns `custom_mob_provider`, `custom_mob_ids_normal`, `custom_mob_ids_ominous` (JSON-encoded id lists) on `chambers` via idempotent migration. Ominous waves fall back to the normal list if the ominous list is empty, matching the loot-table override pattern. `ChamberManager.updateCustomMobProvider(id, provider, normalIds, ominousIds)` is the single write path; `Chamber.pickMobId(ominous)` and `Chamber.hasCustomMobProvider(ominous)` are the read-side helpers.
+- **`CustomMobProviderView` GUI** — new 6-row admin view reachable from `ChamberSettingsView` (spawner icon, row 2 centre). Cycle providers with left/right-click, shift-click to reset to vanilla; add mob ids via a one-shot chat input (`MobIdInputListener`) with 30-second timeout and `cancel` keyword; click a mob-id icon to remove it. All writes go through `ChamberManager.updateCustomMobProvider` and the view refreshes on the player's region thread after each change.
+- **`/tcp mobs` command** — CLI path for per-chamber provider config:
+  - `/tcp mobs providers` — list registered providers and their availability
+  - `/tcp mobs <chamber> provider <id|vanilla|none>` — set the provider
+  - `/tcp mobs <chamber> add normal|ominous <mobId>` — add a mob id to the pool
+  - `/tcp mobs <chamber> remove normal|ominous <mobId>` — remove a mob id
+  - `/tcp mobs <chamber> list` — show current config
+  - Permission: `tcp.admin.mobs` (default op)
+- **MythicMobs integration** as a soft-dependency via `plugin.yml` `softdepend`. `MythicMobsProvider` resolves `io.lumine.mythic.bukkit.MythicBukkit` + `MobManager.spawnMob(String, Location, double)` reflectively and degrades gracefully if the API shape changes.
+- **Additional provider integrations** — five more providers, all zero-compile-time-dependency reflection with cached availability and verbose-logging-gated warnings:
+  - `elitemobs` — EliteMobs custom-boss spawning via `new CustomBossEntity(filename)` + `spawn(Location, 0, true)` + `getLivingEntity()`. Mob id = boss filename (with or without `.yml`).
+  - `ecomobs` — Auxilor [EcoMobs](https://github.com/Auxilor/EcoMobs) (hard-depends on [Eco](https://github.com/Auxilor/eco)) via `EcoMobs[id].spawn(Location, SpawnReason.CUSTOM)`. Mob id = entry id from `plugins/EcoMobs/mobs/<id>.yml`.
+  - `levelledmobs` — spawns a vanilla `EntityType` and applies a LevelledMobs level through `LevelInterface2.applyLevelToMob(LivingEntityWrapper, int, ...)`. Mob id format `ENTITY_TYPE[:level|ominous]` (e.g. `ZOMBIE:15`, `HUSK:ominous`). The ominous keyword maps to tiered levels (20 for ominous waves, 10 otherwise).
+  - `infernalmobs` — spawns a vanilla `EntityType` and enriches it via `infernal_mobs.makeInfernal(Entity, false)` (abilities are rolled by the plugin from config). Mob id format `ENTITY_TYPE`.
+  - `citizens` — clones a template NPC from the default `NPCRegistry` (by numeric id or exact name) and spawns the clone so template NPCs are never moved. Mob id = Citizens NPC id or name.
+- **Plugin.yml softdepends** — `EliteMobs`, `Eco`, `EcoMobs`, `LevelledMobs`, `InfernalMobs`, `Citizens` added alongside `MythicMobs` so load order guarantees the provider registry sees every backing plugin before seeding.
+
+### Changed
+- `TrialChamberPro.onEnable` now constructs a `TrialMobProviderRegistry` after manager init and conditionally registers `MythicMobsProvider` when MythicMobs is present on the server. Accessible via `plugin.trialMobProviderRegistry`.
+
+### Added — GUI translatability
+- **Full GUI localization** — every name, lore line, and button label across all 18 admin GUI views is now driven by `messages.yml` under a nested `gui.*` section (~330 new keys). No hard-coded `Component.text(...)` calls left in any view file. See [docs/configuration/localization.md](docs/configuration/localization.md) for the key naming conventions and translator workflow.
+- **`gui/components/GuiComponents.kt`** — reusable builders (`infoItem`, `toggleItem`, `backButton`, `closeButton`, `prevPageButton`, `nextPageButton`, `playerHead` x2) plus a class-doc that codifies icon material conventions in 5 categories (Navigation, Action buttons, State indicators, Settings categories, Domain icons). All views now build through this layer; future GUI code uses the localization layer by default.
+- **`TrialChamberPro` helper additions** — `loadedMessages()`, `getMessageList(key, ...)`, `getGuiText(key, ...)` returning a `Component`, `getGuiLore(key, ...)` returning a `List<Component>`. `getMessage()` auto-skips the chat prefix for any key starting with `gui.` so admin items don't get `[TCP]` prepended.
+- **Empty-state placeholders** added to 6 list/grid views (chamber list, chambers overview, loot table list, vault management, custom mob provider, loot editor) so admins always see a localized "no entries" card instead of a confusing blank pane.
+
+### Added — Public event API
+- **6 events under `api/events/`** — Bukkit-style events that third-party plugins can hook without forking. See [docs/api/events.md](docs/api/events.md) for field tables and integration examples.
+  - `ChamberResetEvent` (cancellable) with `Reason` enum (SCHEDULED / MANUAL / FORCED)
+  - `ChamberResetCompleteEvent` — post-reset with duration + blocks restored
+  - `VaultOpenedEvent` — post-open with cloned item snapshot
+  - `SpawnerWaveCompleteEvent` — post-wave with participants set
+  - `ChamberDiscoveredEvent` (cancellable) with `Method` enum (CHUNK_LOAD / STARTUP_SWEEP)
+  - `TrialKeyDropEvent` (cancellable) — per-participant key drop for provider-driven waves
+- All events use `Event(!Bukkit.isPrimaryThread())` so they correctly identify as async when fired from coroutines or Folia region threads.
+- **5 fire sites wired**: `ResetManager.resetChamber` (pre + post; `reason` parameter added with `MANUAL` default — scheduled paths pass `SCHEDULED`, GUI shift+right force-reset paths pass `FORCED`); `VaultInteractListener.openVault` (post, with cloned items snapshot); `SpawnerWaveManager.completeWave` (post); `SpawnerWaveManager.maybeDropProviderKeys` (per-participant pre/cancellable); `ChamberDiscoveryManager.registerChamber` (pre/cancellable).
+
+### Added — Stability + reliability
+- **`MenuSessionCleanupListener`** — drops a player's GUI session on `PlayerQuitEvent`. Belt-and-braces soft-cap eviction at 500 sessions inside `MenuService` covers any future code paths that forget to clean up.
+- **`config/ConfigValidator`** — startup sanity check that clamps ~12 numeric config values back into safe ranges with logged warnings (no hard-fail). Sentinel values (e.g. `-1` for "use vanilla cooldown") pass through untouched. Runs early in `onEnable` so the rest of the bootstrap sees corrected values.
+- **`/tcp mobs` tab completer** — second/third/fourth-arg completion for `providers`, `provider`, `add`, `remove`, `list` and the `normal`/`ominous` wave keywords.
+- **`/tcp mobs` localization** — ~23 new `mobs-*` keys in `messages.yml`; the command no longer hard-codes any English strings.
+
+### Added — Test foundation
+- **67 unit tests across 5 test classes** (`./gradlew test` runs in seconds; covers gzip roundtripping, Chamber bounds math, coordinate parsing, LootEditorDraft mutability/equality, and ConfigValidator clamp behavior). Paper API added to `testImplementation` so tests can mock Bukkit types via MockK without spinning up a server.
+
+### Changed — Internal structure
+- **`models/LootEditorDraft`** — extracted from `LootEditorView.Draft` so amount/loot editors and `MenuService` no longer reach into the view class for a shared data type.
+- **`commands/handlers/`** — three of the largest `/tcp` subcommands extracted to dedicated `SubcommandHandler` classes: `GenerateCommand` (548 → 432 lines, with all `parse*` / `validate*` / `placeBoxFromPlayer` helpers and `MIN_XZ` / `MIN_Y` constants moved out of `TCPCommand`), `MobsCommand`, and `LootCommand` (with the four sub-actions — set, clear, info, list — as private methods on the class). The four `generate` mode branches now share a `createChamberAsync` helper that deduplicated ~120 lines of identical scan/snapshot follow-up code.
+- **`TCPCommand.kt`: 1461 → 627 lines (57% reduction).** The dispatcher is a thin when-chain that routes to size-appropriate cases — small handlers stay inline, big ones delegate.
+- **`commands/handlers/CoordinateParser`** — pure parsing logic (`parseTriple`, `parseHyphenated`, `isTripleString`) extracted from `GenerateCommand` to enable unit testing without mocking `Bukkit.getWorld()`. `GenerateCommand.parseCoordsArgs` now delegates to `CoordinateParser` for the pure parts and keeps only the world-aware composition logic.
+
+### Notes
+- **Not persisted across restart**: in-progress waves still reset to vanilla on server stop (matches pre-1.3.0 behavior). Acceptable for this release; revisit if restart-mid-wave becomes a common report.
+- **All planned providers ship in 1.3.0**: the six providers originally split between 1.3.0 (vanilla + MythicMobs) and 1.3.1+ (EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens) are now all in the initial release. The `TrialMobProvider` interface is stable for third-party providers to register against — see [docs/api/mob-providers.md](docs/api/mob-providers.md) for the developer guide.
+- **Public API stability**: the v1.3.0 event classes and `TrialMobProvider` interface are considered stable. Field names, enum constants, and method signatures will go through a deprecation cycle before any breaking change.
+- **No config file format changes** — existing `config.yml`, `loot.yml`, and `messages.yml` files continue to work. Existing chambers, loot tables, and snapshots are unaffected. Translators who already customized `messages.yml` will see the new GUI translation keys auto-merged from the bundled defaults on first reload.
+
 ## [1.2.29] - 2026-04-22
 ### Added
 - **CraftEngine custom-item support** in loot tables: `type: CUSTOM_ITEM` with `plugin: CraftEngine` and `item-id: <namespace:item>`. Items are resolved via `Key.from(id)` → `CraftEngineItems.byId(key)` → `CustomItem.buildItemStack()`. IDs accept the standard namespaced form (e.g. `"my_pack:legendary_sword"`); a bare id defaults to the `minecraft` namespace per CraftEngine's `Key.from` contract, so namespaced IDs are strongly recommended
@@ -818,7 +883,6 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 - Added `LootTable.getEffectivePools()` to convert legacy tables to pool format on-the-fly
 - MenuService now has 6 GUI views: Overview, LootTypeSelect, PoolSelector, LootEditor, AmountEditor
 - GUI navigation state machine expanded with `POOL_SELECT` screen
-- CLAUDE.md updated with multi-pool architecture and GUI navigation flow
 
 ### Documentation
 - Updated `loot.yml` with extensive multi-pool examples and migration guide

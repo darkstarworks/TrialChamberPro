@@ -5,20 +5,21 @@ import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.OutlinePane
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.VaultData
+import io.github.darkstarworks.trialChamberPro.models.VaultType
 import kotlinx.coroutines.runBlocking
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.SkullMeta
 
 /**
- * Vault management view - manage vault cooldowns and view vault states for a chamber.
+ * Vault management view — view and reset vault cooldowns for a chamber.
+ * All strings from `messages.yml` under `gui.vault-management.*` (v1.3.0).
  */
 class VaultManagementView(
     private val plugin: TrialChamberPro,
@@ -26,185 +27,117 @@ class VaultManagementView(
     private val chamber: Chamber
 ) {
     fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, "Vaults: ${chamber.name}")
+        val gui = ChestGui(6, GuiText.plain(plugin, "gui.vault-management.title", "chamber" to chamber.name))
         val pane = StaticPane(0, 0, 9, 6)
 
-        // Row 0: Header and actions
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
+        val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
+        pane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.VAULT,
+                "gui.vault-management.header-name", "gui.vault-management.header-lore",
+                "normal" to normalCount, "ominous" to ominousCount)
+        ) { it.isCancelled = true }, 4, 0)
 
-        // Reset all cooldowns button
-        pane.addItem(GuiItem(createResetAllItem()) { event ->
+        pane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.TNT,
+                "gui.vault-management.reset-all-name", "gui.vault-management.reset-all-lore")
+        ) { event ->
             event.isCancelled = true
-            if (event.isShiftClick && event.isLeftClick) {
-                resetAllCooldowns(player)
-            }
+            if (event.isShiftClick && event.isLeftClick) resetAllCooldowns(player)
         }, 2, 0)
 
-        // Reset specific player button
-        pane.addItem(GuiItem(createResetPlayerItem()) { event ->
+        pane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.PLAYER_HEAD,
+                "gui.vault-management.reset-player-name", "gui.vault-management.reset-player-lore",
+                "chamber" to chamber.name)
+        ) { event ->
             event.isCancelled = true
             player.sendMessage(plugin.getMessage("vault-reset-usage-hint", "chamber" to chamber.name))
         }, 6, 0)
 
-        // Get vaults for this chamber
         val vaults = runBlocking { plugin.vaultManager.getVaultsForChamber(chamber.id) }
-
-        // Vault list (rows 1-4)
         val vaultPane = OutlinePane(0, 1, 9, 4)
         vaults.take(36).forEach { vault ->
             vaultPane.addItem(GuiItem(createVaultItem(vault)) { event ->
                 event.isCancelled = true
-                if (event.isShiftClick && event.isRightClick) {
-                    resetVaultCooldowns(player, vault)
-                }
+                if (event.isShiftClick && event.isRightClick) resetVaultCooldowns(player, vault)
             })
         }
         gui.addPane(vaultPane)
 
-        // Row 5: Navigation
-        val backItem = ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Back to Chamber", NamedTextColor.YELLOW))
-            }
+        if (vaults.isEmpty()) {
+            val emptyPane = StaticPane(0, 2, 9, 1)
+            emptyPane.addItem(GuiItem(
+                GuiComponents.infoItem(plugin, Material.BARRIER,
+                    "gui.vault-management.empty-name", "gui.vault-management.empty-lore",
+                    "chamber" to chamber.name)
+            ) { it.isCancelled = true }, 4, 0)
+            gui.addPane(emptyPane)
         }
-        pane.addItem(GuiItem(backItem) { event ->
-            event.isCancelled = true
+
+        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chamber") {
             menu.openChamberDetail(player, chamber)
         }, 0, 5)
 
-        // Online players with locked vaults
         val playersWithLocks = getPlayersWithLockedVaults()
         if (playersWithLocks.isNotEmpty()) {
             pane.addItem(GuiItem(createPlayersWithLocksItem(playersWithLocks)) { it.isCancelled = true }, 4, 5)
         }
 
-        val closeItem = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Close", NamedTextColor.RED))
-            }
-        }
-        pane.addItem(GuiItem(closeItem) { event ->
-            event.isCancelled = true
-            player.closeInventory()
-        }, 8, 5)
+        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
         gui.setOnGlobalDrag { it.isCancelled = true }
-
         return gui
     }
 
-    private fun createHeaderItem(): ItemStack {
-        val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
-
-        return ItemStack(Material.VAULT).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Vault Management", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Manage vault cooldowns", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("$normalCount Normal Vaults", NamedTextColor.GREEN),
-                    Component.text("$ominousCount Ominous Vaults", NamedTextColor.DARK_PURPLE)
-                ))
-            }
-        }
-    }
-
-    private fun createResetAllItem(): ItemStack {
-        return ItemStack(Material.TNT).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Reset ALL Cooldowns", NamedTextColor.RED)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Reset cooldowns for ALL players", NamedTextColor.GRAY),
-                    Component.text("on ALL vaults in this chamber", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("WARNING: This cannot be undone!", NamedTextColor.RED),
-                    Component.empty(),
-                    Component.text("Shift+Left Click to confirm", NamedTextColor.YELLOW)
-                ))
-            }
-        }
-    }
-
-    private fun createResetPlayerItem(): ItemStack {
-        return ItemStack(Material.PLAYER_HEAD).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Reset Player Cooldowns", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Reset cooldowns for a specific player", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Use command:", NamedTextColor.YELLOW),
-                    Component.text("/tcp vault reset ${chamber.name} <player>", NamedTextColor.WHITE)
-                ))
-            }
-        }
-    }
-
     private fun createVaultItem(vault: VaultData): ItemStack {
-        val isOminous = vault.type == io.github.darkstarworks.trialChamberPro.models.VaultType.OMINOUS
+        val isOminous = vault.type == VaultType.OMINOUS
         val material = if (isOminous) Material.CRYING_OBSIDIAN else Material.CHISELED_TUFF
-
-        // Get lock count for this vault
+        val nameKey = if (isOminous)
+            "gui.vault-management.vault-name-ominous" else "gui.vault-management.vault-name-normal"
         val lockCount = runBlocking { plugin.vaultManager.getVaultLockCount(vault.id) }
-
-        return ItemStack(material).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Vault #${vault.id}", if (isOminous) NamedTextColor.DARK_PURPLE else NamedTextColor.GREEN)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Type: ${vault.type.displayName}", NamedTextColor.GRAY),
-                    Component.text("Location: ${vault.x}, ${vault.y}, ${vault.z}", NamedTextColor.GRAY),
-                    Component.text("Loot Table: ${vault.lootTable}", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Locked for: $lockCount player(s)", NamedTextColor.RED),
-                    Component.empty(),
-                    Component.text("Shift+Right Click to reset", NamedTextColor.YELLOW)
-                ))
-            }
-        }
+        return GuiComponents.infoItem(plugin, material,
+            nameKey, "gui.vault-management.vault-lore",
+            "id" to vault.id,
+            "type" to vault.type.displayName,
+            "x" to vault.x, "y" to vault.y, "z" to vault.z,
+            "table" to vault.lootTable,
+            "locks" to lockCount)
     }
 
     private fun createPlayersWithLocksItem(players: List<Pair<Player, Int>>): ItemStack {
-        val lore = mutableListOf(
-            Component.text("Online players with locked vaults:", NamedTextColor.GRAY),
+        val lore = mutableListOf<Component>(
+            plugin.getGuiText("gui.vault-management.locks-info-header"),
             Component.empty()
         )
-
         players.take(8).forEach { (p, count) ->
-            lore.add(Component.text("${p.name}: $count locked", NamedTextColor.YELLOW))
+            lore.add(plugin.getGuiText("gui.vault-management.locks-info-line",
+                "name" to p.name, "count" to count))
         }
-
         if (players.size > 8) {
-            lore.add(Component.text("...and ${players.size - 8} more", NamedTextColor.GRAY))
+            lore.add(plugin.getGuiText("gui.vault-management.locks-info-overflow",
+                "extra" to (players.size - 8)))
         }
-
         return ItemStack(Material.KNOWLEDGE_BOOK).apply {
             itemMeta = itemMeta?.apply {
-                displayName(Component.text("Locked Vaults Info", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.BOLD, true))
+                displayName(plugin.getGuiText("gui.vault-management.locks-info-name"))
                 lore(lore)
             }
         }
     }
 
-    // ==================== Action Handlers ====================
+    // ==================== Action Handlers (unchanged behavior) ====================
 
     private fun resetAllCooldowns(player: Player) {
         player.sendMessage(plugin.getMessage("vault-reset-all-start", "chamber" to chamber.name))
-
         plugin.launchAsync {
             val vaults = plugin.vaultManager.getVaultsForChamber(chamber.id)
             var resetCount = 0
-
             vaults.forEach { vault ->
                 plugin.vaultManager.resetAllCooldowns(vault.id)
                 resetCount++
             }
-
             plugin.scheduler.runAtEntity(player, Runnable {
                 player.sendMessage(plugin.getMessage("vault-reset-all-complete", "count" to resetCount))
                 menu.openVaultManagement(player, chamber)
@@ -214,7 +147,6 @@ class VaultManagementView(
 
     private fun resetVaultCooldowns(player: Player, vault: VaultData) {
         player.sendMessage(plugin.getMessage("vault-reset-single-start", "id" to vault.id))
-
         plugin.launchAsync {
             plugin.vaultManager.resetAllCooldowns(vault.id)
             plugin.scheduler.runAtEntity(player, Runnable {

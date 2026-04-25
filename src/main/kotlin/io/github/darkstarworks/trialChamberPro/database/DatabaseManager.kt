@@ -252,6 +252,20 @@ class DatabaseManager(private val plugin: TrialChamberPro) {
                 } catch (_: SQLException) {
                     // Column already exists - this is expected on subsequent runs
                 }
+
+                // v1.3.0: Custom mob provider + per-chamber mob id lists (JSON-encoded)
+                listOf(
+                    "ALTER TABLE chambers ADD COLUMN custom_mob_provider VARCHAR(32)",
+                    "ALTER TABLE chambers ADD COLUMN custom_mob_ids_normal TEXT",
+                    "ALTER TABLE chambers ADD COLUMN custom_mob_ids_ominous TEXT"
+                ).forEach { sql ->
+                    try {
+                        stmt.execute(sql)
+                        plugin.logger.info("Migration executed: $sql")
+                    } catch (_: SQLException) {
+                        // Column already exists - this is expected on subsequent runs
+                    }
+                }
             }
         }
     }

@@ -64,6 +64,43 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
             configureWildSpawnerCooldown(block, isOminous)
         }
 
+        // v1.3.0: Replace-after-spawn for chambers with a non-vanilla mob provider.
+        //
+        // The vanilla trial spawner has already produced `entity` and credited it internally
+        // (tracked UUID, wave counter, etc.). We remove that entity the same tick and spawn
+        // the provider's custom mob at the same location, then record THAT as the tracked
+        // wave mob. The vanilla spawner's state machine stays intact — we've just swapped
+        // the creature under its feet.
+        if (chamber != null && chamber.hasCustomMobProvider(isOminous)) {
+            val providerId = chamber.customMobProvider
+            val provider = plugin.trialMobProviderRegistry.get(providerId)
+            val mobId = chamber.pickMobId(isOminous)
+
+            if (provider != null && provider.id != "vanilla" && mobId != null && provider.isAvailable()) {
+                val replaceLoc = entity.location.clone()
+                try {
+                    entity.remove()
+                    val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
+                    if (custom != null) {
+                        plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, custom, isOminous)
+                        location.getNearbyPlayers(detectionRadius.toDouble()).forEach { player ->
+                            plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
+                        }
+                        if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                            plugin.logger.info("[CustomProvider] Replaced vanilla spawn with ${provider.id}:$mobId at ${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}")
+                        }
+                        return
+                    } else {
+                        plugin.logger.warning("[CustomProvider] ${provider.id} returned null for mobId '$mobId' — wave will undercount this spawn")
+                        return
+                    }
+                } catch (e: Throwable) {
+                    plugin.logger.warning("[CustomProvider] Replace-after-spawn failed (${provider.id}:$mobId): ${e.message} — falling back to vanilla")
+                    // fall through to vanilla tracking
+                }
+            }
+        }
+
         // Record the spawn (for both chamber and wild spawners)
         plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, entity, isOminous)
 

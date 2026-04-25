@@ -10,9 +10,11 @@ Before you start, make sure you have:
 * **Java 21** or newer
 * **WorldEdit** (optional but highly recommended for chamber creation)
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Why Paper?** TrialChamberPro uses Paper-specific APIs for better performance and features. Spigot and CraftBukkit won't work!
-{% endhint %}
+
+</div>
 
 ## 📦 Download
 
@@ -54,9 +56,11 @@ Fire it back up! Watch the console for this beautiful message:
 [TrialChamberPro] TrialChamberPro enabled successfully!
 ```
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Seeing errors?** Check the [Troubleshooting](../troubleshooting.md) page!
-{% endhint %}
+
+</div>
 
 ### 4. Check the Config Files
 
@@ -128,30 +132,40 @@ Updating is just as easy:
 3. Start your server
 4. Check console for "Successfully updated database to version X"
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Always backup first!** Before updating, copy your `plugins/TrialChamberPro/` folder somewhere safe. Better safe than sorry when dealing with player data.
-{% endhint %}
+
+</div>
 
 ## ❓ What's Next?
 
 Now that you're installed, let's create your first managed chamber!
 
-{% content-ref url="your-first-chamber.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="your-first-chamber.md">
+
 [your-first-chamber.md](your-first-chamber.md)
-{% endcontent-ref %}
+
+</div>
 
 ---
 
 ## 💡 Quick Tips
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Folia Support:** TrialChamberPro works on Folia out of the box! Just make sure `use-folialib: true` in config.yml.
-{% endhint %}
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **MySQL Support:** By default, the plugin uses SQLite (easy mode). For networks with multiple servers, you can switch to MySQL in config.yml.
-{% endhint %}
 
-{% hint style="warning" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Java Version:** Java 21 is required. If you're on Java 17 or older, the plugin won't even load. Time to upgrade!
-{% endhint %}
+
+</div>

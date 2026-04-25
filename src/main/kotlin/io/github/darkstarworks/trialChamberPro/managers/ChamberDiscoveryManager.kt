@@ -29,7 +29,8 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         val blockX: Int,
         val blockY: Int,
         val blockZ: Int,
-        val attemptsRemaining: Int
+        val attemptsRemaining: Int,
+        val method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
     ) {
         fun toLocation(): Location = Location(world, blockX + 0.5, blockY + 0.5, blockZ + 0.5)
     }
@@ -44,7 +45,12 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
      * Register a seed block location to kick off discovery.
      * Safe to call from any thread.
      */
-    fun seed(world: World, x: Int, y: Int, z: Int) {
+    fun seed(
+        world: World,
+        x: Int, y: Int, z: Int,
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method =
+            io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method.CHUNK_LOAD
+    ) {
         if (!plugin.config.getBoolean("discovery.enabled", false)) return
         if (world.environment != World.Environment.NORMAL) return
 
@@ -57,7 +63,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         val maxAttempts = 6
         val loc = Location(world, x + 0.5, y + 0.5, z + 0.5)
         plugin.scheduler.runAtLocationLater(loc, Runnable {
-            attemptDiscovery(PendingSeed(world, x, y, z, maxAttempts), key)
+            attemptDiscovery(PendingSeed(world, x, y, z, maxAttempts, method), key)
         }, 100L) // initial 5-second delay so nearby chunks settle
     }
 
@@ -109,7 +115,8 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
             if (!isSeedBlock(state.type)) continue
             val loc = Location(world, state.x + 0.5, state.y + 0.5, state.z + 0.5)
             if (plugin.chamberManager.getCachedChamberAt(loc) != null) continue
-            seed(world, state.x, state.y, state.z)
+            seed(world, state.x, state.y, state.z,
+                io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method.STARTUP_SWEEP)
             return // one seed per chunk is enough
         }
     }
@@ -143,7 +150,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
                 return
             }
 
-            registerChamber(seed.world, result, key)
+            registerChamber(seed.world, result, key, seed.method)
         } catch (e: Exception) {
             plugin.logger.severe("[Discovery] Unexpected error during discovery: ${e.message}")
             e.printStackTrace()
@@ -151,7 +158,12 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         }
     }
 
-    private fun registerChamber(world: World, result: BfsResult, key: String) {
+    private fun registerChamber(
+        world: World,
+        result: BfsResult,
+        key: String,
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+    ) {
         val worldName = world.name
         val name = "auto_${worldName}_${result.centerX}_${result.centerZ}"
 
@@ -162,10 +174,26 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
             return
         }
 
+        // Fire pre-registration event; listeners may abort.
+        val corner1 = Location(world, result.minX.toDouble(), result.minY.toDouble(), result.minZ.toDouble())
+        val corner2 = Location(world, result.maxX.toDouble(), result.maxY.toDouble(), result.maxZ.toDouble())
+        val discoveryEvent = io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent(
+            world = world,
+            suggestedName = name,
+            minCorner = corner1,
+            maxCorner = corner2,
+            vaultCount = result.vaultCount,
+            spawnerCount = result.spawnerCount,
+            method = method
+        )
+        plugin.server.pluginManager.callEvent(discoveryEvent)
+        if (discoveryEvent.isCancelled) {
+            finalizeFailed(key, "ChamberDiscoveredEvent cancelled by listener")
+            return
+        }
+
         plugin.launchAsync {
             try {
-                val corner1 = Location(world, result.minX.toDouble(), result.minY.toDouble(), result.minZ.toDouble())
-                val corner2 = Location(world, result.maxX.toDouble(), result.maxY.toDouble(), result.maxZ.toDouble())
                 val chamber = plugin.chamberManager.createChamber(name, corner1, corner2)
                 if (chamber == null) {
                     finalizeFailed(key, "createChamber returned null (duplicate name or DB error)")

@@ -3,6 +3,7 @@ package io.github.darkstarworks.trialChamberPro.gui
 import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.models.Chamber
+import io.github.darkstarworks.trialChamberPro.models.LootEditorDraft
 import org.bukkit.entity.Player
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -46,7 +47,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         var globalLootEdit: Boolean = false,
 
         // Draft editors per loot kind per chamber per pool
-        val drafts: MutableMap<String, LootEditorView.Draft> = mutableMapOf()
+        val drafts: MutableMap<String, LootEditorDraft> = mutableMapOf()
     )
 
     /**
@@ -77,6 +78,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         SETTINGS_MENU,
         GLOBAL_SETTINGS,
         PROTECTION_MENU,
+        CUSTOM_MOB_PROVIDER,
 
         // Help
         HELP_MENU
@@ -92,7 +94,28 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     private val sessions = ConcurrentHashMap<UUID, Session>()
 
-    fun getOrCreateSession(playerId: UUID): Session = sessions.computeIfAbsent(playerId) { Session() }
+    /** Soft cap to protect against leaks if any code path forgets to [clearSession]. */
+    private val maxSessions: Int = 500
+
+    fun getOrCreateSession(playerId: UUID): Session {
+        if (sessions.size >= maxSessions && !sessions.containsKey(playerId)) {
+            // Evict any one offline player's session to make room. Cheap bound;
+            // normal operation is PlayerQuitEvent -> clearSession keeping the map small.
+            val offline = sessions.keys.firstOrNull { uuid ->
+                plugin.server.getPlayer(uuid)?.isOnline != true
+            }
+            if (offline != null) sessions.remove(offline)
+        }
+        return sessions.computeIfAbsent(playerId) { Session() }
+    }
+
+    /** Drop a player's session (called from [MenuSessionCleanupListener] on quit). */
+    fun clearSession(playerId: UUID) {
+        sessions.remove(playerId)
+    }
+
+    /** Total active sessions. Exposed for diagnostics. */
+    fun sessionCount(): Int = sessions.size
 
     /**
      * Opens the GUI for a player, restoring their last viewed screen.
@@ -170,7 +193,21 @@ class MenuService(private val plugin: TrialChamberPro) {
             Screen.GLOBAL_SETTINGS -> openGlobalSettings(player)
             Screen.PROTECTION_MENU -> openProtectionMenu(player)
             Screen.HELP_MENU -> openHelpMenu(player)
+            Screen.CUSTOM_MOB_PROVIDER -> {
+                val chamber = s.chamberId?.let { plugin.chamberManager.getCachedChamberById(it) }
+                if (chamber != null) openCustomMobProvider(player, chamber) else openMainMenu(player)
+            }
         }
+    }
+
+    fun openCustomMobProvider(player: Player, chamber: Chamber) {
+        val view = CustomMobProviderView(plugin, this, chamber)
+        val gui = view.build(player)
+        getOrCreateSession(player.uniqueId).apply {
+            screen = Screen.CUSTOM_MOB_PROVIDER
+            chamberId = chamber.id
+        }
+        gui.show(player)
     }
 
     // ==================== Main Menu ====================
@@ -281,7 +318,7 @@ class MenuService(private val plugin: TrialChamberPro) {
             openLootEditor(player, chamber, kind, poolName)
             return
         }
-        val view = AmountEditorView(this, chamber, kind, poolName, itemIndex, isWeighted, draft)
+        val view = AmountEditorView(plugin, this, chamber, kind, poolName, itemIndex, isWeighted, draft)
         val gui = view.build()
         session.apply {
             screen = Screen.AMOUNT_EDITOR
@@ -353,6 +390,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         }
         val kindHint = if (tableName.startsWith("ominous", ignoreCase = true)) LootKind.OMINOUS else LootKind.NORMAL
         val view = AmountEditorView(
+            plugin,
             this,
             chamber = null,
             kind = kindHint,
@@ -376,7 +414,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         gui.show(player)
     }
 
-    fun saveGlobalDraft(player: Player, tableName: String, poolName: String?, draft: LootEditorView.Draft) {
+    fun saveGlobalDraft(player: Player, tableName: String, poolName: String?, draft: LootEditorDraft) {
         val key = globalDraftKey(tableName, poolName)
         getOrCreateSession(player.uniqueId).drafts[key] = draft
     }
@@ -458,7 +496,7 @@ class MenuService(private val plugin: TrialChamberPro) {
 
     // ==================== Utility Methods ====================
 
-    fun saveDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?, draft: LootEditorView.Draft) {
+    fun saveDraft(player: Player, chamber: Chamber, kind: LootKind, poolName: String?, draft: LootEditorDraft) {
         val key = draftKey(chamber.id, kind, poolName)
         getOrCreateSession(player.uniqueId).drafts[key] = draft
     }
