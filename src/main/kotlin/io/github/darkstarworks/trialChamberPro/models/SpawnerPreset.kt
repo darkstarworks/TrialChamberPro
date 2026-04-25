@@ -7,7 +7,7 @@ package io.github.darkstarworks.trialChamberPro.models
  *
  * The `normalConfig` / `ominousConfig` strings are *resource locations* that
  * point at a datapack-defined trial spawner config (e.g.
- * `darkside_trial:basic_zombie`). The plugin doesn't validate that the
+ * `namespace:basic_zombie`). The plugin doesn't validate that the
  * datapack exists — that's the server owner's responsibility — but the field
  * IS quoted as a string in the produced NBT so an inline-compound form will
  * not parse correctly here. Keep configs in datapacks.
