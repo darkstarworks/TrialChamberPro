@@ -204,6 +204,19 @@ loot-list-item: "&e- &f{table}"
 help-loot: "&e/tcp loot <set|clear|info|list> &7- Per-chamber loot tables"
 help-paste: "&e/tcp paste <schematic> &7- Paste Trial Chamber schematics"
 help-menu: "&e/tcp menu &7- Open the admin GUI"
+help-give: "&e/tcp give <preset> [player] [amount] &7- Give a preconfigured trial spawner item"
+
+# /tcp give (v1.3.1+)
+give-usage: "&cUsage: &e/tcp give <preset> [player] [amount]"
+give-available: "&7Available presets: &f{presets}"
+give-no-presets: "&cNo presets defined. Edit &fspawner_presets.yml &cand run &f/tcp reload&c."
+give-unknown-preset: "&cUnknown preset: &f{preset}"
+give-bad-amount: "&cInvalid amount: &f{value}"
+give-needs-target-from-console: "&cConsole must specify a target player: &e/tcp give <preset> <player> [amount]"
+give-build-failed: "&cFailed to build item for preset &f{preset}&c: {error}"
+give-inventory-full: "&eInventory full — overflow dropped at your feet."
+give-received: "&aReceived &fx{amount} &aof preset &f{preset}&a."
+give-sent: "&aGave &fx{amount} &aof preset &f{preset} &ato &f{player}&a."
 
 # Inventory & Loot
 inventory-full: "&eYour inventory was full! Some items were dropped."

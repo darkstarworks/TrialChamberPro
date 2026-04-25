@@ -145,6 +145,16 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.give`
+**Description:** Hand out preconfigured trial-spawner items *(1.3.1+)*
+**Default:** Operators only
+**Allows:**
+- `/tcp give <preset> [player] [amount]` - Receive (or send) a `trial_spawner` item with `block_entity_data` baked in from a named preset
+
+**Use this for:** Admins who deploy custom trial-spawner pools defined in datapacks. See [spawner\_presets.yml](../configuration/spawner-presets.yml.md) for the preset file format.
+
+---
+
 #### `tcp.admin.stats`
 **Description:** View other players' statistics
 **Default:** Operators only

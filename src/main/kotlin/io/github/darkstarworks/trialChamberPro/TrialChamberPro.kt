@@ -89,6 +89,10 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var trialMobProviderRegistry: io.github.darkstarworks.trialChamberPro.providers.TrialMobProviderRegistry
         private set
 
+    // Spawner preset manager (v1.3.1) — backs `/tcp give <preset>`.
+    lateinit var spawnerPresetManager: SpawnerPresetManager
+        private set
+
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
@@ -232,6 +236,10 @@ class TrialChamberPro : JavaPlugin() {
 
                 // Load loot tables
                 lootManager.loadLootTables()
+
+                // v1.3.1: Spawner presets (backs `/tcp give <preset>`)
+                spawnerPresetManager = SpawnerPresetManager(this@TrialChamberPro)
+                spawnerPresetManager.load()
 
                 // Preload chambers cache for fast, thread-safe lookups in listeners
                 chamberManager.preloadCache()
@@ -461,6 +469,9 @@ class TrialChamberPro : JavaPlugin() {
         cachedMessages = null // Force reload on next getMessage() call
         if (::lootManager.isInitialized) {
             lootManager.loadLootTables()
+        }
+        if (::spawnerPresetManager.isInitialized) {
+            spawnerPresetManager.load()
         }
         logger.info("Configuration reloaded")
     }

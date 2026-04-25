@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.3.1] - 2026-04-26
+### Added
+- **Spawner presets + `/tcp give` command** — server admins can now define named templates of trial-spawner configurations in a new `spawner_presets.yml` and hand them out as preconfigured items via `/tcp give <preset> [player] [amount]`. Each preset materializes as a `minecraft:trial_spawner` item with `block_entity_data` baked in (the same NBT vanilla `/give` accepts), so placing it produces a working spawner with the configured `normal_config` / `ominous_config` (datapack resource locations), `required_player_range`, `target_cooldown_length`, and any optional wave-shape overrides (`total_mobs`, `simultaneous_mobs`, `ticks_between_spawn`, `spawn_range`, etc.). Display name and lore are applied via `ItemMeta` so they survive future component remaps.
+- **`SpawnerPresetManager`** loads `spawner_presets.yml` on enable and on `/tcp reload`. Map swaps are atomic — in-flight `/tcp give` calls aren't affected by reloads. ItemStacks are built through `Bukkit.getItemFactory().createItemStack(...)` (the modern, non-deprecated path that parses the same `material[components]` syntax as vanilla `/give`), not via `Bukkit.getUnsafe().modifyItemStack`.
+- **`tcp.give` permission** (default op, included in the `tcp.admin.*` aggregate) gates the new command. Tab completion lists every loaded preset id and online player names; lookups are case-insensitive.
+- **Trial-spawner-only hardening** — the YAML schema deliberately has no `material:` field. Every preset always produces `Material.TRIAL_SPAWNER`. This is an intentional architectural seam: custom keys, vault crates, and other custom items are out of scope for this file (they belong to the planned premium "Vault Crate" module, which will mirror the same preset/give pattern under its own `vault_presets.yml` + `/tcp vault give` command).
+- **Documentation** — new GitBook page [docs/configuration/spawner-presets.yml.md](docs/configuration/spawner-presets.yml.md) with full field reference, command usage, troubleshooting, and a cross-link to the [Trial Spawner wiki](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration) for the datapack JSON format. `commands.md` and `permissions.md` updated with the new entries.
+
+### Changed
+- `TrialChamberPro.onEnable` now constructs `SpawnerPresetManager` after `LootManager.loadLootTables()` and calls `load()`. `reloadPluginConfig()` re-loads the preset file alongside loot tables.
+
 ## [1.3.0] - 2026-04-23
 ### Added
 - **Custom Mob Provider API** — new pluggable `TrialMobProvider` interface (`providers/TrialMobProvider.kt`) lets trial-spawner waves source mobs from external plugins instead of vanilla. Two built-in providers ship in this release: `vanilla` (default, unchanged behavior) and `mythicmobs` (reflection-based soft-dep on MythicMobs — no compile-time binding).

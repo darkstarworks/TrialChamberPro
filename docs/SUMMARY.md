@@ -14,6 +14,7 @@
 * [💬 messages.yml](configuration/messages.yml.md)
 * [🌐 Localization](configuration/localization.md)
 * [🧟 Custom Mobs](configuration/custom-mobs.md)
+* [🌀 spawner\_presets.yml](configuration/spawner-presets.yml.md)
 
 ## Reference
 
