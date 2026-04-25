@@ -32,6 +32,7 @@ permissions:
       tcp.admin.stats: true
       tcp.admin.generate: true
       tcp.admin.menu: true
+      tcp.give: true
   tcp.admin.scan:
     description: Scan for chambers
     default: op
@@ -80,6 +81,9 @@ permissions:
   tcp.spectate:
     description: Use spectator mode after death in chambers
     default: true
+  tcp.give:
+    description: Receive preconfigured trial-spawner items via /tcp give
+    default: op
   tcp.discovery.notify:
     description: Receive notifications when auto-discovery registers a new chamber
     default: op

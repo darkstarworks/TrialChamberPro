@@ -1,0 +1,51 @@
+# =============================================================================
+# TrialChamberPro - Spawner Presets (v1.3.1+)
+# =============================================================================
+#
+# Named templates for `minecraft:trial_spawner` items. Each preset can be
+# handed out via:
+#
+#     /tcp give <preset> [player] [amount]
+#
+# The given item is a real trial_spawner block — placing it in the world
+# produces a working spawner with the configured normal_config / ominous_config
+# / cooldown / range etc. baked in (via the `block_entity_data` data
+# component, the same NBT vanilla `/give` accepts).
+#
+# IMPORTANT: `normal_config` and `ominous_config` are RESOURCE LOCATIONS
+# pointing at trial-spawner configs DEFINED IN A DATAPACK. The plugin does
+# NOT generate these for you — install or write the datapack separately. See:
+#   https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration
+#
+# Hardening note: there is intentionally NO `material:` field. Every preset
+# always produces a TRIAL_SPAWNER. Custom keys / vault crates / loot-box
+# items are out of scope for this file (they belong to the planned premium
+# "Vault Crate" module).
+#
+# Reload after edits with:  /tcp reload
+# =============================================================================
+
+presets:
+
+  # Example: a tougher zombie spawner. Replace these config IDs with ones
+  # from your own datapack — these references are illustrative only and will
+  # error-log at item-place time if your server doesn't have a matching
+  # datapack registered.
+  #
+  # super_zombie:
+  #   normal-config: "darkside_trial:basic_zombie"
+  #   ominous-config: "darkside_trial:basic_zombie_o"
+  #   required-player-range: 14
+  #   target-cooldown-length: 36000   # ticks (30 min)
+  #   display-name: "&6Super Zombie Spawner"
+  #   lore:
+  #     - "&7A custom trial spawner."
+  #     - "&7Place to deploy."
+
+  # Optional fields you can add to any preset (all are vanilla NBT):
+  #   total-mobs: 6
+  #   simultaneous-mobs: 2
+  #   total-mobs-added-per-player: 2.0
+  #   simultaneous-mobs-added-per-player: 1.0
+  #   ticks-between-spawn: 40
+  #   spawn-range: 4

@@ -2,6 +2,7 @@ package io.github.darkstarworks.trialChamberPro.commands
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import io.github.darkstarworks.trialChamberPro.commands.handlers.GenerateCommand
+import io.github.darkstarworks.trialChamberPro.commands.handlers.GiveCommand
 import io.github.darkstarworks.trialChamberPro.commands.handlers.LootCommand
 import io.github.darkstarworks.trialChamberPro.commands.handlers.MobsCommand
 import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
@@ -23,6 +24,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     private val generateHandler = GenerateCommand(plugin)
     private val lootHandler = LootCommand(plugin)
     private val mobsHandler = MobsCommand(plugin)
+    private val giveHandler = GiveCommand(plugin)
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
@@ -56,6 +58,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "menu" -> handleMenu(sender)
             "loot" -> lootHandler.execute(sender, args)
             "mobs" -> mobsHandler.execute(sender, args)
+            "give" -> giveHandler.execute(sender, args)
             else -> sender.sendMessage(plugin.getMessage("unknown-command"))
         }
 
@@ -79,6 +82,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessage("help-paste"))
         sender.sendMessage(plugin.getMessage("help-menu"))
         sender.sendMessage(plugin.getMessage("help-loot"))
+        sender.sendMessage(plugin.getMessage("help-give"))
         sender.sendMessage(plugin.getMessage("help-reload"))
     }
 
