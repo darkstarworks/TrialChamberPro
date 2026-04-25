@@ -4,18 +4,18 @@ import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.models.VaultType
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
 /**
- * Chamber settings view - configure chamber-specific settings like reset interval,
- * exit location, and loot table overrides.
+ * Chamber settings view — configure chamber-specific reset interval, exit location,
+ * loot table overrides, and spawner cooldown. All strings from `messages.yml` under
+ * `gui.chamber-settings.*` (v1.3.0).
  */
 class ChamberSettingsView(
     private val plugin: TrialChamberPro,
@@ -23,299 +23,178 @@ class ChamberSettingsView(
     private val chamber: Chamber
 ) {
     companion object {
-        // Reset interval presets in seconds (0 = disabled)
+        // (intervalSeconds, label-key)
         private val RESET_INTERVALS = listOf(
-            0L to "Disabled",
-            3600L to "1 hour",
-            6 * 3600L to "6 hours",
-            12 * 3600L to "12 hours",
-            24 * 3600L to "24 hours",
-            48 * 3600L to "48 hours",
-            7 * 24 * 3600L to "1 week"
+            0L to "gui.chamber-settings.reset-disabled",
+            3600L to "gui.chamber-settings.reset-1h",
+            6 * 3600L to "gui.chamber-settings.reset-6h",
+            12 * 3600L to "gui.chamber-settings.reset-12h",
+            24 * 3600L to "gui.chamber-settings.reset-24h",
+            48 * 3600L to "gui.chamber-settings.reset-48h",
+            7 * 24 * 3600L to "gui.chamber-settings.reset-1w"
         )
 
-        // Spawner cooldown presets in minutes (null = global config, -1 = vanilla, 0+ = custom)
-        private val SPAWNER_COOLDOWNS = listOf(
-            null to "Global Config",
-            -1 to "Vanilla (30m)",
-            0 to "No Cooldown",
-            5 to "5 minutes",
-            10 to "10 minutes",
-            15 to "15 minutes",
-            30 to "30 minutes",
-            60 to "1 hour"
+        // (cooldownMinutes-or-null, label-key)
+        private val SPAWNER_COOLDOWNS = listOf<Pair<Int?, String>>(
+            null to "gui.chamber-settings.spawner-cd-global",
+            -1 to "gui.chamber-settings.spawner-cd-vanilla",
+            0 to "gui.chamber-settings.spawner-cd-none",
+            5 to "gui.chamber-settings.spawner-cd-5m",
+            10 to "gui.chamber-settings.spawner-cd-10m",
+            15 to "gui.chamber-settings.spawner-cd-15m",
+            30 to "gui.chamber-settings.spawner-cd-30m",
+            60 to "gui.chamber-settings.spawner-cd-1h"
         )
     }
 
     fun build(player: Player): ChestGui {
-        val gui = ChestGui(5, "Settings: ${chamber.name}")
+        val gui = ChestGui(5, GuiText.plain(plugin, "gui.chamber-settings.title", "chamber" to chamber.name))
         val pane = StaticPane(0, 0, 9, 5)
 
-        // Row 0: Header
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
+        pane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.COMPARATOR,
+                "gui.chamber-settings.header-name", "gui.chamber-settings.header-lore",
+                "chamber" to chamber.name)
+        ) { it.isCancelled = true }, 4, 0)
 
-        // Row 1: Reset interval configuration
         pane.addItem(GuiItem(createResetIntervalItem()) { event ->
             event.isCancelled = true
-            if (event.isLeftClick) {
-                cycleResetInterval(player, 1)
-            } else if (event.isRightClick) {
-                cycleResetInterval(player, -1)
-            }
+            if (event.isLeftClick) cycleResetInterval(player, 1)
+            else if (event.isRightClick) cycleResetInterval(player, -1)
         }, 2, 1)
 
-        // Exit location
         pane.addItem(GuiItem(createExitLocationItem()) { event ->
             event.isCancelled = true
-            if (event.isLeftClick) {
-                setExitLocation(player)
-            } else if (event.isRightClick) {
-                teleportToExit(player)
-            }
+            if (event.isLeftClick) setExitLocation(player)
+            else if (event.isRightClick) teleportToExit(player)
         }, 6, 1)
 
-        // Row 2: Loot table overrides
         pane.addItem(GuiItem(createNormalLootOverrideItem()) { event ->
             event.isCancelled = true
-            if (event.isLeftClick) {
-                cycleLootTable(player, VaultType.NORMAL, 1)
-            } else if (event.isRightClick) {
-                cycleLootTable(player, VaultType.NORMAL, -1)
-            } else if (event.isShiftClick && event.isRightClick) {
-                clearLootOverride(player, VaultType.NORMAL)
+            when {
+                event.isShiftClick && event.isRightClick -> clearLootOverride(player, VaultType.NORMAL)
+                event.isLeftClick -> cycleLootTable(player, VaultType.NORMAL, 1)
+                event.isRightClick -> cycleLootTable(player, VaultType.NORMAL, -1)
             }
         }, 2, 2)
 
         pane.addItem(GuiItem(createOminousLootOverrideItem()) { event ->
             event.isCancelled = true
-            if (event.isLeftClick) {
-                cycleLootTable(player, VaultType.OMINOUS, 1)
-            } else if (event.isRightClick) {
-                cycleLootTable(player, VaultType.OMINOUS, -1)
-            } else if (event.isShiftClick && event.isRightClick) {
-                clearLootOverride(player, VaultType.OMINOUS)
+            when {
+                event.isShiftClick && event.isRightClick -> clearLootOverride(player, VaultType.OMINOUS)
+                event.isLeftClick -> cycleLootTable(player, VaultType.OMINOUS, 1)
+                event.isRightClick -> cycleLootTable(player, VaultType.OMINOUS, -1)
             }
         }, 6, 2)
 
-        // Row 3: Spawner cooldown configuration
+        pane.addItem(GuiItem(createCustomMobEntryItem()) { event ->
+            event.isCancelled = true
+            menu.openCustomMobProvider(player, chamber)
+        }, 4, 2)
+
         pane.addItem(GuiItem(createSpawnerCooldownItem()) { event ->
             event.isCancelled = true
-            if (event.isLeftClick) {
-                cycleSpawnerCooldown(player, 1)
-            } else if (event.isRightClick) {
-                cycleSpawnerCooldown(player, -1)
-            } else if (event.isShiftClick && event.isRightClick) {
-                clearSpawnerCooldown(player)
+            when {
+                event.isShiftClick && event.isRightClick -> clearSpawnerCooldown(player)
+                event.isLeftClick -> cycleSpawnerCooldown(player, 1)
+                event.isRightClick -> cycleSpawnerCooldown(player, -1)
             }
         }, 4, 3)
 
-        // Row 4: Navigation
-        val backItem = ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Back to Chamber", NamedTextColor.YELLOW))
-            }
-        }
-        pane.addItem(GuiItem(backItem) { event ->
-            event.isCancelled = true
-            // Refresh chamber from cache to get updated values
+        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chamber") {
             val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-            if (refreshedChamber != null) {
-                menu.openChamberDetail(player, refreshedChamber)
-            } else {
-                menu.openChamberList(player)
-            }
+            if (refreshedChamber != null) menu.openChamberDetail(player, refreshedChamber)
+            else menu.openChamberList(player)
         }, 0, 4)
-
-        val closeItem = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Close", NamedTextColor.RED))
-            }
-        }
-        pane.addItem(GuiItem(closeItem) { event ->
-            event.isCancelled = true
-            player.closeInventory()
-        }, 8, 4)
+        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 4)
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
         gui.setOnGlobalDrag { it.isCancelled = true }
-
         return gui
     }
 
-    private fun createHeaderItem(): ItemStack {
-        return ItemStack(Material.COMPARATOR).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Chamber Settings", NamedTextColor.WHITE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Configure ${chamber.name}", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Changes are saved immediately", NamedTextColor.YELLOW)
-                ))
-            }
-        }
-    }
-
     private fun createResetIntervalItem(): ItemStack {
-        val currentInterval = chamber.resetInterval
-        val currentName = RESET_INTERVALS.find { it.first == currentInterval }?.second
-            ?: formatDuration(currentInterval * 1000)
-
-        return ItemStack(Material.CLOCK).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Reset Interval", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("How often the chamber resets", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Current: $currentName", NamedTextColor.YELLOW),
-                    Component.empty(),
-                    Component.text("Left Click: Increase", NamedTextColor.GREEN),
-                    Component.text("Right Click: Decrease", NamedTextColor.RED)
-                ))
-            }
-        }
+        val labelKey = RESET_INTERVALS.find { it.first == chamber.resetInterval }?.second
+        val value = labelKey?.let { plugin.getMessage(it) } ?: formatDuration(chamber.resetInterval * 1000)
+        return GuiComponents.infoItem(plugin, Material.CLOCK,
+            "gui.chamber-settings.reset-interval-name", "gui.chamber-settings.reset-interval-lore",
+            "value" to value)
     }
 
     private fun createExitLocationItem(): ItemStack {
         val exitLoc = chamber.getExitLocation()
-        val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" } ?: "Not set"
-
-        return ItemStack(Material.OAK_DOOR).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Exit Location", NamedTextColor.AQUA)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Where players teleport on exit", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Current: $exitStr", NamedTextColor.YELLOW),
-                    Component.empty(),
-                    Component.text("Left Click: Set to your location", NamedTextColor.GREEN),
-                    Component.text("Right Click: Teleport to exit", NamedTextColor.AQUA)
-                ))
-            }
-        }
+        val value = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
+            ?: plugin.getMessage("gui.chamber-settings.exit-not-set")
+        return GuiComponents.infoItem(plugin, Material.OAK_DOOR,
+            "gui.chamber-settings.exit-name", "gui.chamber-settings.exit-lore",
+            "value" to value)
     }
 
     private fun createNormalLootOverrideItem(): ItemStack {
-        val currentOverride = chamber.normalLootTable
-
-        return ItemStack(Material.GREEN_WOOL).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Normal Loot Override", NamedTextColor.GREEN)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Override the loot table for", NamedTextColor.GRAY),
-                    Component.text("normal vaults in this chamber", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Current: ", NamedTextColor.WHITE)
-                        .append(Component.text(currentOverride ?: "(default)",
-                            if (currentOverride != null) NamedTextColor.GREEN else NamedTextColor.GRAY)),
-                    Component.empty(),
-                    Component.text("Left/Right Click: Cycle tables", NamedTextColor.YELLOW),
-                    Component.text("Shift+Right: Clear override", NamedTextColor.RED)
-                ))
-            }
-        }
+        val value = chamber.normalLootTable ?: plugin.getMessage("gui.chamber-settings.override-default")
+        return GuiComponents.infoItem(plugin, Material.GREEN_WOOL,
+            "gui.chamber-settings.normal-override-name", "gui.chamber-settings.normal-override-lore",
+            "value" to value)
     }
 
     private fun createOminousLootOverrideItem(): ItemStack {
-        val currentOverride = chamber.ominousLootTable
+        val value = chamber.ominousLootTable ?: plugin.getMessage("gui.chamber-settings.override-default")
+        return GuiComponents.infoItem(plugin, Material.PURPLE_WOOL,
+            "gui.chamber-settings.ominous-override-name", "gui.chamber-settings.ominous-override-lore",
+            "value" to value)
+    }
 
-        return ItemStack(Material.PURPLE_WOOL).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Ominous Loot Override", NamedTextColor.DARK_PURPLE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Override the loot table for", NamedTextColor.GRAY),
-                    Component.text("ominous vaults in this chamber", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Current: ", NamedTextColor.WHITE)
-                        .append(Component.text(currentOverride ?: "(default)",
-                            if (currentOverride != null) NamedTextColor.DARK_PURPLE else NamedTextColor.GRAY)),
-                    Component.empty(),
-                    Component.text("Left/Right Click: Cycle tables", NamedTextColor.YELLOW),
-                    Component.text("Shift+Right: Clear override", NamedTextColor.RED)
-                ))
-            }
-        }
+    private fun createCustomMobEntryItem(): ItemStack {
+        return GuiComponents.infoItem(plugin, Material.ZOMBIE_HEAD,
+            "gui.chamber-settings.custom-mob-name", "gui.chamber-settings.custom-mob-lore",
+            "provider" to (chamber.customMobProvider ?: "vanilla"),
+            "normal" to chamber.customMobIdsNormal.size,
+            "ominous" to chamber.customMobIdsOminous.size)
     }
 
     private fun createSpawnerCooldownItem(): ItemStack {
-        val currentCooldown = chamber.spawnerCooldownMinutes
-        val currentName = SPAWNER_COOLDOWNS.find { it.first == currentCooldown }?.second
-            ?: if (currentCooldown == null) "Global Config" else "${currentCooldown}m"
-
-        return ItemStack(Material.SPAWNER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Spawner Cooldown", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("How long spawners stay inactive", NamedTextColor.GRAY),
-                    Component.text("after players complete a wave", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Current: ", NamedTextColor.WHITE)
-                        .append(Component.text(currentName,
-                            if (currentCooldown != null) NamedTextColor.LIGHT_PURPLE else NamedTextColor.GRAY)),
-                    Component.empty(),
-                    Component.text("Left Click: Increase", NamedTextColor.GREEN),
-                    Component.text("Right Click: Decrease", NamedTextColor.RED),
-                    Component.text("Shift+Right: Use global config", NamedTextColor.YELLOW)
-                ))
-            }
-        }
+        val labelKey = SPAWNER_COOLDOWNS.find { it.first == chamber.spawnerCooldownMinutes }?.second
+        val value = labelKey?.let { plugin.getMessage(it) }
+            ?: chamber.spawnerCooldownMinutes?.let { "${it}m" }
+            ?: plugin.getMessage("gui.chamber-settings.spawner-cd-global")
+        return GuiComponents.infoItem(plugin, Material.SPAWNER,
+            "gui.chamber-settings.spawner-cd-name", "gui.chamber-settings.spawner-cd-lore",
+            "value" to value)
     }
 
-    // ==================== Action Handlers ====================
+    // ==================== Action Handlers (unchanged behavior) ====================
 
     private fun cycleResetInterval(player: Player, direction: Int) {
         val currentIndex = RESET_INTERVALS.indexOfFirst { it.first == chamber.resetInterval }
         val newIndex = if (currentIndex == -1) {
             if (direction > 0) 0 else RESET_INTERVALS.lastIndex
-        } else {
-            (currentIndex + direction).mod(RESET_INTERVALS.size)
-        }
-
-        val newInterval = RESET_INTERVALS[newIndex].first
-        val newName = RESET_INTERVALS[newIndex].second
+        } else (currentIndex + direction).mod(RESET_INTERVALS.size)
+        val (newInterval, newLabelKey) = RESET_INTERVALS[newIndex]
+        val newName = plugin.getMessage(newLabelKey)
 
         plugin.launchAsync {
             val success = plugin.chamberManager.updateResetInterval(chamber.id, newInterval)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-reset-interval-set", "value" to newName))
-                    // Refresh the view
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-reset-interval-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-reset-interval-failed"))
             })
         }
     }
 
     private fun setExitLocation(player: Player) {
         val location = player.location
-
         plugin.launchAsync {
             val success = plugin.chamberManager.updateExitLocation(
-                chamber.id,
-                location.x, location.y, location.z,
-                location.yaw, location.pitch
+                chamber.id, location.x, location.y, location.z, location.yaw, location.pitch
             )
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-exit-location-set"))
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-exit-location-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-exit-location-failed"))
             })
         }
     }
@@ -337,19 +216,14 @@ class ChamberSettingsView(
             player.sendMessage(plugin.getMessage("gui-no-loot-tables"))
             return
         }
-
         val currentOverride = when (vaultType) {
             VaultType.NORMAL -> chamber.normalLootTable
             VaultType.OMINOUS -> chamber.ominousLootTable
         }
-
         val currentIndex = tables.indexOf(currentOverride)
         val newIndex = if (currentIndex == -1) {
             if (direction > 0) 0 else tables.lastIndex
-        } else {
-            (currentIndex + direction).mod(tables.size)
-        }
-
+        } else (currentIndex + direction).mod(tables.size)
         val newTable = tables[newIndex]
 
         plugin.launchAsync {
@@ -357,13 +231,8 @@ class ChamberSettingsView(
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-loot-table-set", "type" to vaultType.displayName, "table" to newTable))
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-loot-table-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-loot-table-failed"))
             })
         }
     }
@@ -374,13 +243,8 @@ class ChamberSettingsView(
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-loot-table-cleared", "type" to vaultType.displayName))
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-loot-clear-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-loot-clear-failed"))
             })
         }
     }
@@ -389,25 +253,17 @@ class ChamberSettingsView(
         val currentIndex = SPAWNER_COOLDOWNS.indexOfFirst { it.first == chamber.spawnerCooldownMinutes }
         val newIndex = if (currentIndex == -1) {
             if (direction > 0) 0 else SPAWNER_COOLDOWNS.lastIndex
-        } else {
-            (currentIndex + direction).mod(SPAWNER_COOLDOWNS.size)
-        }
-
-        val newCooldown = SPAWNER_COOLDOWNS[newIndex].first
-        val newName = SPAWNER_COOLDOWNS[newIndex].second
+        } else (currentIndex + direction).mod(SPAWNER_COOLDOWNS.size)
+        val (newCooldown, newLabelKey) = SPAWNER_COOLDOWNS[newIndex]
+        val newName = plugin.getMessage(newLabelKey)
 
         plugin.launchAsync {
             val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, newCooldown)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-spawner-cooldown-set", "value" to newName))
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-spawner-cooldown-failed"))
             })
         }
     }
@@ -418,13 +274,8 @@ class ChamberSettingsView(
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
                     player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset"))
-                    val refreshedChamber = plugin.chamberManager.getCachedChamberById(chamber.id)
-                    if (refreshedChamber != null) {
-                        menu.openChamberSettings(player, refreshedChamber)
-                    }
-                } else {
-                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset-failed"))
-                }
+                    plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
+                } else player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset-failed"))
             })
         }
     }
@@ -434,7 +285,6 @@ class ChamberSettingsView(
         val days = seconds / 86400
         val hours = (seconds % 86400) / 3600
         val minutes = (seconds % 3600) / 60
-
         return buildString {
             if (days > 0) append("${days}d ")
             if (hours > 0) append("${hours}h ")

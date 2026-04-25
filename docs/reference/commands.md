@@ -1,13 +1,13 @@
 # 📝 Commands Reference
 
 All commands start with `/tcp` (short for TrialChamberPro). Most require specific permissions—check the [Permissions](permissions.md) page for details.
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Aliases:** `/tcp`, `/trialchamberpro`, `/tcpro`
 
 **Tab completion:** Available for all commands! Press `Tab` while typing for suggestions.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -27,6 +27,11 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
 | `/tcp loot clear <chamber> [normal\|ominous\|all]` | Remove per-chamber loot override | `tcp.admin.loot` |
+| `/tcp mobs providers` | List registered mob providers and their availability | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> provider <id\|vanilla\|none>` | Set a chamber's custom mob provider | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> add normal\|ominous <mobId>` | Add a mob id to a chamber's pool | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> remove normal\|ominous <mobId>` | Remove a mob id from a chamber's pool | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> list` | Show a chamber's mob provider config | `tcp.admin.mobs` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |
@@ -54,11 +59,11 @@ Shows a list of all available commands.
 /tcp help
 ```
 
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 Only shows commands you have permission to use!
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -111,11 +116,11 @@ The admin GUI provides 14 different views organized into categories:
 - **Navigation** - Consistent back/close buttons throughout
 - **Session Restoration** - Return to previous screens automatically
 
-.
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **No YAML editing required!** Most configuration can now be done entirely through the GUI.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -184,11 +189,11 @@ Scans a chamber to detect vaults, trial spawners, and decorated pots.
 [TCP] Scanning complete! Found 8 vaults, 12 spawners, 24 decorated pots.
 ```
 
-.
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Re-scanning overwrites previous data!** If you modified your chamber and re-scan, old vault/spawner data is replaced.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -252,11 +257,11 @@ Scans the chamber and saves every block to a compressed snapshot file.
 
 **Time:** 5-30 seconds depending on chamber size
 
-.
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Update snapshots anytime!** Made changes to your chamber? Run `/tcp snapshot create` again to update.
-{% endhint %}
-.
+
+</div>
 
 #### `restore` - Restore Snapshot
 Immediately resets the chamber from its snapshot (same as `/tcp reset`).
@@ -302,11 +307,11 @@ Forces an immediate chamber reset.
 - Manual reset for events
 - Fixing a broken chamber
 
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Vault cooldowns:** When `reset-vault-cooldowns: true` in config.yml (default), vault cooldowns are cleared both in the database AND via Paper's native Vault API. This ensures players can truly loot vaults again after a reset.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -433,8 +438,8 @@ Permanently deletes a chamber and all associated data.
 /tcp delete TestChamber
 ```
 
-.
-{% hint style="danger" %}
+<div data-gb-custom-block data-tag="hint" data-style="danger">
+
 **⚠️ PERMANENT ACTION!** This deletes:
 - Chamber boundaries and settings
 - All vault data
@@ -443,8 +448,8 @@ Permanently deletes a chamber and all associated data.
 - The snapshot file is NOT deleted (manual cleanup required)
 
 **Cannot be undone!**
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -482,15 +487,16 @@ Resets a player's vault cooldowns for a specific chamber.
 - Event rewards ("free vault access!")
 - Testing vault mechanics
 
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Per-vault cooldowns:** This resets cooldowns for every vault in the chamber individually, not just one vault.
-{% endhint %}
-.
-{% hint style="success" %}
+
+</div>
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **v1.2.21+:** This command now properly clears Paper's native Vault `rewarded_players` list in addition to database tracking. This ensures players can truly loot vaults again immediately.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -523,11 +529,11 @@ Gives trial keys to a player.
 - Sell keys in-game shop (via command blocks or other plugins)
 - Testing vault mechanics
 
-.
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Player must be online!** Offline players can't receive items. The command will fail if the player isn't online.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -593,11 +599,11 @@ View player statistics for Trial Chamber activity.
 [TCP] Time Spent: 5h 32m
 ```
 
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Requires statistics to be enabled** in config.yml (`statistics.enabled: true`)
-{% endhint %}
-.
+
+</div>
 
 **Tracked stats:**
 - **Chambers Completed** - How many times player completed a chamber
@@ -653,11 +659,11 @@ View top players for a specific statistic.
 - Number of players shown: `statistics.top-players-count` in config.yml (default: 10)
 - Update frequency: `statistics.leaderboard-update-interval` in config.yml (default: 1 hour)
 
-.
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Leaderboards are cached** to prevent database lag. They update on the interval specified in config, not in real-time.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -688,11 +694,11 @@ Reloads the plugin configuration without restarting the server.
 - Existing chamber data in memory
 - Active reset timers (they continue with old intervals until next reset)
 
-.
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Database changes require restart!** If you changed database settings in config.yml, you MUST restart the server, not just reload.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -784,26 +790,29 @@ Reloads the plugin configuration without restarting the server.
 
 ## 💡 Pro Tips
 
-.
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Use tab completion!** Press `Tab` while typing commands to autocomplete chamber names, player names, and arguments.
-{% endhint %}
-.
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Aliases:** All leaderboard commands work with `/tcp lb` and `/tcp top` for quick access.
-{% endhint %}
-.
 
-{% hint style="warning" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Chamber names are case-sensitive** in some commands. Use tab completion to ensure correct capitalization.
-{% endhint %}
-.
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Offline player support:** Most commands work with offline players (like `/tcp vault reset`), but `/tcp key give` requires the player to be online.
-{% endhint %}
-.
+
+</div>
 
 ---
 
@@ -867,26 +876,26 @@ tcp.stats       # Can view own stats
 
 ## 🎯 Related Pages
 
-.
-{% content-ref url="permissions.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="permissions.md">
+
 [permissions.md](permissions.md)
-{% endcontent-ref %}
-.
+
+</div>
 
 Complete permission nodes for all commands and features.
 
-.
-{% content-ref url="../configuration/config.yml.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
+
 [config.yml.md](../configuration/config.yml.md)
-{% endcontent-ref %}
-.
+
+</div>
 
 Settings that affect command behavior (auto-scan, auto-snapshot, etc.)
 
-.
-{% content-ref url="../getting-started/your-first-chamber.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../getting-started/your-first-chamber.md">
+
 [your-first-chamber.md](../getting-started/your-first-chamber.md)
-{% endcontent-ref %}
-.
+
+</div>
 
 Step-by-step guide using these commands to set up your first chamber.

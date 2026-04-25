@@ -5,10 +5,10 @@ import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.OutlinePane
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import kotlinx.coroutines.runBlocking
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -17,15 +17,14 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
 
     fun build(player: Player): ChestGui {
         val chambers = plugin.chamberManager.getCachedChambers()
-        val gui = ChestGui(6, "Trial Chambers Overview")
+        val gui = ChestGui(6, GuiText.plain(plugin, "gui.chambers-overview.title"))
 
-        val background = StaticPane(0, 0, 9, 6)
-        // No background filler to keep default visuals
-        gui.addPane(background)
+        gui.addPane(StaticPane(0, 0, 9, 6))
 
-        val page = OutlinePane(0, 0, 9, 5)
-        page.isVisible = true
-        page.gap = 1
+        val page = OutlinePane(0, 0, 9, 5).apply {
+            isVisible = true
+            gap = 1
+        }
 
         chambers.take(45).forEach { chamber ->
             page.addItem(GuiItem(createChamberItem(chamber, player)) { event ->
@@ -36,88 +35,70 @@ class ChambersOverviewView(private val plugin: TrialChamberPro, private val menu
 
         gui.addPane(page)
 
-        // Bottom controls and close/back
-        val controls = StaticPane(0, 5, 9, 1)
-        val closeItem = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Close", NamedTextColor.RED))
-            }
+        if (chambers.isEmpty()) {
+            val emptyPane = StaticPane(0, 2, 9, 1)
+            emptyPane.addItem(GuiItem(
+                GuiComponents.infoItem(plugin, org.bukkit.Material.BARRIER,
+                    "gui.chambers-overview.empty-name", "gui.chambers-overview.empty-lore")
+            ) { it.isCancelled = true }, 4, 0)
+            gui.addPane(emptyPane)
         }
-        controls.addItem(GuiItem(closeItem) {
-            it.isCancelled = true
-            player.closeInventory()
-        }, 8, 0)
 
+        val controls = StaticPane(0, 5, 9, 1)
+        controls.addItem(GuiComponents.closeButton(plugin, player), 8, 0)
         gui.addPane(controls)
 
         gui.setOnGlobalClick { it.isCancelled = true }
         gui.setOnGlobalDrag { it.isCancelled = true }
-
         return gui
     }
 
     private fun createChamberItem(chamber: Chamber, player: Player): ItemStack {
-        val item = ItemStack(Material.LODESTONE)
-
-        // Time calculations
         val timeUntilMs = plugin.resetManager.getTimeUntilReset(chamber)
         val lastResetMs = chamber.lastReset ?: chamber.createdAt
         val sinceLastMs = System.currentTimeMillis() - lastResetMs
-
-        // Players inside
         val playersInside = chamber.getPlayersInside().size
-
-        // Vault counts (Normal/Ominous) via lightweight TTL cache (non-blocking)
         val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
-
-        // Get locked vault counts for this player
         val (normalLocked, ominousLocked) = runBlocking {
             plugin.vaultManager.getLockedVaultCounts(player.uniqueId, chamber.id)
         }
 
-        item.itemMeta = (item.itemMeta ?: plugin.server.itemFactory.getItemMeta(item.type))?.apply {
-            displayName(Component.text(chamber.name, NamedTextColor.AQUA))
-            lore(
-                listOf(
-                    Component.text("World: ${chamber.world}", NamedTextColor.GRAY),
-                    Component.text("Bounds: (${chamber.minX},${chamber.minY},${chamber.minZ}) -> (${chamber.maxX},${chamber.maxY},${chamber.maxZ})", NamedTextColor.GRAY),
-                    Component.text("Players inside: $playersInside", NamedTextColor.GRAY),
-                    Component.text("Vaults: $normalCount Normal, $ominousCount Ominous", NamedTextColor.GRAY),
-                    Component.text("Locked: $normalLocked Normal, $ominousLocked Ominous", NamedTextColor.RED),
-                    Component.text("Time until reset: ${humanizeDuration(timeUntilMs)}", NamedTextColor.YELLOW),
-                    Component.text("Since last reset: ${humanizeDuration(sinceLastMs)}", NamedTextColor.YELLOW),
-                    Component.text("Click to Manage", NamedTextColor.GREEN)
-                )
-            )
-        }
-        return item
+        return GuiComponents.infoItem(
+            plugin, Material.LODESTONE,
+            "gui.chambers-overview.chamber-name", "gui.chambers-overview.chamber-lore",
+            "chamber" to chamber.name,
+            "world" to chamber.world,
+            "minX" to chamber.minX, "minY" to chamber.minY, "minZ" to chamber.minZ,
+            "maxX" to chamber.maxX, "maxY" to chamber.maxY, "maxZ" to chamber.maxZ,
+            "inside" to playersInside,
+            "normal" to normalCount, "ominous" to ominousCount,
+            "normalLocked" to normalLocked, "ominousLocked" to ominousLocked,
+            "reset" to DurationFmt.humanize(plugin, timeUntilMs),
+            "lastReset" to DurationFmt.humanize(plugin, sinceLastMs)
+        )
     }
+}
 
-    private fun humanizeDuration(durationMs: Long): String {
-        if (durationMs <= 0) return "due now"
+/**
+ * Shared duration formatter for chamber list views. Produces "2d 3h", "5m", or the
+ * localized "due now" token when `durationMs <= 0`.
+ */
+internal object DurationFmt {
+    fun humanize(plugin: TrialChamberPro, durationMs: Long): String {
+        if (durationMs <= 0) return plugin.getMessage("gui.chamber-list.duration-due-now")
         var seconds = durationMs / 1000
-
-        val months = seconds / (30L * 24 * 3600)
-        seconds %= (30L * 24 * 3600)
-        val weeks = seconds / (7L * 24 * 3600)
-        seconds %= (7L * 24 * 3600)
-        val days = seconds / (24 * 3600)
-        seconds %= (24 * 3600)
-        val hours = seconds / 3600
-        seconds %= 3600
-        val minutes = seconds / 60
-        seconds %= 60
-
+        val months = seconds / (30L * 24 * 3600); seconds %= (30L * 24 * 3600)
+        val weeks = seconds / (7L * 24 * 3600);   seconds %= (7L * 24 * 3600)
+        val days = seconds / (24 * 3600);          seconds %= (24 * 3600)
+        val hours = seconds / 3600;                seconds %= 3600
+        val minutes = seconds / 60;                seconds %= 60
         val parts = mutableListOf<String>()
-        if (months > 0) parts += "$months month" + if (months != 1L) "s" else ""
-        if (weeks > 0) parts += "$weeks week" + if (weeks != 1L) "s" else ""
-        if (days > 0) parts += "$days day" + if (days != 1L) "s" else ""
-        if (hours > 0) parts += "$hours hour" + if (hours != 1L) "s" else ""
-        if (minutes > 0) parts += "$minutes minute" + if (minutes != 1L) "s" else ""
-        // Include seconds only if nothing else
-        if (parts.isEmpty() && seconds > 0) parts += "$seconds second" + if (seconds != 1L) "s" else ""
-
-        // Limit to a reasonable number of components (max 3) for readability
-        return parts.take(3).joinToString(", ")
+        if (months > 0) parts += "${months}mo"
+        if (weeks > 0) parts += "${weeks}w"
+        if (days > 0) parts += "${days}d"
+        if (hours > 0) parts += "${hours}h"
+        if (minutes > 0) parts += "${minutes}m"
+        if (parts.isEmpty() && seconds > 0) parts += "${seconds}s"
+        return parts.take(2).joinToString(" ")
     }
 }

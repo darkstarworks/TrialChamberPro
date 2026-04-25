@@ -19,3 +19,20 @@ build/
 gradle-app.setting
 .gradletasknamecache
 **/build/
+
+# AI / IDE local state
+.claude/
+.junie/
+CLAUDE.md
+
+# Runtime / development artifacts
+database.db
+*.db
+nul
+
+# Personal planning / analysis drafts (kept local)
+COMPREHENSIVE_PROJECT_ANALYSIS.md
+PROJECT_STUDY.md
+SCREENSHOTS_PLAN.md
+SPIGOT.md
+tcpbugimage.png

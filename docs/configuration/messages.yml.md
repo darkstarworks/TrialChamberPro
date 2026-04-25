@@ -2,11 +2,19 @@
 
 Want your plugin to match your server's vibe? The `messages.yml` file lets you customize every single message players see. Whether you're running a serious roleplay server or a meme-filled chaos realm, you've got full control.
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Location:** `plugins/TrialChamberPro/messages.yml`
 
 After making changes, reload with `/tcp reload`
-{% endhint %}
+
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
+
+</div>
 
 ---
 
@@ -44,9 +52,11 @@ All messages support Minecraft color codes using `&`:
 "&k?????? &r&eMystery text revealed!"
 ```
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Pro tip:** Use `&r` to reset formatting before starting new text. Prevents colors bleeding into placeholders!
-{% endhint %}
+
+</div>
 
 ---
 
@@ -244,13 +254,17 @@ vault-error: "&cAn error occurred while opening the vault. Please try again."
 - `vault-locked` - Shown when a player has already opened a vault (permanent cooldown until reset)
 - `vault-error` - Shown when the vault block state can't be updated (rare edge case)
 
-{% hint style="info" %}
-**Note:** In v1.2.19+, if error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the issue is resolved.
-{% endhint %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-{% hint style="success" %}
+**Note:** In v1.2.19+, if error messages appear, **keys are NOT consumed**. The player keeps their key so they can try again once the issue is resolved.
+
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **v1.2.21+:** Vault cooldowns now use Paper's native API. The `vault-locked` message is shown for permanent cooldowns (vanilla behavior). This automatically resets when the chamber is restored from snapshot.
-{% endhint %}
+
+</div>
 
 **Examples:**
 
@@ -813,25 +827,33 @@ Want to support multiple languages? You can create separate message files!
 2. Translate all messages
 3. Use a language switcher plugin to change which file is loaded per-player
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Note:** TrialChamberPro doesn't have built-in per-player language switching (yet), but you can manually swap files and reload for server-wide language changes.
-{% endhint %}
+
+</div>
 
 ---
 
 ## 💡 Pro Tips
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Test your messages!** Trigger each message in-game to see how it looks in chat. Some look great in the config but ugly in-game.
-{% endhint %}
 
-{% hint style="warning" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Don't overdo colors.** Too many colors = eyesore. Stick to 2-3 main colors for consistency.
-{% endhint %}
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Use prefixes wisely.** If you have a very long prefix, consider shortening it or removing it entirely for certain messages (like warnings).
-{% endhint %}
+
+</div>
 
 ---
 
@@ -892,16 +914,22 @@ You've completed the configuration trilogy! 🎉
 
 Check out the guides for hands-on usage:
 
-{% content-ref url="../guides/custom-loot.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+
 [custom-loot.md](../guides/custom-loot.md)
-{% endcontent-ref %}
 
-{% content-ref url="../guides/automatic-resets.md" %}
+</div>
+
+<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
+
 [automatic-resets.md](../guides/automatic-resets.md)
-{% endcontent-ref %}
 
-{% content-ref url="../reference/commands.md" %}
+</div>
+
+<div data-gb-custom-block data-tag="content-ref" data-url="../reference/commands.md">
+
 [commands.md](../reference/commands.md)
-{% endcontent-ref %}
+
+</div>
 
 Now go make those messages uniquely yours! ✨

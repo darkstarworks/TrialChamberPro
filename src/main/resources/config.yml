@@ -112,6 +112,15 @@ reset:
   # This allows controlling cooldown for unregistered Trial Chambers server-wide
   wild-spawner-cooldown-minutes: -1
 
+  # v1.3.0 — Custom mob provider spawner-key drops
+  # When a wave is driven by a non-vanilla mob provider (e.g. MythicMobs), vanilla's
+  # state machine cannot issue Trial Keys on completion, so the plugin drops them
+  # itself: one key per unique participating player, above the spawner block.
+  # Drops are owner-locked for this many seconds before anyone can pick them up.
+  # Set to 0 to keep drops owner-locked until they despawn naturally.
+  # Players with permission `tcp.bypass.droplock` can always pick up.
+  spawner-key-drop-owner-grace-seconds: 30
+
 # Performance
 performance:
   cache-chamber-lookups: true

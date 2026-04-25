@@ -2,13 +2,16 @@
 
 Time to get creative! The `loot.yml` file is where you customize what players get from vaults. Want to rain diamonds? Give economy rewards? Drop custom items from other plugins? This is your playground.
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Location:** `plugins/TrialChamberPro/loot.yml`
 
 After making changes, reload with `/tcp reload`
-{% endhint %}
 
-{% hint style="danger" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="danger">
+
 **CRITICAL: Never use TAB characters in loot.yml!**
 
 TAB characters will cause the entire YAML file to fail to load silently. This results in **all loot tables being empty**, causing vaults to give no loot even though keys are consumed (fixed in v1.2.19+).
@@ -26,7 +29,8 @@ TAB characters will cause the entire YAML file to fail to load silently. This re
 **Prevention:**
 - Configure your text editor to use "spaces for tabs"
 - Use editors like VS Code, Notepad++, or Sublime Text that can show whitespace
-{% endhint %}
+
+</div>
 
 ---
 
@@ -67,9 +71,11 @@ How many times to randomly pick from `weighted-items`. A random number between m
 - `min-rolls: 1` + `max-rolls: 1` = Player gets exactly 1 item (hardcore mode!)
 - `min-rolls: 10` + `max-rolls: 15` = Loot explosion
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Don't go crazy!** More rolls = more items. A vault that drops 20 items might be fun once, but it trivializes progression. Start conservative.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -154,13 +160,17 @@ loot-tables:
 4. Unique pool rolls 0-1 times → **might** get special item
 5. Total: 3-6 items with good variety!
 
-{% hint style="info" %}
-**Legacy Format Still Works!** The old single-pool format (without `pools:`) is fully supported and will keep working. This is purely optional!
-{% endhint %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
 
-{% hint style="success" %}
+**Legacy Format Still Works!** The old single-pool format (without `pools:`) is fully supported and will keep working. This is purely optional!
+
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Edit from the GUI** *(1.2.26+)*: open `/tcp menu` → **Loot Tables**, click any table to edit it. Multi-pool tables open a pool selector; single-pool tables open the editor directly. Changes save to `loot.yml` and apply to every chamber using that table.
-{% endhint %}
+
+</div>
 
 ### Config Option
 
@@ -395,9 +405,11 @@ Create potions with any effect level—perfect for ominous vault rewards!
   weight: 2.5
 ```
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Ominous Potion Note:** The `ominous-potion: true` flag is cosmetic in most 1.21 implementations. The real power is the high `potion-level` (3+ = Level IV+)!
-{% endhint %}
+
+</div>
 
 ### 🔮 Ominous Bottles (Bad Omen Effect)
 
@@ -466,9 +478,11 @@ Use the `custom-effect-type` field to specify custom potion effects like `BAD_OM
 
 **Note:** The `effect-duration` field works with both `potion-type` and `custom-effect-type`! Use it to customize how long any potion effect lasts.
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Important:** In vanilla Minecraft, ominous bottles only come in levels **III, IV, and V**—never I or II. Match vanilla behavior by using `potion-level: 2` (III), `potion-level: 3` (IV), or `potion-level: 4` (V).
-{% endhint %}
+
+</div>
 
 #### Other Custom Effect Types
 
@@ -653,9 +667,11 @@ Drop pre-damaged items with random wear—makes loot feel "used" and realistic!
   name: "&bScratched Helmet"
 ```
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Durability values are damage amounts!** Higher values = more damaged. Check the max durability for each material to calibrate your ranges.
-{% endhint %}
+
+</div>
 
 ### 🎨 Combining Everything
 
@@ -715,9 +731,11 @@ weighted-items:
 - Iron: 15/100 = **15%** chance per roll
 - Coal: 55/100 = **55%** chance per roll
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Weights don't need to add to 100!** That's just for easy mental math. They're all relative to each other.
-{% endhint %}
+
+</div>
 
 ### Weight Strategies
 
@@ -839,9 +857,11 @@ loot-tables:
 
 See the full [💰 COMMAND Rewards](#-command-rewards-economy--permissions) section below for complete documentation and examples.
 
-{% hint style="danger" %}
+<div data-gb-custom-block data-tag="hint" data-style="danger">
+
 **`type: COMMAND` inside `weighted-items` is NOT valid** and will log an error. Always use the `command-rewards` list instead.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -890,13 +910,17 @@ TrialChamberPro resolves custom items at runtime using the plugin's API, so the 
 
 You can also stack extra `name:`, `lore:`, and `enchantments:` on top of the resolved item—they will be applied over the custom item's base properties.
 
-{% hint style="warning" %}
-**Make sure the item IDs are correct!** If the plugin can't find the item, it'll be skipped silently and nothing will drop. Test your loot tables after adding custom items.
-{% endhint %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
 
-{% hint style="info" %}
+**Make sure the item IDs are correct!** If the plugin can't find the item, it'll be skipped silently and nothing will drop. Test your loot tables after adding custom items.
+
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Heads up — custom item plugins are optional integrations.** TrialChamberPro talks to Nexo, ItemsAdder, Oraxen, CraftEngine, and MythicCrucible through their own APIs at runtime. If one of those plugins releases a big update that changes how their API works, the integration here might stop working until TrialChamberPro is updated to match. If that happens, the worst case is that the custom item is skipped and a warning appears in the server log — your chamber won't break or crash. Just let me know (open an issue / ping on Modrinth) and I'll push a fix.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -1275,9 +1299,11 @@ Want to give players **money**, **permissions**, **experience**, or run **any co
 
 Command rewards run console commands with a **probability** (weight-based). They execute alongside regular item drops.
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Key Point:** Command rewards go in a separate `command-rewards` list, **NOT** in `weighted-items`!
-{% endhint %}
+
+</div>
 
 ### Basic Example
 
@@ -1483,21 +1509,29 @@ commands:
 
 ### Important Notes
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Commands run as CONSOLE** with OP permissions. Be careful with what commands you allow!
-{% endhint %}
 
-{% hint style="success" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Weight = Probability**. Higher weight = more likely. A `weight: 50.0` is twice as likely as `weight: 25.0`.
-{% endhint %}
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Multiple commands execute in order**. Great for jackpot rewards that give items + money + permissions!
-{% endhint %}
 
-{% hint style="danger" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="danger">
+
 **Don't use `type: COMMAND` in weighted-items!** That's incorrect. Use the `command-rewards` list instead.
-{% endhint %}
+
+</div>
 
 ### Required Plugins
 
@@ -1535,15 +1569,19 @@ Command rewards work with **any** plugin that uses console commands:
 
 Now that you've mastered loot configuration, check out:
 
-{% content-ref url="messages.yml.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="messages.yml.md">
+
 [messages.yml.md](messages.yml.md)
-{% endcontent-ref %}
+
+</div>
 
 Customize all player-facing messages to match your server's style.
 
-{% content-ref url="../guides/custom-loot.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../guides/custom-loot.md">
+
 [custom-loot.md](../guides/custom-loot.md)
-{% endcontent-ref %}
+
+</div>
 
 Hands-on guide to creating themed loot tables with examples.
 
@@ -1551,18 +1589,20 @@ Hands-on guide to creating themed loot tables with examples.
 
 ## 💎 Pro Tips
 
-.
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Create loot tiers:** Make tables named `tier1`, `tier2`, `tier3` with progressively better loot. Assign them to chambers in different regions of your world!
-{% endhint %}
-.
-{% hint style="info" %}
+
+</div>
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Seasonal events:** Copy your `loot.yml`, modify it for the event (Halloween, Christmas), swap it in, reload. Easy seasonal loot!
-{% endhint %}
-.
-{% hint style="warning" %}
+
+</div>
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Backup before experimenting!** Copy `loot.yml` before making drastic changes. Easy to restore if you mess up the YAML formatting.
-{% endhint %}
-.
+
+</div>
 
 Happy looting! ⚔️

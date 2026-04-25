@@ -84,6 +84,11 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var chamberDiscoveryManager: ChamberDiscoveryManager
         private set
 
+    // Custom mob provider registry (v1.3.0) — always contains VanillaMobProvider;
+    // additional providers (MythicMobs, ...) are registered after soft-deps are up.
+    lateinit var trialMobProviderRegistry: io.github.darkstarworks.trialChamberPro.providers.TrialMobProviderRegistry
+        private set
+
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
@@ -145,6 +150,9 @@ class TrialChamberPro : JavaPlugin() {
         saveResource("messages.yml", false)
         saveResource("loot.yml", false)
 
+        // v1.3.0: sanity-check numeric config values; clamp with warnings rather than hard-fail
+        io.github.darkstarworks.trialChamberPro.config.ConfigValidator.validate(this)
+
         // Register command executor and tab completer immediately to avoid early "/tcp [args]" usage messages
         val tcpCommand = TCPCommand(this)
         val tabCompleter = TCPTabCompleter(this)
@@ -179,6 +187,48 @@ class TrialChamberPro : JavaPlugin() {
                 spawnerWaveManager = SpawnerWaveManager(this@TrialChamberPro)
                 spectatorManager = SpectatorManager(this@TrialChamberPro)
                 chamberDiscoveryManager = ChamberDiscoveryManager(this@TrialChamberPro)
+
+                // v1.3.0: Trial mob provider registry. Vanilla is registered by the registry's
+                // init block; soft-depended providers are registered below once we know their
+                // backing plugins are enabled (which is guaranteed by the time this runs because
+                // plugin.yml `softdepend` controls load order).
+                trialMobProviderRegistry = io.github.darkstarworks.trialChamberPro.providers.TrialMobProviderRegistry()
+                if (server.pluginManager.getPlugin("MythicMobs") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.MythicMobsProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: MythicMobs")
+                }
+                if (server.pluginManager.getPlugin("EliteMobs") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.EliteMobsProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: EliteMobs")
+                }
+                if (server.pluginManager.getPlugin("EcoMobs") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.EcoMobsProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: EcoMobs")
+                }
+                if (server.pluginManager.getPlugin("LevelledMobs") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.LevelledMobsProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: LevelledMobs")
+                }
+                if (server.pluginManager.getPlugin("InfernalMobs") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.InfernalMobsProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: InfernalMobs")
+                }
+                if (server.pluginManager.getPlugin("Citizens") != null) {
+                    trialMobProviderRegistry.register(
+                        io.github.darkstarworks.trialChamberPro.providers.CitizensProvider(this@TrialChamberPro)
+                    )
+                    logger.info("Registered TrialMobProvider: Citizens")
+                }
 
                 // Load loot tables
                 lootManager.loadLootTables()
@@ -235,6 +285,22 @@ class TrialChamberPro : JavaPlugin() {
                     io.github.darkstarworks.trialChamberPro.listeners.VaultDropOwnerListener.init(this@TrialChamberPro)
                     server.pluginManager.registerEvents(
                         io.github.darkstarworks.trialChamberPro.listeners.VaultDropOwnerListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.3.0: spawner-key drop owner lock (sibling of vault drop listener)
+                    io.github.darkstarworks.trialChamberPro.listeners.SpawnerKeyDropOwnerListener.init(this@TrialChamberPro)
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.SpawnerKeyDropOwnerListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.3.0: one-shot chat input collector for CustomMobProviderView
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.MobIdInputListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.3.0: drop GUI session cache entries on player quit
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.MenuSessionCleanupListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
 
@@ -391,6 +457,7 @@ class TrialChamberPro : JavaPlugin() {
      */
     fun reloadPluginConfig() {
         reloadConfig()
+        io.github.darkstarworks.trialChamberPro.config.ConfigValidator.validate(this)
         cachedMessages = null // Force reload on next getMessage() call
         if (::lootManager.isInitialized) {
             lootManager.loadLootTables()
@@ -401,12 +468,76 @@ class TrialChamberPro : JavaPlugin() {
     /**
      * Gets a message from messages.yml with optional placeholders.
      */
-    fun getMessage(key: String, vararg replacements: Pair<String, Any?>): String {
-        val messages = cachedMessages ?: run {
+    private fun loadedMessages(): org.bukkit.configuration.file.YamlConfiguration {
+        return cachedMessages ?: run {
             val loaded = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(File(dataFolder, "messages.yml"))
             cachedMessages = loaded
             loaded
         }
+    }
+
+    /**
+     * Gets a list-valued message from messages.yml (used for GUI lore and
+     * multi-line help entries). Added in v1.3.0.
+     *
+     * Accepts either a YAML list (preferred) or a single string; returns empty
+     * list if the key is absent. Runs `{placeholder}` substitution on every
+     * line but does NOT add the chat prefix or convert color codes — callers
+     * decide what to do with the raw strings.
+     */
+    fun getMessageList(key: String, vararg replacements: Pair<String, Any?>): List<String> {
+        val messages = loadedMessages()
+        val list = messages.getStringList(key)
+        val source: List<String> = if (list.isEmpty()) {
+            messages.getString(key)?.let { listOf(it) } ?: return emptyList()
+        } else list
+
+        return source.map { line ->
+            var out = line
+            replacements.forEach { (p, v) -> out = out.replace("{$p}", v?.toString() ?: "null") }
+            out
+        }
+    }
+
+    /**
+     * Gets a GUI item name (Component) from messages.yml. Unlike [getMessage]
+     * this never prepends the chat prefix and disables Minecraft's default
+     * italic styling on item names. Added in v1.3.0.
+     */
+    fun getGuiText(
+        key: String,
+        vararg replacements: Pair<String, Any?>
+    ): net.kyori.adventure.text.Component {
+        val messages = loadedMessages()
+        var raw = messages.getString(key, "<missing: $key>")!!
+        replacements.forEach { (p, v) -> raw = raw.replace("{$p}", v?.toString() ?: "null") }
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+            .legacyAmpersand()
+            .deserialize(raw)
+            .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
+    }
+
+    /**
+     * Gets a GUI item lore (list of Components) from messages.yml. The key
+     * must point at a YAML list; each line is independently color-parsed and
+     * has italics disabled. Empty lines render as [Component.empty].
+     * Added in v1.3.0.
+     */
+    fun getGuiLore(
+        key: String,
+        vararg replacements: Pair<String, Any?>
+    ): List<net.kyori.adventure.text.Component> {
+        return getMessageList(key, *replacements).map { line ->
+            if (line.isBlank()) net.kyori.adventure.text.Component.empty()
+            else net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                .legacyAmpersand()
+                .deserialize(line)
+                .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
+        }
+    }
+
+    fun getMessage(key: String, vararg replacements: Pair<String, Any?>): String {
+        val messages = loadedMessages()
 
         val prefix = messages.getString("prefix", "&8[&6TCP&8]&r ")
         var message = messages.getString(key, "&cMessage not found: $key")!!
@@ -420,7 +551,8 @@ class TrialChamberPro : JavaPlugin() {
         val shouldAddPrefix = !key.contains("list-item") &&
                 !key.contains("header") &&
                 !key.contains("help-") &&
-                !key.contains("boss-bar")
+                !key.contains("boss-bar") &&
+                !key.startsWith("gui.")
 
         val finalMessage = if (shouldAddPrefix) "$prefix$message" else message
 

@@ -3,22 +3,30 @@ package io.github.darkstarworks.trialChamberPro.gui
 import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
+import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import io.github.darkstarworks.trialChamberPro.models.Chamber
+import io.github.darkstarworks.trialChamberPro.models.LootEditorDraft
 import io.github.darkstarworks.trialChamberPro.models.LootItem
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
+/**
+ * Amount editor — adjusts min/max stack range for a single LootItem in a draft.
+ * All strings from `messages.yml` under `gui.amount-editor.*` (v1.3.0).
+ */
 class AmountEditorView(
+    private val plugin: TrialChamberPro,
     private val menu: MenuService,
     private val chamber: Chamber?,
     private val kind: MenuService.LootKind,
     private val poolName: String? = null,
     private val itemIndex: Int,
     private val isWeighted: Boolean,
-    private val draft: LootEditorView.Draft,
+    private val draft: LootEditorDraft,
     private val globalTableName: String? = null
 ) {
     init {
@@ -26,95 +34,52 @@ class AmountEditorView(
             "AmountEditorView requires either a chamber or a globalTableName"
         }
     }
+
     private lateinit var gui: ChestGui
     private lateinit var mainPane: StaticPane
-    private var currentItem: LootItem
-
-    init {
-        val list = if (isWeighted) draft.weighted else draft.guaranteed
-        currentItem = list[itemIndex].copy()
-    }
+    private var currentItem: LootItem = (if (isWeighted) draft.weighted else draft.guaranteed)[itemIndex].copy()
 
     fun build(): ChestGui {
-        gui = ChestGui(3, "Edit Amount: ${currentItem.type.name}")
-
-        // Disable all click and drag operations
-        gui.setOnGlobalClick { event ->
-            event.isCancelled = true
-        }
-        gui.setOnGlobalDrag { event ->
-            event.isCancelled = true
-        }
-
-        // IMPORTANT: add the pane to the GUI before populating it
+        gui = ChestGui(3, GuiText.plain(plugin, "gui.amount-editor.title", "item" to currentItem.type.name))
+        gui.setOnGlobalClick { it.isCancelled = true }
+        gui.setOnGlobalDrag { it.isCancelled = true }
         mainPane = StaticPane(0, 0, 9, 3)
         gui.addPane(mainPane)
         buildContent()
-
         return gui
     }
 
     private fun buildContent() {
         mainPane.clear()
 
-        // Display the item top-center with info
-        val displayItem = createDisplayItem()
-        mainPane.addItem(GuiItem(displayItem) { it.isCancelled = true }, 4, 0)
+        mainPane.addItem(GuiItem(createDisplayItem()) { it.isCancelled = true }, 4, 0)
 
-        // Adjustment buttons on row 2
-        // +-1 button at position 2
-        val adjust1 = createAdjustButton(1)
-        mainPane.addItem(GuiItem(adjust1) { event ->
-            event.isCancelled = true
-            handleAdjustClick(1, event.isLeftClick, event.isRightClick, event.isShiftClick)
-        }, 2, 1)
+        listOf(1, 5, 10).forEachIndexed { i, amount ->
+            mainPane.addItem(GuiItem(createAdjustButton(amount)) { event ->
+                event.isCancelled = true
+                handleAdjustClick(amount, event.isLeftClick, event.isRightClick, event.isShiftClick)
+            }, 2 + i, 1)
+        }
 
-        // +-5 button at position 3
-        val adjust5 = createAdjustButton(5)
-        mainPane.addItem(GuiItem(adjust5) { event ->
-            event.isCancelled = true
-            handleAdjustClick(5, event.isLeftClick, event.isRightClick, event.isShiftClick)
-        }, 3, 1)
-
-        // +-10 button at position 4
-        val adjust10 = createAdjustButton(10)
-        mainPane.addItem(GuiItem(adjust10) { event ->
-            event.isCancelled = true
-            handleAdjustClick(10, event.isLeftClick, event.isRightClick, event.isShiftClick)
-        }, 4, 1)
-
-        // Reset to 1-1 button at position 6
-        val reset = createResetButton()
-        mainPane.addItem(GuiItem(reset) { event ->
+        mainPane.addItem(GuiItem(createResetButton()) { event ->
             event.isCancelled = true
             handleResetClick(event.isLeftClick, event.isRightClick)
         }, 6, 1)
 
-        // Bottom row: Save and Discard
-        val save = ItemStack(Material.GREEN_CONCRETE).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("💾 Save", NamedTextColor.GREEN))
-                lore(listOf(
-                    Component.text("Apply changes and return", NamedTextColor.GRAY)
-                ))
-            }
-        }
-        mainPane.addItem(GuiItem(save) {
-            it.isCancelled = true
-            saveAndReturn(it.whoClicked as Player)
+        mainPane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.GREEN_CONCRETE,
+                "gui.amount-editor.save-name", "gui.amount-editor.save-lore")
+        ) { event ->
+            event.isCancelled = true
+            saveAndReturn(event.whoClicked as Player)
         }, 0, 2)
 
-        val discard = ItemStack(Material.RED_CONCRETE).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("✖ Discard", NamedTextColor.RED))
-                lore(listOf(
-                    Component.text("Cancel changes and return", NamedTextColor.GRAY)
-                ))
-            }
-        }
-        mainPane.addItem(GuiItem(discard) {
-            it.isCancelled = true
-            discardAndReturn(it.whoClicked as Player)
+        mainPane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, Material.RED_CONCRETE,
+                "gui.amount-editor.discard-name", "gui.amount-editor.discard-lore")
+        ) { event ->
+            event.isCancelled = true
+            discardAndReturn(event.whoClicked as Player)
         }, 8, 2)
 
         gui.update()
@@ -122,120 +87,65 @@ class AmountEditorView(
 
     private fun createDisplayItem(): ItemStack {
         val item = ItemStack(currentItem.type)
+        val totalWeight = if (isWeighted) draft.weighted.filter { it.enabled }.sumOf { it.weight } else 0.0
 
-        // Calculate chance percentage if weighted
-        val totalWeight = if (isWeighted) {
-            draft.weighted.filter { it.enabled }.sumOf { it.weight }
-        } else {
-            0.0
+        val lore = mutableListOf<Component>()
+        lore += plugin.getGuiText("gui.amount-editor.display-amount",
+            "min" to currentItem.amountMin, "max" to currentItem.amountMax)
+        if (isWeighted && totalWeight > 0.0 && currentItem.enabled) {
+            val percentage = (currentItem.weight / totalWeight) * 100.0
+            lore += plugin.getGuiText("gui.amount-editor.display-chance",
+                "percent" to String.format("%.1f", percentage))
         }
+        lore += plugin.getGuiText(
+            if (currentItem.enabled) "gui.amount-editor.display-enabled" else "gui.amount-editor.display-disabled"
+        )
 
         item.itemMeta = item.itemMeta?.apply {
-            displayName(Component.text(currentItem.type.name, NamedTextColor.AQUA))
-
-            val lore = mutableListOf<Component>()
-            lore += Component.text("Amount: ${currentItem.amountMin}-${currentItem.amountMax}", NamedTextColor.YELLOW)
-
-            if (isWeighted && totalWeight > 0.0 && currentItem.enabled) {
-                val percentage = (currentItem.weight / totalWeight) * 100.0
-                lore += Component.text("Chance: ${String.format("%.1f", percentage)}%", NamedTextColor.YELLOW)
-            }
-
-            lore += Component.text(
-                if (currentItem.enabled) "✓ Enabled" else "✗ Disabled",
-                if (currentItem.enabled) NamedTextColor.GREEN else NamedTextColor.RED
-            )
-
+            displayName(plugin.getGuiText("gui.amount-editor.display-name", "item" to currentItem.type.name))
             lore(lore)
         }
         return item
     }
 
     private fun createAdjustButton(amount: Int): ItemStack {
-        val item = ItemStack(Material.YELLOW_CONCRETE)
-        item.itemMeta = item.itemMeta?.apply {
-            displayName(Component.text("Adjust Amount", NamedTextColor.GOLD))
-            lore(listOf(
-                Component.text("", NamedTextColor.GRAY),
-                Component.text("Left: Minimum +$amount", NamedTextColor.AQUA),
-                Component.text("Right: Minimum -$amount", NamedTextColor.AQUA),
-                Component.text("", NamedTextColor.GRAY),
-                Component.text("Shift + Left: Maximum +$amount", NamedTextColor.LIGHT_PURPLE),
-                Component.text("Shift + Right: Maximum -$amount", NamedTextColor.LIGHT_PURPLE)
-            ))
-        }
-        return item
+        return GuiComponents.infoItem(plugin, Material.YELLOW_CONCRETE,
+            "gui.amount-editor.adjust-name", "gui.amount-editor.adjust-lore",
+            "amount" to amount)
     }
 
     private fun createResetButton(): ItemStack {
-        val item = ItemStack(Material.CYAN_CONCRETE)
-        item.itemMeta = item.itemMeta?.apply {
-            displayName(Component.text("Reset to drop only 1", NamedTextColor.DARK_AQUA))
-            lore(listOf(
-                Component.text("", NamedTextColor.GRAY),
-                Component.text("Left: Set Minimum to 1", NamedTextColor.AQUA),
-                Component.text("Right: Set Maximum to 1", NamedTextColor.AQUA)
-            ))
-        }
-        return item
+        return GuiComponents.infoItem(plugin, Material.CYAN_CONCRETE,
+            "gui.amount-editor.reset-name", "gui.amount-editor.reset-lore")
     }
 
     private fun handleAdjustClick(amount: Int, left: Boolean, right: Boolean, shift: Boolean) {
         when {
-            shift && left -> {
-                // Increase maximum
-                currentItem = currentItem.copy(
-                    amountMax = (currentItem.amountMax + amount).coerceIn(1, 64)
-                )
-            }
-            shift && right -> {
-                // Decrease maximum (but not below minimum)
-                currentItem = currentItem.copy(
-                    amountMax = (currentItem.amountMax - amount).coerceIn(currentItem.amountMin, 64)
-                )
-            }
-            left -> {
-                // Increase minimum (but not above maximum)
-                currentItem = currentItem.copy(
-                    amountMin = (currentItem.amountMin + amount).coerceIn(1, currentItem.amountMax)
-                )
-            }
-            right -> {
-                // Decrease minimum
-                currentItem = currentItem.copy(
-                    amountMin = (currentItem.amountMin - amount).coerceIn(1, 64)
-                )
-            }
+            shift && left -> currentItem = currentItem.copy(
+                amountMax = (currentItem.amountMax + amount).coerceIn(1, 64))
+            shift && right -> currentItem = currentItem.copy(
+                amountMax = (currentItem.amountMax - amount).coerceIn(currentItem.amountMin, 64))
+            left -> currentItem = currentItem.copy(
+                amountMin = (currentItem.amountMin + amount).coerceIn(1, currentItem.amountMax))
+            right -> currentItem = currentItem.copy(
+                amountMin = (currentItem.amountMin - amount).coerceIn(1, 64))
         }
-
         buildContent()
     }
 
     private fun handleResetClick(left: Boolean, right: Boolean) {
         when {
-            left -> {
-                // Set minimum to 1
-                currentItem = currentItem.copy(amountMin = 1)
-            }
-            right -> {
-                // Set maximum to 1
-                currentItem = currentItem.copy(
-                    amountMax = 1,
-                    amountMin = currentItem.amountMin.coerceAtMost(1)
-                )
-            }
+            left -> currentItem = currentItem.copy(amountMin = 1)
+            right -> currentItem = currentItem.copy(
+                amountMax = 1, amountMin = currentItem.amountMin.coerceAtMost(1))
         }
-
         buildContent()
     }
 
     private fun saveAndReturn(player: Player) {
-        // Update the item in the draft
         val list = if (isWeighted) draft.weighted else draft.guaranteed
         list[itemIndex] = currentItem
         draft.dirty = true
-
-        // Save the draft and return to loot editor
         if (chamber != null) {
             menu.saveDraft(player, chamber, kind, poolName, draft)
             menu.openLootEditor(player, chamber, kind, poolName)
@@ -246,11 +156,7 @@ class AmountEditorView(
     }
 
     private fun discardAndReturn(player: Player) {
-        // Just return to loot editor without saving
-        if (chamber != null) {
-            menu.openLootEditor(player, chamber, kind, poolName)
-        } else {
-            menu.openGlobalLootEditor(player, globalTableName!!, poolName)
-        }
+        if (chamber != null) menu.openLootEditor(player, chamber, kind, poolName)
+        else menu.openGlobalLootEditor(player, globalTableName!!, poolName)
     }
 }

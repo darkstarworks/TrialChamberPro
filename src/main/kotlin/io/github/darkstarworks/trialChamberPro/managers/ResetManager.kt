@@ -1,6 +1,8 @@
 package io.github.darkstarworks.trialChamberPro.managers
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.api.events.ChamberResetCompleteEvent
+import io.github.darkstarworks.trialChamberPro.api.events.ChamberResetEvent
 import io.github.darkstarworks.trialChamberPro.models.Chamber
 import io.github.darkstarworks.trialChamberPro.utils.BlockRestorer
 import io.github.darkstarworks.trialChamberPro.utils.MessageUtil
@@ -67,7 +69,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
         if (now >= nextResetTime) {
             // Reset immediately
-            resetChamber(chamber)
+            resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED)
         } else {
             // Schedule future reset
             val delayMs = nextResetTime - now
@@ -76,7 +78,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 scheduleWarnings(chamber, delayMs)
 
                 delay(delayMs)
-                resetChamber(chamber)
+                resetChamber(chamber, reason = ChamberResetEvent.Reason.SCHEDULED)
             }
 
             scheduledResets[chamber.id] = resetJob
@@ -127,8 +129,23 @@ class ResetManager(private val plugin: TrialChamberPro) {
      * @param chamber The chamber to reset
      * @param initiatingPlayer Optional player who initiated the reset (for WorldEdit undo support)
      */
-    suspend fun resetChamber(chamber: Chamber, initiatingPlayer: Player? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun resetChamber(
+        chamber: Chamber,
+        initiatingPlayer: Player? = null,
+        reason: ChamberResetEvent.Reason = ChamberResetEvent.Reason.MANUAL
+    ): Boolean = withContext(Dispatchers.IO) {
         plugin.logger.info("Resetting chamber: ${chamber.name}")
+
+        // Fire pre-reset event; listeners may abort.
+        val preEvent = ChamberResetEvent(chamber, reason, initiatingPlayer)
+        plugin.server.pluginManager.callEvent(preEvent)
+        if (preEvent.isCancelled) {
+            plugin.logger.info("Chamber reset cancelled by listener: ${chamber.name}")
+            return@withContext false
+        }
+
+        val resetStart = System.currentTimeMillis()
+        var blocksRestored = 0
 
         try {
             // Cancel any scheduled resets/warnings
@@ -153,6 +170,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 // finishes, so spawner reset (Step 4) and vault cooldown clear
                 // (Step 6) are guaranteed to act on the restored blocks.
                 restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
+                blocksRestored = chamber.getVolume()
             } else {
                 plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
             }
@@ -182,6 +200,12 @@ class ResetManager(private val plugin: TrialChamberPro) {
             })
 
             plugin.logger.info("Chamber ${chamber.name} reset successfully")
+
+            // Fire post-reset event for downstream consumers.
+            val durationMs = System.currentTimeMillis() - resetStart
+            plugin.server.pluginManager.callEvent(
+                ChamberResetCompleteEvent(chamber, durationMs, blocksRestored)
+            )
             true
 
         } catch (e: Exception) {
