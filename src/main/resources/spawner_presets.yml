@@ -33,8 +33,8 @@ presets:
   # datapack registered.
   #
   # super_zombie:
-  #   normal-config: "darkside_trial:basic_zombie"
-  #   ominous-config: "darkside_trial:basic_zombie_o"
+  #   normal-config: "namespace:basic_zombie"
+  #   ominous-config: "namespace:basic_zombie_o"
   #   required-player-range: 14
   #   target-cooldown-length: 36000   # ticks (30 min)
   #   display-name: "&6Super Zombie Spawner"
