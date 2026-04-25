@@ -6,6 +6,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.entity.CreatureSpawnEvent
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.player.PlayerMoveEvent
@@ -195,6 +196,18 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
 
         // Drop any boss bars for spawners the player has walked away from.
         plugin.spawnerWaveManager.removePlayerFromDistantWaves(player, removeDistance)
+    }
+
+    /**
+     * Tears down any active wave when its trial spawner is broken — otherwise the boss bar
+     * lingers (its tracked mobs may still be alive elsewhere, so it never satisfies the
+     * normal completion conditions).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onBlockBreak(event: BlockBreakEvent) {
+        if (!plugin.isReady) return
+        if (event.block.type != Material.TRIAL_SPAWNER) return
+        plugin.spawnerWaveManager.cancelWaveAt(event.block.location)
     }
 
     /**
