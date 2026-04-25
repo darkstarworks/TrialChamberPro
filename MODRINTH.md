@@ -2,13 +2,14 @@
 
 # TrialChamberPro
 
-### Recently improved
-- **Plug-and-play auto-discovery** — the plugin now finds and registers every natural Trial Chamber by itself. No WorldEdit, no commands.
-- **GUI-editable loot tables** — edit your default loot tables from `/tcp menu` and changes apply to every chamber using that table. No YAML editing required.
-- **Custom plugin items** — drop Nexo, ItemsAdder, Oraxen, CraftEngine, or MythicCrucible items from vaults, plus `custom-model-data` support for resource pack items.
-- **Fully translatable** — every user-facing string lives in `messages.yml`. Localize to any language.
-- **Minecraft 26.x support** — use the `-mc26` version (Paper 26.1.2+).
-- Better boss bars, fewer bugs, tighter GUIs, and much more.
+### What's new in 1.3.0
+
+- **Custom mobs from your favorite plugin.** Trial spawners can now pull mobs from MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, or Citizens NPCs — configured per chamber, per wave type. Boss bars, cooldowns, and key drops keep working exactly the same; only the mobs change. If the upstream plugin isn't installed, that chamber quietly falls back to vanilla.
+- **The whole admin GUI is translatable now.** Every name, lore line, and button across all 18 admin views lives in `messages.yml` under a `gui.*` section. Translate once, no source edits, no resource pack required.
+- **An events API for plugin developers.** Hook into chamber resets, vault opens, wave completion, auto-discovery, and trial-key drops with proper Bukkit events — useful for stat tracking, custom rewards, webhooks, or world-restricted auto-discovery rules. Cancellable where it makes sense. Documented at `docs/api/events.md`.
+- **Polish you'll notice.** Empty admin menus now show a localized hint instead of staring back blankly. Out-of-range config values get clamped at startup with a friendly warning rather than crashing later. Held GUI sessions clean themselves up when players quit.
+
+Plus everything that landed in the recent 1.2.x line: **plug-and-play auto-discovery** of natural chambers, **GUI-editable loot tables**, **custom plugin items** (Nexo, ItemsAdder, Oraxen, CraftEngine, MythicCrucible), and **Minecraft 26.x support** via the `-mc26` build.
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 

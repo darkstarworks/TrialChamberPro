@@ -131,6 +131,20 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.admin.mobs`
+**Description:** Configure per-chamber custom mob providers *(1.3.0+)*
+**Default:** Operators only
+**Allows:**
+- `/tcp mobs providers` - List registered providers and availability
+- `/tcp mobs <chamber> provider <id|vanilla|none>` - Set the provider for a chamber
+- `/tcp mobs <chamber> add normal|ominous <mobId>` - Add a mob id to the chamber's pool
+- `/tcp mobs <chamber> remove normal|ominous <mobId>` - Remove a mob id
+- `/tcp mobs <chamber> list` - Show the chamber's current config
+
+**Use this for:** Admins who manage MythicMobs / EliteMobs / EcoMobs / LevelledMobs / InfernalMobs / Citizens integrations on their chambers. See [Custom Mobs](../configuration/custom-mobs.md) for the per-provider mob-id format.
+
+---
+
 #### `tcp.admin.stats`
 **Description:** View other players' statistics
 **Default:** Operators only

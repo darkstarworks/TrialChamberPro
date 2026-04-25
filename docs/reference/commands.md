@@ -27,6 +27,11 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp delete <chamber>` | Delete a chamber | `tcp.admin.generate` |
 | `/tcp loot set <chamber> <normal\|ominous> <table>` | Override a chamber's loot table | `tcp.admin.loot` |
 | `/tcp loot clear <chamber> [normal\|ominous\|all]` | Remove per-chamber loot override | `tcp.admin.loot` |
+| `/tcp mobs providers` | List registered mob providers and their availability | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> provider <id\|vanilla\|none>` | Set a chamber's custom mob provider | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> add normal\|ominous <mobId>` | Add a mob id to a chamber's pool | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> remove normal\|ominous <mobId>` | Remove a mob id from a chamber's pool | `tcp.admin.mobs` |
+| `/tcp mobs <chamber> list` | Show a chamber's mob provider config | `tcp.admin.mobs` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |

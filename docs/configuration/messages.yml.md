@@ -10,6 +10,12 @@ After making changes, reload with `/tcp reload`
 
 </div>
 
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Translating the admin GUI?** As of v1.3.0 every name, lore line, and button label across all 18 admin GUI views also lives here, under a nested `gui.*` section (~330 keys). For the GUI-specific translation conventions — section layout, shared toggle templates, the `gui.common.*` reuse pattern — see the [Localization](localization.md) guide.
+
+</div>
+
 ---
 
 ## 🎨 Color Codes & Formatting
