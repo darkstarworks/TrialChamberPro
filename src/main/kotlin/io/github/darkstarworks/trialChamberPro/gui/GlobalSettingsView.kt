@@ -4,192 +4,101 @@ import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
-import org.bukkit.Material
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
 
 /**
- * Global settings view - toggle various plugin settings at runtime.
- * Changes are saved to config.yml immediately.
+ * Global settings view — toggle plugin features at runtime.
+ * All strings from `messages.yml` under `gui.global-settings.*` (v1.3.0).
  */
 class GlobalSettingsView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService
 ) {
+    private data class ToggleDef(
+        val configPath: String,
+        val labelKey: String,
+        val descKey: String,
+        val x: Int,
+        val y: Int
+    )
+
+    private val toggles = listOf(
+        ToggleDef("reset.clear-ground-items",
+            "gui.global-settings.clear-ground-items-label",
+            "gui.global-settings.clear-ground-items-desc", 1, 1),
+        ToggleDef("reset.remove-spawner-mobs",
+            "gui.global-settings.remove-spawner-mobs-label",
+            "gui.global-settings.remove-spawner-mobs-desc", 3, 1),
+        ToggleDef("reset.reset-trial-spawners",
+            "gui.global-settings.reset-trial-spawners-label",
+            "gui.global-settings.reset-trial-spawners-desc", 5, 1),
+        ToggleDef("reset.reset-vault-cooldowns",
+            "gui.global-settings.reset-vault-cooldowns-label",
+            "gui.global-settings.reset-vault-cooldowns-desc", 7, 1),
+        ToggleDef("spawner-waves.enabled",
+            "gui.global-settings.spawner-waves-label",
+            "gui.global-settings.spawner-waves-desc", 1, 2),
+        ToggleDef("spawner-waves.show-boss-bar",
+            "gui.global-settings.wave-boss-bar-label",
+            "gui.global-settings.wave-boss-bar-desc", 3, 2),
+        ToggleDef("spectator-mode.enabled",
+            "gui.global-settings.spectator-mode-label",
+            "gui.global-settings.spectator-mode-desc", 5, 2),
+        ToggleDef("statistics.enabled",
+            "gui.global-settings.statistics-label",
+            "gui.global-settings.statistics-desc", 7, 2),
+        ToggleDef("loot.apply-luck-effect",
+            "gui.global-settings.luck-effect-label",
+            "gui.global-settings.luck-effect-desc", 3, 3),
+        ToggleDef("vaults.per-player-loot",
+            "gui.global-settings.per-player-loot-label",
+            "gui.global-settings.per-player-loot-desc", 5, 3),
+    )
+
     fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, "Global Settings")
+        val gui = ChestGui(6, GuiText.plain(plugin, "gui.global-settings.title"))
         val pane = StaticPane(0, 0, 9, 6)
 
-        // Row 0: Header
-        pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
+        pane.addItem(GuiItem(
+            GuiComponents.infoItem(plugin, org.bukkit.Material.COMMAND_BLOCK,
+                "gui.global-settings.header-name", "gui.global-settings.header-lore")
+        ) { it.isCancelled = true }, 4, 0)
 
-        // Row 1: Reset Settings
-        pane.addItem(createToggleItem(
-            "reset.clear-ground-items",
-            "Clear Ground Items",
-            "Remove dropped items on reset",
-            Material.HOPPER, 1, 1
-        ))
-
-        pane.addItem(createToggleItem(
-            "reset.remove-spawner-mobs",
-            "Remove Spawner Mobs",
-            "Remove mobs from spawners on reset",
-            Material.ZOMBIE_HEAD, 3, 1
-        ))
-
-        pane.addItem(createToggleItem(
-            "reset.reset-trial-spawners",
-            "Reset Trial Spawners",
-            "Clear tracked players from spawners",
-            Material.SPAWNER, 5, 1
-        ))
-
-        pane.addItem(createToggleItem(
-            "reset.reset-vault-cooldowns",
-            "Reset Vault Cooldowns",
-            "Clear vault locks on chamber reset",
-            Material.VAULT, 7, 1
-        ))
-
-        // Row 2: Feature Settings
-        pane.addItem(createToggleItem(
-            "spawner-waves.enabled",
-            "Spawner Waves",
-            "Track spawner wave progress",
-            Material.IRON_SWORD, 1, 2
-        ))
-
-        pane.addItem(createToggleItem(
-            "spawner-waves.show-boss-bar",
-            "Wave Boss Bar",
-            "Show boss bar during waves",
-            Material.DRAGON_BREATH, 3, 2
-        ))
-
-        pane.addItem(createToggleItem(
-            "spectator-mode.enabled",
-            "Spectator Mode",
-            "Allow spectating after death",
-            Material.ENDER_EYE, 5, 2
-        ))
-
-        pane.addItem(createToggleItem(
-            "statistics.enabled",
-            "Statistics",
-            "Track player statistics",
-            Material.WRITABLE_BOOK, 7, 2
-        ))
-
-        // Row 3: Loot Settings
-        pane.addItem(createToggleItem(
-            "loot.apply-luck-effect",
-            "Apply Luck Effect",
-            "Luck potion affects loot rolls",
-            Material.RABBIT_FOOT, 3, 3
-        ))
-
-        pane.addItem(createToggleItem(
-            "vaults.per-player-loot",
-            "Per-Player Loot",
-            "Each player gets their own loot",
-            Material.CHEST, 5, 3
-        ))
-
-        // Row 5: Navigation
-        val backItem = ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Back to Settings", NamedTextColor.YELLOW))
-            }
+        for (def in toggles) {
+            val enabled = plugin.config.getBoolean(def.configPath, true)
+            pane.addItem(GuiItem(
+                GuiComponents.toggleItem(plugin, enabled, def.labelKey, def.descKey)
+            ) { event ->
+                event.isCancelled = true
+                toggleSetting(def, event.whoClicked as Player)
+            }, def.x, def.y)
         }
-        pane.addItem(GuiItem(backItem) { event ->
-            event.isCancelled = true
+
+        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-settings") {
             menu.openSettingsMenu(player)
         }, 0, 5)
-
-        val closeItem = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Close", NamedTextColor.RED))
-            }
-        }
-        pane.addItem(GuiItem(closeItem) { event ->
-            event.isCancelled = true
-            player.closeInventory()
-        }, 8, 5)
+        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
         gui.setOnGlobalDrag { it.isCancelled = true }
-
         return gui
     }
 
-    private fun createHeaderItem(): ItemStack {
-        return ItemStack(Material.COMMAND_BLOCK).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Global Settings", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Toggle plugin features", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Click items to toggle on/off", NamedTextColor.YELLOW),
-                    Component.text("Changes are saved immediately", NamedTextColor.YELLOW)
-                ))
-            }
-        }
-    }
-
-    private fun createToggleItem(
-        configPath: String,
-        name: String,
-        description: String,
-        baseMaterial: Material,
-        x: Int,
-        y: Int
-    ): Triple<GuiItem, Int, Int> {
-        val enabled = plugin.config.getBoolean(configPath, true)
-        val material = if (enabled) Material.LIME_WOOL else Material.RED_WOOL
-
-        val item = ItemStack(material).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text(name, if (enabled) NamedTextColor.GREEN else NamedTextColor.RED)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text(description, NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Status: ${if (enabled) "Enabled" else "Disabled"}",
-                        if (enabled) NamedTextColor.GREEN else NamedTextColor.RED),
-                    Component.empty(),
-                    Component.text("Click to toggle", NamedTextColor.YELLOW)
-                ))
-            }
-        }
-
-        return Triple(GuiItem(item) { event ->
-            event.isCancelled = true
-            toggleSetting(configPath, event.whoClicked as Player)
-        }, x, y)
-    }
-
-    private fun StaticPane.addItem(triple: Triple<GuiItem, Int, Int>) {
-        this.addItem(triple.first, triple.second, triple.third)
-    }
-
-    private fun toggleSetting(configPath: String, player: Player) {
-        val currentValue = plugin.config.getBoolean(configPath, true)
-        val newValue = !currentValue
-
-        plugin.config.set(configPath, newValue)
+    private fun toggleSetting(def: ToggleDef, player: Player) {
+        val newValue = !plugin.config.getBoolean(def.configPath, true)
+        plugin.config.set(def.configPath, newValue)
         plugin.saveConfig()
 
-        val settingName = configPath.split(".").last().replace("-", " ").replaceFirstChar { it.uppercase() }
-        val valueText = if (newValue) plugin.getMessage("gui-setting-enabled") else plugin.getMessage("gui-setting-disabled")
-        player.sendMessage(plugin.getMessage("gui-setting-toggled", "setting" to settingName, "value" to valueText))
+        val settingLabel = plugin.getMessage(def.labelKey)
+        val valueText = plugin.getMessage(
+            if (newValue) "gui.common.setting-enabled" else "gui.common.setting-disabled"
+        )
+        player.sendMessage(plugin.getMessage("gui.common.setting-toggled",
+            "setting" to settingLabel, "value" to valueText))
 
-        // Refresh the view
         menu.openGlobalSettings(player)
     }
 }

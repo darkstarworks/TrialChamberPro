@@ -14,13 +14,15 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val subcommands = listOf(
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
-        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot"
+        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs"
     )
 
     private val snapshotActions = listOf("create", "restore")
     private val statTypes = listOf("chambers", "normal", "ominous", "mobs", "time")
     private val lootActions = listOf("set", "clear", "info", "list")
     private val vaultTypes = listOf("normal", "ominous")
+    private val mobsActions = listOf("provider", "add", "remove", "list")
+    private val mobsWaveTypes = listOf("normal", "ominous")
 
     override fun onTabComplete(
         sender: CommandSender,
@@ -62,6 +64,10 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         // Loot subcommands
                         lootActions.filter { it.startsWith(args[1].lowercase()) }
                     }
+                    "mobs" -> {
+                        // Chamber name or the literal "providers"
+                        (getChamberNames() + "providers").filter { it.startsWith(args[1], ignoreCase = true) }
+                    }
                     else -> emptyList()
                 }
             }
@@ -89,6 +95,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             else -> emptyList()
                         }
                     }
+                    "mobs" -> {
+                        // /tcp mobs <chamber> <action>
+                        if (args[1].equals("providers", ignoreCase = true)) emptyList()
+                        else mobsActions.filter { it.startsWith(args[2].lowercase()) }
+                    }
                     else -> emptyList()
                 }
             }
@@ -112,6 +123,20 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         when (args[1].lowercase()) {
                             "set" -> vaultTypes.filter { it.startsWith(args[3].lowercase()) }
                             "clear" -> (vaultTypes + "all").filter { it.startsWith(args[3].lowercase()) }
+                            else -> emptyList()
+                        }
+                    }
+                    "mobs" -> {
+                        // /tcp mobs <chamber> <action> <arg>
+                        when (args[2].lowercase()) {
+                            "provider" -> {
+                                val providers = try {
+                                    plugin.trialMobProviderRegistry.all().map { it.id }
+                                } catch (_: Exception) { emptyList() }
+                                (providers + listOf("vanilla", "none"))
+                                    .filter { it.startsWith(args[3].lowercase()) }
+                            }
+                            "add", "remove" -> mobsWaveTypes.filter { it.startsWith(args[3].lowercase()) }
                             else -> emptyList()
                         }
                     }

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.darkstarworks"
-version = "1.2.29"
+version = "1.3.0"
 
 repositories {
     mavenCentral()
@@ -62,6 +62,8 @@ dependencies {
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("io.mockk:mockk:1.13.8")
+    // Paper API on the test classpath so unit tests can mock Bukkit types directly.
+    testImplementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
 }
 
 tasks {

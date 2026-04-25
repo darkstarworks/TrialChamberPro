@@ -12,11 +12,18 @@
 * [⚙️ config.yml](configuration/config.yml.md)
 * [🎲 loot.yml](configuration/loot.yml.md)
 * [💬 messages.yml](configuration/messages.yml.md)
+* [🌐 Localization](configuration/localization.md)
+* [🧟 Custom Mobs](configuration/custom-mobs.md)
 
 ## Reference
 
 * [📝 Commands](reference/commands.md)
 * [🔐 Permissions](reference/permissions.md)
+
+## API
+
+* [📡 Events](api/events.md)
+* [🧟 Custom Mob Providers](api/mob-providers.md)
 
 ## Troubleshooting
 

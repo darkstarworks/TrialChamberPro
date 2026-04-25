@@ -2,11 +2,13 @@
 
 You've installed the plugin and created your first chamber. Now let's tune the basics to match your server's playstyle. This is a quick-start guide—for deep dives, check the full [config.yml reference](../configuration/config.yml.md).
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Config location:** `plugins/TrialChamberPro/config.yml`
 
 After editing, run `/tcp reload` to apply changes (no restart needed for most settings!)
-{% endhint %}
+
+</div>
 
 ---
 
@@ -34,9 +36,11 @@ global:
 - **Medium activity** (20-50 players): 24-48 hours
 - **Small/casual** (<20 players): 48-168 hours
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Start longer, shorten later!** It's easier to speed up resets than deal with player complaints about too-frequent changes.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -132,9 +136,11 @@ protection:
   # Or keep enabled and use tcp.bypass.protection permission
 ```
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Don't disable protection on public survival servers!** Players will grief your chambers. Use `tcp.bypass.protection` permission for staff instead.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -228,9 +234,11 @@ No warnings (surprise resets):
 reset-warning-times: []
 ```
 
-{% hint style="info" %}
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Warnings are in seconds.** `300` = 5 minutes, `60` = 1 minute, `30` = 30 seconds.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -326,9 +334,11 @@ database:
   pool-size: 10
 ```
 
-{% hint style="warning" %}
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Database changes require a full restart,** not just `/tcp reload`!
-{% endhint %}
+
+</div>
 
 **When to use MySQL:**
 - Running BungeeCord/Velocity with multiple servers
@@ -466,9 +476,11 @@ Most settings apply immediately. Exceptions:
 - **Database settings** require a full restart
 - **Chamber-specific intervals** affect new resets, not current timers
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Backup before major changes!** Copy your `plugins/TrialChamberPro/` folder before experimenting with config.
-{% endhint %}
+
+</div>
 
 ---
 
@@ -495,27 +507,35 @@ Increase `blocks-per-tick` gradually (500 → 750 → 1000) and test for lag. Al
 
 Now that you've configured the basics, dive deeper:
 
-{% content-ref url="../configuration/config.yml.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/config.yml.md">
+
 [config.yml.md](../configuration/config.yml.md)
-{% endcontent-ref %}
+
+</div>
 
 Complete reference for every config option.
 
-{% content-ref url="../configuration/loot.yml.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/loot.yml.md">
+
 [loot.yml.md](../configuration/loot.yml.md)
-{% endcontent-ref %}
+
+</div>
 
 Customize what players get from vaults.
 
-{% content-ref url="../configuration/messages.yml.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../configuration/messages.yml.md">
+
 [messages.yml.md](../configuration/messages.yml.md)
-{% endcontent-ref %}
+
+</div>
 
 Change all player-facing messages to match your server's style.
 
-{% content-ref url="../guides/automatic-resets.md" %}
+<div data-gb-custom-block data-tag="content-ref" data-url="../guides/automatic-resets.md">
+
 [automatic-resets.md](../guides/automatic-resets.md)
-{% endcontent-ref %}
+
+</div>
 
 Deep dive into how resets work and advanced scheduling.
 
@@ -523,20 +543,28 @@ Deep dive into how resets work and advanced scheduling.
 
 ## 💡 Pro Tips
 
-{% hint style="success" %}
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Test in a dev environment first!** Create a test chamber and experiment with settings before applying to production.
-{% endhint %}
 
-{% hint style="info" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
 **Start conservative with cooldowns and intervals.** You can always make them shorter based on player feedback. Going the opposite direction causes complaints!
-{% endhint %}
 
-{% hint style="warning" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="warning">
+
 **Watch your server TPS during resets.** If TPS drops significantly, lower `blocks-per-tick` or increase `reset-warning-times` to spread resets out.
-{% endhint %}
 
-{% hint style="success" %}
+</div>
+
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
 **Join the discussion!** Check [GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues) for community config tips and common setups.
-{% endhint %}
+
+</div>
 
 Happy configuring! ⚙️

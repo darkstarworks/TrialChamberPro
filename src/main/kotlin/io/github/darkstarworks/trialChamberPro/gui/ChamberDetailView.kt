@@ -4,19 +4,17 @@ import com.github.stefvanschie.inventoryframework.gui.GuiItem
 import com.github.stefvanschie.inventoryframework.gui.type.ChestGui
 import com.github.stefvanschie.inventoryframework.pane.StaticPane
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiComponents
+import io.github.darkstarworks.trialChamberPro.gui.components.GuiText
 import io.github.darkstarworks.trialChamberPro.models.Chamber
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.format.TextDecoration
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import java.util.concurrent.TimeUnit
 
 /**
- * Chamber detail view - comprehensive management screen for a single chamber.
- * Provides access to loot editing, settings, vault management, and reset controls.
- * Replaces the old LootTypeSelectView with expanded functionality.
+ * Chamber detail view — central management screen for a single chamber.
+ * All strings from `messages.yml` under `gui.chamber-detail.*` (v1.3.0).
  */
 class ChamberDetailView(
     private val plugin: TrialChamberPro,
@@ -24,13 +22,11 @@ class ChamberDetailView(
     private val chamber: Chamber
 ) {
     fun build(player: Player): ChestGui {
-        val gui = ChestGui(6, "Chamber: ${chamber.name}")
+        val gui = ChestGui(6, GuiText.plain(plugin, "gui.chamber-detail.title", "chamber" to chamber.name))
         val pane = StaticPane(0, 0, 9, 6)
 
-        // Row 0: Chamber info header
         pane.addItem(GuiItem(createChamberInfoItem()) { it.isCancelled = true }, 4, 0)
 
-        // Row 1: Loot editing (Normal, Ominous, Loot Overrides)
         pane.addItem(GuiItem(createNormalLootItem()) { event ->
             event.isCancelled = true
             handleLootKindClick(player, MenuService.LootKind.NORMAL)
@@ -46,7 +42,6 @@ class ChamberDetailView(
             menu.openChamberSettings(player, chamber)
         }, 6, 1)
 
-        // Row 2: Chamber settings and vault management
         pane.addItem(GuiItem(createSettingsItem()) { event ->
             event.isCancelled = true
             menu.openChamberSettings(player, chamber)
@@ -57,12 +52,11 @@ class ChamberDetailView(
             menu.openVaultManagement(player, chamber)
         }, 4, 2)
 
-        pane.addItem(GuiItem(createTeleportItem(player)) { event ->
+        pane.addItem(GuiItem(createTeleportItem()) { event ->
             event.isCancelled = true
             handleTeleport(player, event.isLeftClick, event.isRightClick)
         }, 6, 2)
 
-        // Row 3: Reset and exit controls
         pane.addItem(GuiItem(createResetChamberItem()) { event ->
             event.isCancelled = true
             handleResetChamberClick(player, event.isLeftClick, event.isRightClick, event.isShiftClick)
@@ -78,31 +72,14 @@ class ChamberDetailView(
             handleSnapshotClick(player, event.isLeftClick, event.isShiftClick)
         }, 6, 3)
 
-        // Row 5: Navigation
-        val backItem = ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Back to Chambers", NamedTextColor.YELLOW))
-            }
-        }
-        pane.addItem(GuiItem(backItem) { event ->
-            event.isCancelled = true
+        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chambers") {
             menu.openChamberList(player)
         }, 0, 5)
-
-        val closeItem = ItemStack(Material.BARRIER).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Close", NamedTextColor.RED))
-            }
-        }
-        pane.addItem(GuiItem(closeItem) { event ->
-            event.isCancelled = true
-            player.closeInventory()
-        }, 8, 5)
+        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
         gui.setOnGlobalDrag { it.isCancelled = true }
-
         return gui
     }
 
@@ -113,230 +90,125 @@ class ChamberDetailView(
         val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
         val timeUntilMs = plugin.resetManager.getTimeUntilReset(chamber)
 
-        return ItemStack(Material.LODESTONE).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text(chamber.name, NamedTextColor.AQUA)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("World: ${chamber.world}", NamedTextColor.GRAY),
-                    Component.text("Bounds: (${chamber.minX},${chamber.minY},${chamber.minZ})", NamedTextColor.GRAY),
-                    Component.text("     to (${chamber.maxX},${chamber.maxY},${chamber.maxZ})", NamedTextColor.GRAY),
-                    Component.text("Volume: ${chamber.getVolume()} blocks", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Players Inside: $playersInside", NamedTextColor.YELLOW),
-                    Component.text("Vaults: $normalCount Normal, $ominousCount Ominous", NamedTextColor.YELLOW),
-                    Component.text("Reset in: ${formatDuration(timeUntilMs)}", NamedTextColor.YELLOW)
-                ))
-            }
-        }
+        return GuiComponents.infoItem(
+            plugin, Material.LODESTONE,
+            "gui.chamber-detail.info-name", "gui.chamber-detail.info-lore",
+            "chamber" to chamber.name,
+            "world" to chamber.world,
+            "minX" to chamber.minX, "minY" to chamber.minY, "minZ" to chamber.minZ,
+            "maxX" to chamber.maxX, "maxY" to chamber.maxY, "maxZ" to chamber.maxZ,
+            "volume" to chamber.getVolume(),
+            "inside" to playersInside,
+            "normal" to normalCount, "ominous" to ominousCount,
+            "reset" to formatDuration(timeUntilMs)
+        )
     }
 
     private fun createNormalLootItem(): ItemStack {
         val tableName = "chamber-${chamber.name.lowercase()}"
         val tableExists = plugin.lootManager.getTable(tableName) != null
-
-        return ItemStack(Material.GREEN_WOOL).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Normal Loot", NamedTextColor.GREEN)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Edit normal vault loot table", NamedTextColor.GRAY),
-                    Component.empty(),
-                    if (tableExists) {
-                        Component.text("Table: $tableName", NamedTextColor.YELLOW)
-                    } else {
-                        Component.text("No custom table (using default)", NamedTextColor.GRAY)
-                    },
-                    Component.empty(),
-                    Component.text("Click to edit", NamedTextColor.GREEN)
-                ))
-            }
-        }
+        val loreKey = if (tableExists)
+            "gui.chamber-detail.normal-loot-lore-custom" else "gui.chamber-detail.normal-loot-lore-default"
+        return GuiComponents.infoItem(
+            plugin, Material.GREEN_WOOL,
+            "gui.chamber-detail.normal-loot-name", loreKey,
+            "table" to tableName
+        )
     }
 
     private fun createOminousLootItem(): ItemStack {
         val tableName = "ominous-${chamber.name.lowercase()}"
         val tableExists = plugin.lootManager.getTable(tableName) != null
-
-        return ItemStack(Material.PURPLE_WOOL).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Ominous Loot", NamedTextColor.DARK_PURPLE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Edit ominous vault loot table", NamedTextColor.GRAY),
-                    Component.empty(),
-                    if (tableExists) {
-                        Component.text("Table: $tableName", NamedTextColor.YELLOW)
-                    } else {
-                        Component.text("No custom table (using default)", NamedTextColor.GRAY)
-                    },
-                    Component.empty(),
-                    Component.text("Click to edit", NamedTextColor.GREEN)
-                ))
-            }
-        }
+        val loreKey = if (tableExists)
+            "gui.chamber-detail.ominous-loot-lore-custom" else "gui.chamber-detail.ominous-loot-lore-default"
+        return GuiComponents.infoItem(
+            plugin, Material.PURPLE_WOOL,
+            "gui.chamber-detail.ominous-loot-name", loreKey,
+            "table" to tableName
+        )
     }
 
     private fun createLootOverridesItem(): ItemStack {
         val normalOverride = chamber.normalLootTable
         val ominousOverride = chamber.ominousLootTable
         val hasOverrides = normalOverride != null || ominousOverride != null
-
-        return ItemStack(if (hasOverrides) Material.ENCHANTED_BOOK else Material.BOOK).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Loot Table Overrides", NamedTextColor.LIGHT_PURPLE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Override which loot tables this", NamedTextColor.GRAY),
-                    Component.text("chamber uses for vaults", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Normal: ", NamedTextColor.GREEN)
-                        .append(Component.text(normalOverride ?: "(default)",
-                            if (normalOverride != null) NamedTextColor.WHITE else NamedTextColor.GRAY)),
-                    Component.text("Ominous: ", NamedTextColor.DARK_PURPLE)
-                        .append(Component.text(ominousOverride ?: "(default)",
-                            if (ominousOverride != null) NamedTextColor.WHITE else NamedTextColor.GRAY)),
-                    Component.empty(),
-                    Component.text("Click to configure", NamedTextColor.GREEN)
-                ))
-            }
-        }
+        val defaultTag = plugin.getMessage("gui.chamber-detail.overrides-default-tag")
+        return GuiComponents.infoItem(
+            plugin, if (hasOverrides) Material.ENCHANTED_BOOK else Material.BOOK,
+            "gui.chamber-detail.overrides-name", "gui.chamber-detail.overrides-lore",
+            "normal" to (normalOverride ?: defaultTag),
+            "ominous" to (ominousOverride ?: defaultTag)
+        )
     }
 
     private fun createSettingsItem(): ItemStack {
         val exitLoc = chamber.getExitLocation()
-        val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" } ?: "Not set"
-
-        return ItemStack(Material.COMPARATOR).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Chamber Settings", NamedTextColor.WHITE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Configure chamber-specific settings", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Reset Interval: ${formatDuration(chamber.resetInterval * 1000)}", NamedTextColor.YELLOW),
-                    Component.text("Exit Location: $exitStr", NamedTextColor.YELLOW),
-                    Component.empty(),
-                    Component.text("Click to configure", NamedTextColor.GREEN)
-                ))
-            }
-        }
+        val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
+            ?: plugin.getMessage("gui.chamber-detail.exit-not-set")
+        return GuiComponents.infoItem(
+            plugin, Material.COMPARATOR,
+            "gui.chamber-detail.settings-name", "gui.chamber-detail.settings-lore",
+            "interval" to formatDuration(chamber.resetInterval * 1000),
+            "exit" to exitStr
+        )
     }
 
     private fun createVaultManagementItem(): ItemStack {
         val (normalCount, ominousCount) = plugin.vaultManager.getVaultCounts(chamber.id)
-
-        return ItemStack(Material.VAULT).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Vault Management", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Manage vault cooldowns and locks", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("$normalCount Normal Vaults", NamedTextColor.GREEN),
-                    Component.text("$ominousCount Ominous Vaults", NamedTextColor.DARK_PURPLE),
-                    Component.empty(),
-                    Component.text("Click to manage", NamedTextColor.GREEN)
-                ))
-            }
-        }
+        return GuiComponents.infoItem(
+            plugin, Material.VAULT,
+            "gui.chamber-detail.vault-mgmt-name", "gui.chamber-detail.vault-mgmt-lore",
+            "normal" to normalCount, "ominous" to ominousCount
+        )
     }
 
-    private fun createTeleportItem(player: Player): ItemStack {
-        return ItemStack(Material.ENDER_PEARL).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Teleport", NamedTextColor.AQUA)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Teleport to this chamber", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Left Click: Center of chamber", NamedTextColor.YELLOW),
-                    Component.text("Right Click: Exit location", NamedTextColor.YELLOW),
-                    Component.empty(),
-                    Component.text("Click to teleport", NamedTextColor.GREEN)
-                ))
-            }
-        }
+    private fun createTeleportItem(): ItemStack {
+        return GuiComponents.infoItem(
+            plugin, Material.ENDER_PEARL,
+            "gui.chamber-detail.teleport-name", "gui.chamber-detail.teleport-lore"
+        )
     }
 
     private fun createResetChamberItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size
-        val lastReset = chamber.lastReset?.let { formatElapsedTime(System.currentTimeMillis() - it) } ?: "Never"
-
-        return ItemStack(Material.CLOCK).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Reset Chamber", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Timed Reset:", NamedTextColor.YELLOW),
-                    Component.text("  Left: 5 minute timer", NamedTextColor.AQUA),
-                    Component.text("  Right: 1 minute timer", NamedTextColor.AQUA),
-                    Component.empty(),
-                    Component.text("Force Reset:", NamedTextColor.RED),
-                    Component.text("  Shift + Right Click", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Players inside: $playersInside", NamedTextColor.DARK_AQUA),
-                    Component.text("Last reset: $lastReset", NamedTextColor.DARK_AQUA)
-                ))
-            }
-        }
+        val lastReset = chamber.lastReset?.let { formatElapsedTime(System.currentTimeMillis() - it) }
+            ?: plugin.getMessage("gui.chamber-detail.last-reset-never")
+        return GuiComponents.infoItem(
+            plugin, Material.CLOCK,
+            "gui.chamber-detail.reset-name", "gui.chamber-detail.reset-lore",
+            "inside" to playersInside, "lastReset" to lastReset
+        )
     }
 
     private fun createExitPlayersItem(): ItemStack {
         val playersInside = chamber.getPlayersInside().size
         val exitLoc = chamber.getExitLocation()
-        val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" } ?: "World Spawn"
-
-        return ItemStack(Material.OAK_DOOR).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Exit Players", NamedTextColor.RED)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Timed Exit:", NamedTextColor.YELLOW),
-                    Component.text("  Left: 15 seconds timer", NamedTextColor.AQUA),
-                    Component.text("  Right: 30 seconds timer", NamedTextColor.AQUA),
-                    Component.empty(),
-                    Component.text("Force Exit:", NamedTextColor.RED),
-                    Component.text("  Shift + Right Click", NamedTextColor.GRAY),
-                    Component.empty(),
-                    Component.text("Players inside: $playersInside", NamedTextColor.DARK_AQUA),
-                    Component.text("Exit to: $exitStr", NamedTextColor.DARK_AQUA)
-                ))
-            }
-        }
+        val exitStr = exitLoc?.let { "${it.blockX}, ${it.blockY}, ${it.blockZ}" }
+            ?: plugin.getMessage("gui.chamber-detail.exit-players-default")
+        return GuiComponents.infoItem(
+            plugin, Material.OAK_DOOR,
+            "gui.chamber-detail.exit-players-name", "gui.chamber-detail.exit-players-lore",
+            "inside" to playersInside, "exit" to exitStr
+        )
     }
 
     private fun createSnapshotItem(): ItemStack {
         val snapshotExists = chamber.getSnapshotFile()?.exists() == true
-
-        return ItemStack(Material.SPYGLASS).apply {
-            itemMeta = itemMeta?.apply {
-                displayName(Component.text("Snapshot", NamedTextColor.BLUE)
-                    .decoration(TextDecoration.BOLD, true))
-                lore(listOf(
-                    Component.text("Manage chamber snapshots", NamedTextColor.GRAY),
-                    Component.empty(),
-                    if (snapshotExists) {
-                        Component.text("Snapshot: Exists", NamedTextColor.GREEN)
-                    } else {
-                        Component.text("Snapshot: None", NamedTextColor.RED)
-                    },
-                    Component.empty(),
-                    Component.text("Left Click: Create snapshot", NamedTextColor.YELLOW),
-                    Component.text("Shift+Left: Restore snapshot", NamedTextColor.YELLOW)
-                ))
-            }
-        }
+        val loreKey = if (snapshotExists)
+            "gui.chamber-detail.snapshot-lore-exists" else "gui.chamber-detail.snapshot-lore-missing"
+        return GuiComponents.infoItem(
+            plugin, Material.SPYGLASS,
+            "gui.chamber-detail.snapshot-name", loreKey
+        )
     }
 
-    // ==================== Click Handlers ====================
+    // ==================== Click Handlers (unchanged behavior) ====================
 
     private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
         val tableName = when (kind) {
             MenuService.LootKind.NORMAL -> "chamber-${chamber.name.lowercase()}"
             MenuService.LootKind.OMINOUS -> "ominous-${chamber.name.lowercase()}"
         }
-
         val table = plugin.lootManager.getTable(tableName)
         if (table != null && !table.isLegacyFormat()) {
             menu.openPoolSelect(player, chamber, kind)
@@ -351,10 +223,8 @@ class ChamberDetailView(
             player.sendMessage(plugin.getMessage("gui-chamber-world-not-loaded"))
             return
         }
-
         when {
             right -> {
-                // Right click: Teleport to exit location
                 val exitLoc = chamber.getExitLocation()
                 if (exitLoc == null) {
                     player.sendMessage(plugin.getMessage("gui-no-exit-location"))
@@ -364,7 +234,6 @@ class ChamberDetailView(
                 player.sendMessage(plugin.getMessage("gui-teleport-to-exit", "chamber" to chamber.name))
             }
             else -> {
-                // Left click (default): Teleport to center
                 val centerX = (chamber.minX + chamber.maxX) / 2.0
                 val centerY = (chamber.minY + chamber.maxY) / 2.0
                 val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
@@ -382,7 +251,10 @@ class ChamberDetailView(
                 player.sendMessage(plugin.getMessage("gui-forcing-reset", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
-                        plugin.resetManager.resetChamber(chamber, player)
+                        plugin.resetManager.resetChamber(
+                            chamber, player,
+                            io.github.darkstarworks.trialChamberPro.api.events.ChamberResetEvent.Reason.FORCED
+                        )
                         plugin.scheduler.runAtEntity(player, Runnable {
                             player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
                             player.closeInventory()
@@ -401,12 +273,10 @@ class ChamberDetailView(
 
     private fun handleExitPlayersClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         val playersInChamber = chamber.getPlayersInside()
-
         if (playersInChamber.isEmpty()) {
             player.sendMessage(plugin.getMessage("gui-no-players-in-chamber"))
             return
         }
-
         when {
             shift && right -> {
                 exitPlayers(playersInChamber)
@@ -421,7 +291,6 @@ class ChamberDetailView(
     private fun handleSnapshotClick(player: Player, left: Boolean, shift: Boolean) {
         when {
             shift && left -> {
-                // Restore snapshot
                 val snapshotFile = chamber.getSnapshotFile()
                 if (snapshotFile == null || !snapshotFile.exists()) {
                     player.sendMessage(plugin.getMessage("gui-no-snapshot-exists"))
@@ -442,7 +311,6 @@ class ChamberDetailView(
                 }
             }
             left -> {
-                // Create snapshot
                 player.sendMessage(plugin.getMessage("gui-creating-snapshot", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
@@ -464,7 +332,6 @@ class ChamberDetailView(
 
     private fun scheduleReset(player: Player, seconds: Int) {
         player.sendMessage(plugin.getMessage("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
-
         plugin.scheduler.runTaskLater(Runnable {
             plugin.launchAsync {
                 try {
@@ -483,13 +350,11 @@ class ChamberDetailView(
 
     private fun scheduleExit(player: Player, playersToExit: List<Player>, seconds: Int) {
         player.sendMessage(plugin.getMessage("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
-
         playersToExit.forEach { p ->
             plugin.scheduler.runAtEntity(p, Runnable {
                 p.sendMessage(plugin.getMessage("gui-exit-warning", "seconds" to seconds))
             })
         }
-
         plugin.scheduler.runTaskLater(Runnable {
             exitPlayers(playersToExit)
             plugin.scheduler.runAtEntity(player, Runnable {
@@ -499,11 +364,8 @@ class ChamberDetailView(
     }
 
     private fun exitPlayers(players: List<Player>) {
-        val dest = chamber.getExitLocation() ?: chamber.getWorld()?.spawnLocation
-        if (dest == null) return
-
+        val dest = chamber.getExitLocation() ?: chamber.getWorld()?.spawnLocation ?: return
         players.forEach { p ->
-            // Use Folia-safe scheduling - each player may be in a different region
             plugin.scheduler.runAtEntity(p, Runnable {
                 if (p.isOnline) {
                     p.teleport(dest)
@@ -514,20 +376,19 @@ class ChamberDetailView(
     }
 
     private fun formatDuration(milliseconds: Long): String {
-        if (milliseconds <= 0) return "Now"
-
+        val nowToken = plugin.getMessage("gui.chamber-detail.duration-now")
+        if (milliseconds <= 0) return nowToken
         val seconds = milliseconds / 1000
         val days = seconds / 86400
         val hours = (seconds % 86400) / 3600
         val minutes = (seconds % 3600) / 60
         val secs = seconds % 60
-
         return buildString {
             if (days > 0) append("${days}d ")
             if (hours > 0) append("${hours}h ")
             if (minutes > 0) append("${minutes}m ")
             if (secs > 0 && days == 0L) append("${secs}s")
-        }.trim().ifEmpty { "Now" }
+        }.trim().ifEmpty { nowToken }
     }
 
     private fun formatElapsedTime(milliseconds: Long): String {
@@ -535,12 +396,18 @@ class ChamberDetailView(
         val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
         val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
         val days = TimeUnit.MILLISECONDS.toDays(milliseconds)
-
-        return when {
-            days > 0 -> "$days day(s) ago"
-            hours > 0 -> "$hours hour(s) ago"
-            minutes > 0 -> "$minutes minute(s) ago"
-            else -> "$seconds second(s) ago"
+        val key = when {
+            days > 0 -> "gui.chamber-detail.elapsed-days"
+            hours > 0 -> "gui.chamber-detail.elapsed-hours"
+            minutes > 0 -> "gui.chamber-detail.elapsed-minutes"
+            else -> "gui.chamber-detail.elapsed-seconds"
         }
+        val n = when {
+            days > 0 -> days
+            hours > 0 -> hours
+            minutes > 0 -> minutes
+            else -> seconds
+        }
+        return plugin.getMessage(key, "n" to n)
     }
 }

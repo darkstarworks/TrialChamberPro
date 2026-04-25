@@ -31,6 +31,9 @@ import java.io.File
  * @property normalLootTable Per-chamber loot table override for normal vaults (nullable)
  * @property ominousLootTable Per-chamber loot table override for ominous vaults (nullable)
  * @property spawnerCooldownMinutes Per-chamber spawner cooldown override in minutes (nullable = use global config, -1 = vanilla, 0 = no cooldown)
+ * @property customMobProvider Id of the [io.github.darkstarworks.trialChamberPro.providers.TrialMobProvider] driving spawner waves in this chamber (null / "vanilla" = unchanged vanilla behavior)
+ * @property customMobIdsNormal Provider-specific mob ids drawn from for normal waves
+ * @property customMobIdsOminous Provider-specific mob ids drawn from for ominous waves (falls back to normal if empty)
  */
 data class Chamber(
     val id: Int,
@@ -53,7 +56,10 @@ data class Chamber(
     val createdAt: Long,
     val normalLootTable: String? = null,
     val ominousLootTable: String? = null,
-    val spawnerCooldownMinutes: Int? = null
+    val spawnerCooldownMinutes: Int? = null,
+    val customMobProvider: String? = null,
+    val customMobIdsNormal: List<String> = emptyList(),
+    val customMobIdsOminous: List<String> = emptyList()
 ) {
     /**
      * Gets the loot table override for a specific vault type.
@@ -153,5 +159,27 @@ data class Chamber(
      */
     fun getSnapshotFile(): File? {
         return snapshotFile?.let { File(it) }
+    }
+
+    /**
+     * Returns true when this chamber has a non-vanilla mob provider configured
+     * with at least one mob id available for the given wave type.
+     */
+    fun hasCustomMobProvider(ominous: Boolean): Boolean {
+        val provider = customMobProvider?.lowercase()
+        if (provider == null || provider == "vanilla") return false
+        return pickMobId(ominous) != null
+    }
+
+    /**
+     * Picks a random mob id from the appropriate list for the given wave type.
+     * Ominous falls back to the normal list if the ominous list is empty, matching
+     * the loot-table override fallback pattern. Returns null if no ids are configured.
+     */
+    fun pickMobId(ominous: Boolean): String? {
+        val primary = if (ominous) customMobIdsOminous else customMobIdsNormal
+        val pool = if (primary.isNotEmpty()) primary else customMobIdsNormal
+        if (pool.isEmpty()) return null
+        return pool.random()
     }
 }

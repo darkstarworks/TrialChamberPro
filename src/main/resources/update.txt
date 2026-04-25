@@ -1,4 +1,13 @@
 <black>.
+<aqua>[1.3.0] <gray>- <white>2026-04-23
+<lime>+ <white>NEW: <green>Custom Mob Provider API — waves can now spawn mobs from external plugins (<yellow>MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens<green>) while preserving boss bars, cooldowns, and key drops.
+<lime>+ <white>NEW: <green>Per-chamber mob provider config via <yellow>/tcp mobs<green> command or the new <yellow>Custom Mob Provider<green> GUI (Chamber Settings).
+<lime>+ <white>NEW: <green>Plugin-driven Trial Key drops for non-vanilla waves with owner-only pickup grace window (<yellow>tcp.bypass.droplock<green>).
+<lime>+ <white>NEW: <green>Fully translatable GUI — every name, lore, and button across all 18 admin views is now driven by <yellow>messages.yml<green>.
+<lime>+ <white>NEW: <green>Public event API for third-party plugins — 6 Bukkit events for chamber resets, vault opens, wave completion, and auto-discovery.
+<lime>+ <white>NEW: <green>Empty-state placeholders across list/grid views — no more confusing blank menus.
+<lime>+ <white>NEW: <green>Startup config validator clamps out-of-range values back to safe defaults with logged warnings.
+<lime>+ <white>FIX: <green>GUI sessions are now properly cleaned up on player quit.
 <aqua>[1.2.29] <gray>- <white>2026-04-22
 <lime>+ <white>NEW: <green>CraftEngine custom items in loot tables (<yellow>plugin: CraftEngine<green>).
 <lime>+ <white>NEW: <green>MythicCrucible custom items in loot tables (<yellow>plugin: MythicCrucible<green>).

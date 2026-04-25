@@ -379,6 +379,19 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                         player.inventory.setItemInMainHand(null)
                     }
 
+                    // Fire post-event for downstream consumers. Items are cloned so
+                    // listeners can inspect the loot snapshot independently of the
+                    // player's inventory state.
+                    plugin.server.pluginManager.callEvent(
+                        io.github.darkstarworks.trialChamberPro.api.events.VaultOpenedEvent(
+                            player = player,
+                            vault = vaultData,
+                            chamber = chamber,
+                            lootTableName = effectiveLootTable,
+                            items = loot.map { it.clone() }
+                        )
+                    )
+
                     continuation.resume(Unit) {}
                 } catch (e: Exception) {
                     plugin.logger.severe("Error in vault open: ${e.message}")
