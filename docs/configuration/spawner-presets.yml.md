@@ -33,8 +33,8 @@ The plugin does **not** generate the datapack for you — that's the part Mojang
 ```yaml
 presets:
   super_zombie:
-    normal-config: "darkside_trial:basic_zombie"
-    ominous-config: "darkside_trial:basic_zombie_o"
+    normal-config: "namespace:basic_zombie"
+    ominous-config: "namespace:basic_zombie_o"
     required-player-range: 14
     target-cooldown-length: 36000
     display-name: "&6Super Zombie Spawner"
@@ -43,7 +43,7 @@ presets:
       - "&7Place to deploy."
 
   boss_arena:
-    normal-config: "darkside_trial:boss_pool"
+    normal-config: "namespace:boss_pool"
     required-player-range: 24
     target-cooldown-length: 72000
     total-mobs: 12
@@ -129,6 +129,27 @@ The preset map is hot-swapped atomically; in-flight `/tcp give` calls are not af
 - **Preset ids are case-insensitive** in lookups — `Super_Zombie`, `super_zombie`, and `SUPER_ZOMBIE` all resolve to the same preset.
 - **Datapack authoring** is documented at the [Minecraft Wiki — Trial Spawner page](https://minecraft.wiki/w/Trial_Spawner#Spawner_configuration). The relevant data folder is `data/<namespace>/trial_spawner/<config_name>.json`.
 - **Validate quickly**: copy your `/give` test command into the preset (just the config strings + numbers) and verify the produced item matches the same NBT in F3+H tooltips.
+
+---
+
+## ⚠️ Limitations
+
+### Custom Mob Providers do NOT apply to preset-spawned spawners
+
+TrialChamberPro's [Custom Mob Providers](custom-mobs.md) (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens) only intercept trial-spawner spawns **inside a registered chamber**. Spawners placed from `/tcp give` exist as standalone blocks in the world — they are not tied to a chamber — so the provider intercept does not run on them.
+
+This means:
+
+- A spawner placed from a preset will spawn whatever entity its datapack config specifies (vanilla mob types only — `minecraft:zombie`, `minecraft:skeleton`, etc., heavily customizable via NBT but always vanilla entity ids).
+- You **cannot** spawn MythicMobs / EliteMobs / etc. creatures from a preset-built spawner placed in the wild, because the datapack JSON has no field for non-vanilla entity ids and TCP's provider intercept is chamber-scoped.
+
+**If you need custom-plugin mobs to spawn from a preset spawner**, place the spawner inside a registered chamber and configure that chamber's custom mob provider (`/tcp mobs <chamber> provider <id>`). The chamber's provider will then intercept the preset spawner's wave the same way it intercepts vanilla-generated spawners in that chamber.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+This is by design for the free tier. If your use case is selling sellable, placeable trial spawners that work with custom-plugin mobs anywhere on a survival map without chamber registration, that's the natural shape of an upcoming premium module — drop a note in the [Issues](https://github.com/darkstarworks/TrialChamberPro/issues) tracker if it'd be useful for your server.
+
+</div>
 
 ---
 
