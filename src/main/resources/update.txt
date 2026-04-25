@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.3.2] <gray>- <white>2026-04-26
+<lime>+ <white>FIX: <green>Trial spawner wave size now respects the spawner's <yellow>total_mobs<green> / <yellow>total_mobs_added_per_player<green> config (was hard-coded to 6).
+<lime>+ <white>FIX: <green>Boss bar no longer hangs when a tracked mob despawns or is removed without an EntityDeathEvent — periodic sweeper drops vanished mobs and closes finished waves.
+<lime>+ <white>FIX: <green>Breaking a trial spawner now removes its lingering boss bar.
 <aqua>[1.3.1] <gray>- <white>2026-04-26
 <lime>+ <white>NEW: <green>Spawner presets — define named templates of trial-spawner configs in the new <yellow>spawner_presets.yml<green> and hand them out as preconfigured items via <yellow>/tcp give <preset> [player] [amount]<green>.
 <lime>+ <white>NEW: <green>Drop-in support for datapack-defined spawner pools — point a preset at a <yellow>namespace:config<green> resource location and place the resulting trial spawner anywhere.
