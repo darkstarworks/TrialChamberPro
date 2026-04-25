@@ -14,7 +14,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val subcommands = listOf(
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
-        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs"
+        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give"
     )
 
     private val snapshotActions = listOf("create", "restore")
@@ -68,6 +68,9 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         // Chamber name or the literal "providers"
                         (getChamberNames() + "providers").filter { it.startsWith(args[1], ignoreCase = true) }
                     }
+                    "give" -> {
+                        getPresetNames().filter { it.startsWith(args[1].lowercase()) }
+                    }
                     else -> emptyList()
                 }
             }
@@ -99,6 +102,11 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                         // /tcp mobs <chamber> <action>
                         if (args[1].equals("providers", ignoreCase = true)) emptyList()
                         else mobsActions.filter { it.startsWith(args[2].lowercase()) }
+                    }
+                    "give" -> {
+                        // /tcp give <preset> <player>
+                        plugin.server.onlinePlayers.map { it.name }
+                            .filter { it.startsWith(args[2], ignoreCase = true) }
                     }
                     else -> emptyList()
                 }
@@ -165,6 +173,14 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
         return try {
             val names = plugin.chamberManager.getCachedChamberNames()
             names.ifEmpty { emptyList() }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun getPresetNames(): List<String> {
+        return try {
+            plugin.spawnerPresetManager.getNames().toList()
         } catch (_: Exception) {
             emptyList()
         }

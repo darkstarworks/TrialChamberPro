@@ -32,6 +32,7 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp mobs <chamber> add normal\|ominous <mobId>` | Add a mob id to a chamber's pool | `tcp.admin.mobs` |
 | `/tcp mobs <chamber> remove normal\|ominous <mobId>` | Remove a mob id from a chamber's pool | `tcp.admin.mobs` |
 | `/tcp mobs <chamber> list` | Show a chamber's mob provider config | `tcp.admin.mobs` |
+| `/tcp give <preset> [player] [amount]` | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md) | `tcp.give` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |
