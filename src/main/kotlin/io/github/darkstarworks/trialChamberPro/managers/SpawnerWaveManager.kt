@@ -64,6 +64,37 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
     // Player to spawner mapping for boss bar cleanup
     private val playerBossBars = ConcurrentHashMap<UUID, MutableSet<String>>()
 
+    init {
+        // Periodic sweep: drop UUIDs whose entity is gone (despawned, /kill, removed by another
+        // plugin, void death without an EntityDeathEvent); close out waves whose spawner block
+        // has already entered cooldown vanilla-side or whose block no longer exists. Without this
+        // the boss bar deadlocks at e.g. 2/6 forever when a tracked mob disappears silently.
+        try {
+            plugin.scheduler.runTaskTimer(Runnable { sweepWaves() }, 100L, 100L)
+        } catch (e: Throwable) {
+            plugin.logger.warning("[SpawnerWave] Failed to schedule wave sweeper: ${e.message}")
+        }
+    }
+
+    /**
+     * Reads the spawner's actual `total_mobs` / `total_mobs_added_per_player` from its
+     * configuration NBT and computes the expected wave size. Falls back to 6 if the block
+     * isn't a trial spawner or the API call fails.
+     */
+    private fun computeExpectedMobs(location: Location, isOminous: Boolean, playerCountFallback: Int): Int {
+        return try {
+            val world = location.world ?: return 6
+            val state = world.getBlockAt(location).state as? org.bukkit.block.TrialSpawner ?: return 6
+            val cfg = if (isOminous) state.ominousConfiguration else state.normalConfiguration
+            val players = state.trackedPlayers.size.takeIf { it > 0 } ?: playerCountFallback.coerceAtLeast(1)
+            val base = cfg.baseSpawnsBeforeCooldown
+            val perPlayer = cfg.additionalSpawnsBeforeCooldown
+            kotlin.math.ceil(base + perPlayer * players).toInt().coerceAtLeast(1)
+        } catch (_: Throwable) {
+            6
+        }
+    }
+
     /**
      * Gets spawner key from location.
      */
@@ -127,8 +158,9 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         // Get or create wave
         var wave = activeWaves[key]
         if (wave == null || wave.completed) {
-            // Start a new wave with estimated mob count (will be updated)
-            wave = startWave(spawnerLocation, isOminous, 6) // Default estimate
+            // Read real total_mobs from spawner NBT instead of assuming 6
+            val initialExpected = computeExpectedMobs(spawnerLocation, isOminous, 1)
+            wave = startWave(spawnerLocation, isOminous, initialExpected)
         }
 
         // Track the mob
@@ -136,8 +168,10 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         val spawned = wave.mobsSpawned.incrementAndGet()
         mobToSpawner[mobUUID] = key
 
-        // Update expected if we're spawning more than expected (atomic update)
-        wave.totalMobsExpected.updateAndGet { current -> maxOf(current, spawned) }
+        // Ratchet expected count: max of (configured base+per-player), actual spawn count, and
+        // current value. The configured value can grow as more players join (additional per-player).
+        val recomputed = computeExpectedMobs(spawnerLocation, isOminous, wave.participatingPlayers.size)
+        wave.totalMobsExpected.updateAndGet { current -> maxOf(current, maxOf(spawned, recomputed)) }
 
         // Update boss bar
         updateBossBar(wave)
@@ -239,6 +273,79 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         if (tracked.isEmpty()) {
             playerBossBars.remove(playerUUID)
+        }
+    }
+
+    /**
+     * Cancels and tears down the wave at [spawnerLocation] without firing completion rewards.
+     * Called when the spawner block is broken — the wave is no longer meaningful.
+     */
+    fun cancelWaveAt(spawnerLocation: Location) {
+        val key = getSpawnerKey(spawnerLocation)
+        val wave = activeWaves.remove(key) ?: return
+        wave.completed = true
+        removeBossBar(wave)
+        mobToSpawner.entries.removeIf { it.value == key }
+    }
+
+    /**
+     * Periodic sweep that fixes the two ways a wave can deadlock:
+     *   1. A tracked mob disappears without firing EntityDeathEvent (despawn, /kill, void,
+     *      removed by another plugin) — its UUID stays in trackedMobs and the wave never
+     *      satisfies trackedMobs.isEmpty().
+     *   2. The vanilla spawner has already entered cooldown / ejecting_reward but our kill
+     *      counter never reached the (possibly inflated) expected value, so the bar hangs.
+     *
+     * For each active wave: drop dead/missing UUIDs, then if the spawner block is gone or in
+     * cooldown, force-complete; otherwise complete normally if conditions now match.
+     */
+    private fun sweepWaves() {
+        activeWaves.values.toList().forEach { wave ->
+            if (wave.completed) return@forEach
+            plugin.scheduler.runAtLocation(wave.location, Runnable {
+                try {
+                    val world = wave.location.world ?: return@Runnable
+
+                    // Phase 1: drop UUIDs whose entity is gone
+                    val stale = wave.trackedMobs.filter { uuid ->
+                        val ent = world.getEntity(uuid)
+                        ent == null || ent.isDead || !ent.isValid
+                    }
+                    if (stale.isNotEmpty()) {
+                        stale.forEach { uuid ->
+                            wave.trackedMobs.remove(uuid)
+                            mobToSpawner.remove(uuid)
+                        }
+                        updateBossBar(wave)
+                    }
+
+                    // Phase 2: spawner block gone? cancel.
+                    val block = world.getBlockAt(wave.location)
+                    if (block.type != Material.TRIAL_SPAWNER) {
+                        cancelWaveAt(wave.location)
+                        return@Runnable
+                    }
+
+                    // Phase 3: spawner finished vanilla-side? force-complete (handles inflated
+                    // expected counts and silently-vanished mobs).
+                    val stateStr = block.blockData.asString
+                    val vanillaDone = stateStr.contains("trial_spawner_state=cooldown") ||
+                        stateStr.contains("trial_spawner_state=ejecting_reward")
+                    if (vanillaDone && wave.trackedMobs.isEmpty()) {
+                        completeWave(wave)
+                        return@Runnable
+                    }
+
+                    // Phase 4: normal completion check (in case stale removal tipped us over)
+                    if (wave.isAllMobsKilled() && wave.trackedMobs.isEmpty()) {
+                        completeWave(wave)
+                    }
+                } catch (e: Throwable) {
+                    if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                        plugin.logger.warning("[SpawnerWave] Sweep failed for ${wave.spawnerId}: ${e.message}")
+                    }
+                }
+            })
         }
     }
 
