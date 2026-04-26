@@ -51,7 +51,7 @@ class VaultManagementView(
                 "chamber" to chamber.name)
         ) { event ->
             event.isCancelled = true
-            player.sendMessage(plugin.getMessage("vault-reset-usage-hint", "chamber" to chamber.name))
+            player.sendMessage(plugin.getMessageComponent("vault-reset-usage-hint", "chamber" to chamber.name))
         }, 6, 0)
 
         val vaults = runBlocking { plugin.vaultManager.getVaultsForChamber(chamber.id) }
@@ -130,7 +130,7 @@ class VaultManagementView(
     // ==================== Action Handlers (unchanged behavior) ====================
 
     private fun resetAllCooldowns(player: Player) {
-        player.sendMessage(plugin.getMessage("vault-reset-all-start", "chamber" to chamber.name))
+        player.sendMessage(plugin.getMessageComponent("vault-reset-all-start", "chamber" to chamber.name))
         plugin.launchAsync {
             val vaults = plugin.vaultManager.getVaultsForChamber(chamber.id)
             var resetCount = 0
@@ -139,18 +139,18 @@ class VaultManagementView(
                 resetCount++
             }
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessage("vault-reset-all-complete", "count" to resetCount))
+                player.sendMessage(plugin.getMessageComponent("vault-reset-all-complete", "count" to resetCount))
                 menu.openVaultManagement(player, chamber)
             })
         }
     }
 
     private fun resetVaultCooldowns(player: Player, vault: VaultData) {
-        player.sendMessage(plugin.getMessage("vault-reset-single-start", "id" to vault.id))
+        player.sendMessage(plugin.getMessageComponent("vault-reset-single-start", "id" to vault.id))
         plugin.launchAsync {
             plugin.vaultManager.resetAllCooldowns(vault.id)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessage("vault-reset-single-complete"))
+                player.sendMessage(plugin.getMessageComponent("vault-reset-single-complete"))
                 menu.openVaultManagement(player, chamber)
             })
         }

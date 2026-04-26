@@ -13,8 +13,25 @@ import java.sql.SQLException
 /**
  * Manages database connections using HikariCP connection pooling.
  * Supports both SQLite and MySQL databases.
+ *
+ * **v1.4.0 — open for extension.** This class is `open` so third-party
+ * plugins (notably a planned premium "Network Sync" module adding Postgres
+ * / MariaDB / Redis support) can subclass and register their implementation
+ * via Bukkit's [org.bukkit.plugin.ServicesManager] at higher priority. The
+ * instance is auto-registered at TCP startup; consumers resolve it with:
+ *
+ * ```kotlin
+ * val dbm = Bukkit.getServicesManager().load(DatabaseManager::class.java)
+ * ```
+ *
+ * Note: TCP itself currently still references the field
+ * [TrialChamberPro.databaseManager] directly throughout its own codebase,
+ * so subclass replacement only takes effect for callers that explicitly
+ * resolve via the services manager. Full runtime substitution at every
+ * TCP call site is planned for a future major version when the premium
+ * Network Sync module is built.
  */
-class DatabaseManager(private val plugin: TrialChamberPro) {
+open class DatabaseManager(protected val plugin: TrialChamberPro) {
 
     private lateinit var dataSource: HikariDataSource
     private var _databaseType: DatabaseType = DatabaseType.SQLITE

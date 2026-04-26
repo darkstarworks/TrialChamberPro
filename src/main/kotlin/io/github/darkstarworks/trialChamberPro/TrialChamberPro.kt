@@ -182,6 +182,16 @@ class TrialChamberPro : JavaPlugin() {
                 databaseManager = DatabaseManager(this@TrialChamberPro)
                 databaseManager.initialize()
 
+                // v1.4.0: Register with Bukkit's ServicesManager so external
+                // plugins (notably the planned premium "Network Sync" module)
+                // can resolve and/or replace the database backend.
+                server.servicesManager.register(
+                    DatabaseManager::class.java,
+                    databaseManager,
+                    this@TrialChamberPro,
+                    org.bukkit.plugin.ServicePriority.Normal
+                )
+
                 // Test connection
                 if (databaseManager.testConnection()) {
                     logger.info("Database connection test successful")
@@ -322,6 +332,13 @@ class TrialChamberPro : JavaPlugin() {
                     // v1.3.0: drop GUI session cache entries on player quit
                     server.pluginManager.registerEvents(
                         io.github.darkstarworks.trialChamberPro.listeners.MenuSessionCleanupListener(this@TrialChamberPro),
+                        this@TrialChamberPro
+                    )
+                    // v1.4.0: copy `tcp:preset_id` PDC tag from preset items
+                    // onto placed TrialSpawner TileStates so the wild-spawner
+                    // resolver seam can identify the source preset.
+                    server.pluginManager.registerEvents(
+                        io.github.darkstarworks.trialChamberPro.listeners.SpawnerPresetPlaceListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
 
@@ -539,7 +556,14 @@ class TrialChamberPro : JavaPlugin() {
     /**
      * Gets a GUI item name (Component) from messages.yml. Unlike [getMessage]
      * this never prepends the chat prefix and disables Minecraft's default
-     * italic styling on item names. Added in v1.3.0.
+     * italic styling on item names.
+     *
+     * v1.4.0: parsed via [io.github.darkstarworks.trialChamberPro.utils.MessageParser],
+     * so messages.yml entries can use full MiniMessage syntax (`<gradient>`,
+     * `<hover>`, `<click>`, `<#hex>`) alongside legacy `&` codes. Existing
+     * entries with only legacy codes continue to render unchanged.
+     *
+     * Added in v1.3.0.
      */
     fun getGuiText(
         key: String,
@@ -548,16 +572,18 @@ class TrialChamberPro : JavaPlugin() {
         val messages = loadedMessages()
         var raw = messages.getString(key, "<missing: $key>")!!
         replacements.forEach { (p, v) -> raw = raw.replace("{$p}", v?.toString() ?: "null") }
-        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-            .legacyAmpersand()
-            .deserialize(raw)
+        return io.github.darkstarworks.trialChamberPro.utils.MessageParser.parse(raw)
             .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
     }
 
     /**
      * Gets a GUI item lore (list of Components) from messages.yml. The key
-     * must point at a YAML list; each line is independently color-parsed and
-     * has italics disabled. Empty lines render as [Component.empty].
+     * must point at a YAML list; each line is independently parsed and
+     * has italics disabled. Empty lines render as [net.kyori.adventure.text.Component.empty].
+     *
+     * v1.4.0: full MiniMessage support per line via
+     * [io.github.darkstarworks.trialChamberPro.utils.MessageParser].
+     *
      * Added in v1.3.0.
      */
     fun getGuiLore(
@@ -566,37 +592,77 @@ class TrialChamberPro : JavaPlugin() {
     ): List<net.kyori.adventure.text.Component> {
         return getMessageList(key, *replacements).map { line ->
             if (line.isBlank()) net.kyori.adventure.text.Component.empty()
-            else net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                .legacyAmpersand()
-                .deserialize(line)
+            else io.github.darkstarworks.trialChamberPro.utils.MessageParser.parse(line)
                 .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)
         }
     }
 
+    /**
+     * Gets a message from messages.yml as a legacy section-coded String.
+     *
+     * v1.4.0: messages are now parsed via
+     * [io.github.darkstarworks.trialChamberPro.utils.MessageParser], so
+     * MiniMessage syntax (`<gradient>`, `<#hex>`, `<click>`, `<hover>`)
+     * works in messages.yml alongside legacy `&` codes. The result is then
+     * serialized back to legacy section codes for callers that still use
+     * `String`-based APIs (`Player.sendMessage(String)`, etc.). MiniMessage
+     * features that have no legacy equivalent (gradients, click, hover,
+     * fonts) **degrade gracefully** to plain text or a single representative
+     * colour.
+     *
+     * For full MiniMessage fidelity (gradients, clickable text, hover
+     * tooltips), use [getMessageComponent] instead — modern Bukkit/Paper
+     * APIs all accept `Component`.
+     */
     fun getMessage(key: String, vararg replacements: Pair<String, Any?>): String {
-        val messages = loadedMessages()
+        return io.github.darkstarworks.trialChamberPro.utils.MessageParser
+            .parseToLegacy(rawMessageWithPrefix(key, *replacements))
+    }
 
+    /**
+     * Gets a message from messages.yml as a fully-styled Adventure
+     * [net.kyori.adventure.text.Component]. Full MiniMessage fidelity is
+     * preserved end-to-end — gradients, click events, hover events, and
+     * custom fonts all render correctly when the result is delivered via
+     * `Player.sendMessage(Component)` or other Component-accepting APIs.
+     *
+     * Identical placeholder substitution and chat-prefix logic as
+     * [getMessage]. Added in v1.4.0.
+     */
+    fun getMessageComponent(
+        key: String,
+        vararg replacements: Pair<String, Any?>
+    ): net.kyori.adventure.text.Component {
+        return io.github.darkstarworks.trialChamberPro.utils.MessageParser
+            .parse(rawMessageWithPrefix(key, *replacements))
+    }
+
+    /**
+     * Internal helper: looks up the raw message string, performs
+     * `{placeholder}` substitution, and prepends the chat prefix when
+     * appropriate. The result is still a raw MM-or-legacy string — the
+     * caller decides whether to render to Component or legacy section.
+     */
+    private fun rawMessageWithPrefix(
+        key: String,
+        vararg replacements: Pair<String, Any?>
+    ): String {
+        val messages = loadedMessages()
         val prefix = messages.getString("prefix", "&8[&6TCP&8]&r ")
         var message = messages.getString(key, "&cMessage not found: $key")!!
 
-        // Replace placeholders
         replacements.forEach { (placeholder, value) ->
             message = message.replace("{$placeholder}", value?.toString() ?: "null")
         }
 
-        // Add prefix if not a list item, header, help text, or boss bar
+        // Skip prefix for list items, headers, help entries, boss bars,
+        // and any GUI key (`gui.*`) — same rules as before v1.4.0.
         val shouldAddPrefix = !key.contains("list-item") &&
                 !key.contains("header") &&
                 !key.contains("help-") &&
                 !key.contains("boss-bar") &&
                 !key.startsWith("gui.")
 
-        val finalMessage = if (shouldAddPrefix) "$prefix$message" else message
-
-        // Convert color codes
-        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-            .legacyAmpersand()
-            .deserialize(finalMessage)
-            .let { net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(it) }
+        return if (shouldAddPrefix) "$prefix$message" else message
     }
 }

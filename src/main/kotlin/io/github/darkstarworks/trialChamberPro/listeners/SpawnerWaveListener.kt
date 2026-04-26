@@ -63,6 +63,14 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         if (chamber == null) {
             // Wild spawner - configure cooldown if setting is enabled
             configureWildSpawnerCooldown(block, isOminous)
+
+            // v1.4.0: WildSpawnerResolver seam — let a registered service
+            // (typically the planned premium "Wild Custom-Mob Spawners"
+            // module) substitute the vanilla spawn with a custom-provider
+            // mob. Mirrors the chamber-mode replace-after-spawn flow below.
+            if (tryWildSpawnerReplacement(entity, spawnerLocation, isOminous, block)) {
+                return
+            }
         }
 
         // v1.3.0: Replace-after-spawn for chambers with a non-vanilla mob provider.
@@ -131,6 +139,87 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
                 providerId = "vanilla"
             )
         )
+    }
+
+    /**
+     * v1.4.0 wild-spawner replacement seam. If a [io.github.darkstarworks.trialChamberPro.api.WildSpawnerResolver]
+     * is registered as a Bukkit service AND it returns a config for this
+     * spawner, the vanilla spawn is removed and replaced with a custom-
+     * provider mob (same flow as chamber spawners with custom mob providers).
+     *
+     * Reads the `tcp:preset_id` PDC tag off the spawner block (written at
+     * place-time by `SpawnerPresetPlaceListener`) so the resolver knows
+     * which TCP preset the spawner was placed from. Spawners placed by
+     * other means (vanilla `/give`, schematic) carry no tag → presetId
+     * passes as null.
+     *
+     * @return `true` if the spawn was replaced and the caller should `return`
+     *         from `onCreatureSpawn` without recording the original entity;
+     *         `false` to fall through to the vanilla recording path.
+     */
+    private fun tryWildSpawnerReplacement(
+        originalEntity: org.bukkit.entity.Entity,
+        spawnerLocation: org.bukkit.Location,
+        isOminous: Boolean,
+        spawnerBlock: org.bukkit.block.Block
+    ): Boolean {
+        val resolver = plugin.server.servicesManager
+            .load(io.github.darkstarworks.trialChamberPro.api.WildSpawnerResolver::class.java)
+            ?: return false
+
+        val presetId = readPresetIdTag(spawnerBlock)
+        val config = resolver.resolve(spawnerLocation, presetId) ?: return false
+        val mobId = config.pickMobId(isOminous) ?: return false
+        val provider = plugin.trialMobProviderRegistry.get(config.providerId) ?: return false
+        if (provider.id == "vanilla" || !provider.isAvailable()) return false
+
+        val replaceLoc = originalEntity.location.clone()
+        return try {
+            originalEntity.remove()
+            val custom = provider.spawnMob(mobId, replaceLoc, isOminous)
+            if (custom == null) {
+                plugin.logger.warning(
+                    "[WildSpawnerResolver] ${provider.id} returned null for mobId '$mobId' at " +
+                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ} — wave will undercount"
+                )
+                return true  // we removed the original; nothing to record
+            }
+            plugin.spawnerWaveManager.recordMobSpawn(spawnerLocation, custom, isOminous)
+            originalEntity.location.getNearbyPlayers(detectionRadius.toDouble()).forEach { p ->
+                plugin.spawnerWaveManager.addPlayerToWave(p, spawnerLocation)
+            }
+            plugin.server.pluginManager.callEvent(
+                io.github.darkstarworks.trialChamberPro.api.events.ChamberMobSpawnedEvent(
+                    entity = custom,
+                    spawnerLocation = spawnerLocation,
+                    chamber = null,
+                    isOminous = isOminous,
+                    providerId = provider.id
+                )
+            )
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info(
+                    "[WildSpawnerResolver] Replaced vanilla spawn with ${provider.id}:$mobId at " +
+                        "${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}" +
+                        if (presetId != null) " (preset=$presetId)" else ""
+                )
+            }
+            true
+        } catch (e: Throwable) {
+            plugin.logger.warning(
+                "[WildSpawnerResolver] Replacement failed (${provider.id}:$mobId): ${e.message} — falling back to vanilla"
+            )
+            false  // let the caller record the original entity (already removed though, so undercount)
+        }
+    }
+
+    private fun readPresetIdTag(block: org.bukkit.block.Block): String? {
+        val state = block.state as? org.bukkit.block.TileState ?: return null
+        val key = org.bukkit.NamespacedKey(
+            plugin,
+            io.github.darkstarworks.trialChamberPro.managers.SpawnerPresetManager.PRESET_ID_KEY_NAME
+        )
+        return state.persistentDataContainer.get(key, org.bukkit.persistence.PersistentDataType.STRING)
     }
 
     /**

@@ -89,7 +89,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
             if (keyType == null) {
                 event.isCancelled = true
-                player.sendMessage(plugin.getMessage("no-key"))
+                player.sendMessage(plugin.getMessageComponent("no-key"))
                 playErrorSound(player)
                 return
             }
@@ -103,7 +103,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
             if (keyType != requiredKeyType) {
                 event.isCancelled = true
                 val requiredTypeName = if (vaultType == VaultType.OMINOUS) "Ominous" else "Normal"
-                player.sendMessage(plugin.getMessage("wrong-key-type", "required_type" to requiredTypeName))
+                player.sendMessage(plugin.getMessageComponent("wrong-key-type", "required_type" to requiredTypeName))
                 playErrorSound(player)
                 return
             }
@@ -165,7 +165,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         // Get vault data for the specific type (normal or ominous) - needed for loot table resolution
         val vaultData = plugin.vaultManager.getVault(location, vaultType)
         if (vaultData == null) {
-            player.sendMessage(plugin.getMessage("vault-not-found"))
+            player.sendMessage(plugin.getMessageComponent("vault-not-found"))
             return
         }
 
@@ -217,14 +217,14 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
             if (cooldownHours < 0) {
                 // Permanent lock (vanilla behavior) - player must wait for chamber reset
-                player.sendMessage(plugin.getMessage("vault-locked",
+                player.sendMessage(plugin.getMessageComponent("vault-locked",
                     "type" to vaultType.displayName
                 ))
             } else {
                 // Time-based cooldown configured, but Vault API doesn't track time
                 // For now, treat as permanent until chamber reset (vanilla behavior)
                 // Future enhancement: Could use database for time-based cooldowns
-                player.sendMessage(plugin.getMessage("vault-locked",
+                player.sendMessage(plugin.getMessageComponent("vault-locked",
                     "type" to vaultType.displayName
                 ))
             }
@@ -290,7 +290,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         val tableExists = plugin.lootManager.getTable(effectiveLootTable) != null
         if (!tableExists) {
             plugin.logger.warning("Loot table '$effectiveLootTable' not found! Key will NOT be consumed.")
-            player.sendMessage(plugin.getMessage("vault-loot-table-missing"))
+            player.sendMessage(plugin.getMessageComponent("vault-loot-table-missing"))
             return  // Don't consume key, don't mark vault as opened
         }
 
@@ -300,7 +300,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         // CRITICAL: If no loot was generated, don't consume the key or mark the vault
         if (loot.isEmpty()) {
             plugin.logger.warning("No loot generated from table '$effectiveLootTable'! Key will NOT be consumed.")
-            player.sendMessage(plugin.getMessage("vault-no-loot-generated"))
+            player.sendMessage(plugin.getMessageComponent("vault-no-loot-generated"))
             return  // Don't consume key, don't mark vault as opened
         }
 
@@ -339,7 +339,7 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
 
         if (!rewardMarked) {
             plugin.logger.warning("Failed to mark player as rewarded! Key will NOT be consumed.")
-            player.sendMessage(plugin.getMessage("vault-error"))
+            player.sendMessage(plugin.getMessageComponent("vault-error"))
             return
         }
 
@@ -375,12 +375,12 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
                                 leftover.values.forEach { item ->
                                     player.world.dropItemNaturally(player.location, item)
                                 }
-                                player.sendMessage(plugin.getMessage("inventory-full"))
+                                player.sendMessage(plugin.getMessageComponent("inventory-full"))
                             }
                         }
                     }
 
-                    player.sendMessage(plugin.getMessage("vault-opened", "type" to vaultType.displayName))
+                    player.sendMessage(plugin.getMessageComponent("vault-opened", "type" to vaultType.displayName))
 
                     // Grant the appropriate advancement
                     when (vaultType) {

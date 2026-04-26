@@ -35,7 +35,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         // Guard commands until plugin finished async initialization, but allow help
         val sub = args[0].lowercase()
         if (!plugin.isReady && sub !in setOf("help")) {
-            sender.sendMessage(plugin.getMessage("plugin-starting-up"))
+            sender.sendMessage(plugin.getMessageComponent("plugin-starting-up"))
             return true
         }
 
@@ -59,55 +59,55 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "loot" -> lootHandler.execute(sender, args)
             "mobs" -> mobsHandler.execute(sender, args)
             "give" -> giveHandler.execute(sender, args)
-            else -> sender.sendMessage(plugin.getMessage("unknown-command"))
+            else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
 
         return true
     }
 
     private fun sendHelp(sender: CommandSender) {
-        sender.sendMessage(plugin.getMessage("help-header"))
-        sender.sendMessage(plugin.getMessage("help-generate"))
-        sender.sendMessage(plugin.getMessage("help-scan"))
-        sender.sendMessage(plugin.getMessage("help-setexit"))
-        sender.sendMessage(plugin.getMessage("help-snapshot"))
-        sender.sendMessage(plugin.getMessage("help-reset"))
-        sender.sendMessage(plugin.getMessage("help-list"))
-        sender.sendMessage(plugin.getMessage("help-info"))
-        sender.sendMessage(plugin.getMessage("help-delete"))
-        sender.sendMessage(plugin.getMessage("help-stats"))
-        sender.sendMessage(plugin.getMessage("help-leaderboard"))
-        sender.sendMessage(plugin.getMessage("help-key"))
-        sender.sendMessage(plugin.getMessage("help-vault"))
-        sender.sendMessage(plugin.getMessage("help-paste"))
-        sender.sendMessage(plugin.getMessage("help-menu"))
-        sender.sendMessage(plugin.getMessage("help-loot"))
-        sender.sendMessage(plugin.getMessage("help-give"))
-        sender.sendMessage(plugin.getMessage("help-reload"))
+        sender.sendMessage(plugin.getMessageComponent("help-header"))
+        sender.sendMessage(plugin.getMessageComponent("help-generate"))
+        sender.sendMessage(plugin.getMessageComponent("help-scan"))
+        sender.sendMessage(plugin.getMessageComponent("help-setexit"))
+        sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
+        sender.sendMessage(plugin.getMessageComponent("help-reset"))
+        sender.sendMessage(plugin.getMessageComponent("help-list"))
+        sender.sendMessage(plugin.getMessageComponent("help-info"))
+        sender.sendMessage(plugin.getMessageComponent("help-delete"))
+        sender.sendMessage(plugin.getMessageComponent("help-stats"))
+        sender.sendMessage(plugin.getMessageComponent("help-leaderboard"))
+        sender.sendMessage(plugin.getMessageComponent("help-key"))
+        sender.sendMessage(plugin.getMessageComponent("help-vault"))
+        sender.sendMessage(plugin.getMessageComponent("help-paste"))
+        sender.sendMessage(plugin.getMessageComponent("help-menu"))
+        sender.sendMessage(plugin.getMessageComponent("help-loot"))
+        sender.sendMessage(plugin.getMessageComponent("help-give"))
+        sender.sendMessage(plugin.getMessageComponent("help-reload"))
     }
 
     private fun handleReload(sender: CommandSender) {
         if (!sender.hasPermission("tcp.admin.reload")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         plugin.reloadPluginConfig()
         plugin.chamberManager.clearCache()
         plugin.vaultManager.clearCache()
-        sender.sendMessage(plugin.getMessage("reload-success"))
+        sender.sendMessage(plugin.getMessageComponent("reload-success"))
     }
 
 
 
     private fun handleScan(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.scan")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("usage-scan"))
+            sender.sendMessage(plugin.getMessageComponent("usage-scan"))
             return
         }
 
@@ -116,13 +116,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
-            sender.sendMessage(plugin.getMessage("scan-started", "chamber" to chamberName))
+            sender.sendMessage(plugin.getMessageComponent("scan-started", "chamber" to chamberName))
             val (vaults, spawners, pots) = plugin.chamberManager.scanChamber(chamber)
-            sender.sendMessage(plugin.getMessage("scan-complete",
+            sender.sendMessage(plugin.getMessageComponent("scan-complete",
                 "vaults" to vaults,
                 "spawners" to spawners,
                 "pots" to pots
@@ -132,17 +132,17 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handleSetExit(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.create")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (sender !is Player) {
-            sender.sendMessage(plugin.getMessage("player-only"))
+            sender.sendMessage(plugin.getMessageComponent("player-only"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("usage-setexit"))
+            sender.sendMessage(plugin.getMessageComponent("usage-setexit"))
             return
         }
 
@@ -151,21 +151,21 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         plugin.launchAsync {
             val success = plugin.chamberManager.setExitLocation(chamberName, sender.location)
             if (success) {
-                sender.sendMessage(plugin.getMessage("exit-set", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("exit-set", "chamber" to chamberName))
             } else {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
             }
         }
     }
 
     private fun handleSnapshot(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.snapshot")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 3) {
-            sender.sendMessage(plugin.getMessage("usage-snapshot"))
+            sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             return
         }
 
@@ -177,15 +177,15 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
-                        sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                        sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                         return@launchAsync
                     }
 
-                    sender.sendMessage(plugin.getMessage("snapshot-creating", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("snapshot-creating", "chamber" to chamberName))
                     val file = plugin.snapshotManager.createSnapshot(chamber)
                     plugin.chamberManager.setSnapshotFile(chamberName, file.absolutePath)
 
-                    sender.sendMessage(plugin.getMessage("snapshot-created",
+                    sender.sendMessage(plugin.getMessageComponent("snapshot-created",
                         "chamber" to chamberName,
                         "blocks" to chamber.getVolume(),
                         "size" to io.github.darkstarworks.trialChamberPro.utils.CompressionUtil.formatSize(file.length())
@@ -196,31 +196,31 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 plugin.launchAsync {
                     val chamber = plugin.chamberManager.getChamber(chamberName)
                     if (chamber == null) {
-                        sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                        sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                         return@launchAsync
                     }
 
-                    sender.sendMessage(plugin.getMessage("snapshot-restoring", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("snapshot-restoring", "chamber" to chamberName))
 
                     // Pass player for WorldEdit undo support if sender is a player
                     val initiatingPlayer = sender as? Player
                     val success = plugin.resetManager.resetChamber(chamber, initiatingPlayer)
                     if (success) {
-                        sender.sendMessage(plugin.getMessage("snapshot-restored"))
+                        sender.sendMessage(plugin.getMessageComponent("snapshot-restored"))
                     } else {
-                        sender.sendMessage(plugin.getMessage("snapshot-failed", "error" to "Check console for details"))
+                        sender.sendMessage(plugin.getMessageComponent("snapshot-failed", "error" to "Check console for details"))
                     }
                 }
             }
             else -> {
-                sender.sendMessage(plugin.getMessage("usage-snapshot"))
+                sender.sendMessage(plugin.getMessageComponent("usage-snapshot"))
             }
         }
     }
 
     private fun handleList(sender: CommandSender) {
         if (!sender.hasPermission("tcp.admin")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
@@ -228,13 +228,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val chambers = plugin.chamberManager.getAllChambers()
 
             if (chambers.isEmpty()) {
-                sender.sendMessage(plugin.getMessage("chamber-list-empty"))
+                sender.sendMessage(plugin.getMessageComponent("chamber-list-empty"))
                 return@launchAsync
             }
 
-            sender.sendMessage(plugin.getMessage("chamber-list-header"))
+            sender.sendMessage(plugin.getMessageComponent("chamber-list-header"))
             chambers.forEach { chamber ->
-                sender.sendMessage(plugin.getMessage("chamber-list-item",
+                sender.sendMessage(plugin.getMessageComponent("chamber-list-item",
                     "chamber" to chamber.name,
                     "world" to chamber.world,
                     "volume" to chamber.getVolume()
@@ -245,7 +245,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handleInfo(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
@@ -261,7 +261,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
@@ -282,25 +282,25 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 plugin.getMessage("time-never")
             }
 
-            sender.sendMessage(plugin.getMessage("info-header", "chamber" to chamber.name))
-            sender.sendMessage(plugin.getMessage("info-world", "world" to chamber.world))
-            sender.sendMessage(plugin.getMessage("info-bounds",
+            sender.sendMessage(plugin.getMessageComponent("info-header", "chamber" to chamber.name))
+            sender.sendMessage(plugin.getMessageComponent("info-world", "world" to chamber.world))
+            sender.sendMessage(plugin.getMessageComponent("info-bounds",
                 "minX" to chamber.minX, "minY" to chamber.minY, "minZ" to chamber.minZ,
                 "maxX" to chamber.maxX, "maxY" to chamber.maxY, "maxZ" to chamber.maxZ
             ))
-            sender.sendMessage(plugin.getMessage("info-volume", "volume" to chamber.getVolume()))
-            sender.sendMessage(plugin.getMessage("info-exit", "exit" to exitStr))
-            sender.sendMessage(plugin.getMessage("info-reset-interval",
+            sender.sendMessage(plugin.getMessageComponent("info-volume", "volume" to chamber.getVolume()))
+            sender.sendMessage(plugin.getMessageComponent("info-exit", "exit" to exitStr))
+            sender.sendMessage(plugin.getMessageComponent("info-reset-interval",
                 "interval" to MessageUtil.formatTimeSeconds(chamber.resetInterval)
             ))
-            sender.sendMessage(plugin.getMessage("info-last-reset", "time" to lastResetStr))
+            sender.sendMessage(plugin.getMessageComponent("info-last-reset", "time" to lastResetStr))
 
             val snapshotStatus = if (chamber.snapshotFile != null) {
                 plugin.getMessage("info-snapshot-created")
             } else {
                 plugin.getMessage("info-snapshot-not-created")
             }
-            sender.sendMessage(plugin.getMessage("info-snapshot", "status" to snapshotStatus))
+            sender.sendMessage(plugin.getMessageComponent("info-snapshot", "status" to snapshotStatus))
         }
     }
 
@@ -333,50 +333,50 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             false
         }
 
-        sender.sendMessage(plugin.getMessage("plugin-info-header"))
-        sender.sendMessage(plugin.getMessage("plugin-info-version", "version" to version))
-        sender.sendMessage(plugin.getMessage("plugin-info-authors", "authors" to authors))
-        sender.sendMessage(plugin.getMessage("plugin-info-database", "type" to dbType))
-        sender.sendMessage(plugin.getMessage("plugin-info-chambers", "count" to chamberCount))
-        sender.sendMessage(plugin.getMessage("plugin-info-platform",
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-header"))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-version", "version" to version))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-authors", "authors" to authors))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-database", "type" to dbType))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-chambers", "count" to chamberCount))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-platform",
             "platform" to if (isFolia) "Folia" else "Paper/Spigot"
         ))
 
         // Integrations
-        sender.sendMessage(plugin.getMessage("plugin-info-integrations-header"))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-integrations-header"))
 
         val weStatus = if (worldEdit) "§a✓" else "§c✗"
         val wgStatus = if (worldGuard) "§a✓" else "§c✗"
         val papiStatus = if (placeholderApi) "§a✓" else "§c✗"
         val vaultStatus = if (vault) "§a✓" else "§c✗"
 
-        sender.sendMessage(plugin.getMessage("plugin-info-integration-worldedit", "status" to weStatus))
-        sender.sendMessage(plugin.getMessage("plugin-info-integration-worldguard", "status" to wgStatus))
-        sender.sendMessage(plugin.getMessage("plugin-info-integration-papi", "status" to papiStatus))
-        sender.sendMessage(plugin.getMessage("plugin-info-integration-vault", "status" to vaultStatus))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-worldedit", "status" to weStatus))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-worldguard", "status" to wgStatus))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-papi", "status" to papiStatus))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-integration-vault", "status" to vaultStatus))
 
         // Config status
-        sender.sendMessage(plugin.getMessage("plugin-info-config-header"))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-header"))
         val perPlayerLoot = if (plugin.config.getBoolean("vaults.per-player-loot", true)) "§a✓" else "§c✗"
         val spawnerWaves = if (plugin.config.getBoolean("spawner-waves.enabled", true)) "§a✓" else "§c✗"
         val spectatorMode = if (plugin.config.getBoolean("spectator-mode.enabled", true)) "§a✓" else "§c✗"
         val statistics = if (plugin.config.getBoolean("statistics.enabled", true)) "§a✓" else "§c✗"
 
-        sender.sendMessage(plugin.getMessage("plugin-info-config-per-player", "status" to perPlayerLoot))
-        sender.sendMessage(plugin.getMessage("plugin-info-config-spawner-waves", "status" to spawnerWaves))
-        sender.sendMessage(plugin.getMessage("plugin-info-config-spectator", "status" to spectatorMode))
-        sender.sendMessage(plugin.getMessage("plugin-info-config-statistics", "status" to statistics))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-per-player", "status" to perPlayerLoot))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-spawner-waves", "status" to spawnerWaves))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-spectator", "status" to spectatorMode))
+        sender.sendMessage(plugin.getMessageComponent("plugin-info-config-statistics", "status" to statistics))
     }
 
 
     private fun handleDelete(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.create")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("usage-delete"))
+            sender.sendMessage(plugin.getMessageComponent("usage-delete"))
             return
         }
 
@@ -385,9 +385,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         plugin.launchAsync {
             val success = plugin.chamberManager.deleteChamber(chamberName)
             if (success) {
-                sender.sendMessage(plugin.getMessage("chamber-deleted", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-deleted", "chamber" to chamberName))
             } else {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
             }
         }
     }
@@ -406,28 +406,28 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handleMenu(sender: CommandSender) {
         if (sender !is Player) {
-            sender.sendMessage(plugin.getMessage("player-only"))
+            sender.sendMessage(plugin.getMessageComponent("player-only"))
             return
         }
         if (!sender.hasPermission("tcp.admin.menu")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
         if (!plugin.isReady) {
-            sender.sendMessage(plugin.getMessage("plugin-starting-up"))
+            sender.sendMessage(plugin.getMessageComponent("plugin-starting-up"))
             return
         }
         try {
             plugin.menuService.openFor(sender)
         } catch (e: Exception) {
-            sender.sendMessage(plugin.getMessage("error-menu-failed", "error" to (e.message ?: "Unknown error")))
+            sender.sendMessage(plugin.getMessageComponent("error-menu-failed", "error" to (e.message ?: "Unknown error")))
             e.printStackTrace()
         }
     }
 
     private fun handleStats(sender: CommandSender, args: Array<out String>) {
         if (!plugin.config.getBoolean("statistics.enabled", true)) {
-            sender.sendMessage(plugin.getMessage("statistics-disabled"))
+            sender.sendMessage(plugin.getMessageComponent("statistics-disabled"))
             return
         }
 
@@ -435,40 +435,40 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             if (args.size < 2) {
                 // Show own stats
                 if (sender !is Player) {
-                    sender.sendMessage(plugin.getMessage("player-only"))
+                    sender.sendMessage(plugin.getMessageComponent("player-only"))
                     return@launchAsync
                 }
 
                 val stats = plugin.statisticsManager.getStats(sender.uniqueId)
-                sender.sendMessage(plugin.getMessage("stats-header", "player" to sender.name))
-                sender.sendMessage(plugin.getMessage("stats-chambers", "count" to stats.chambersCompleted))
-                sender.sendMessage(plugin.getMessage("stats-normal-vaults", "count" to stats.normalVaultsOpened))
-                sender.sendMessage(plugin.getMessage("stats-ominous-vaults", "count" to stats.ominousVaultsOpened))
-                sender.sendMessage(plugin.getMessage("stats-mobs", "count" to stats.mobsKilled))
-                sender.sendMessage(plugin.getMessage("stats-deaths", "count" to stats.deaths))
-                sender.sendMessage(plugin.getMessage("stats-time",
+                sender.sendMessage(plugin.getMessageComponent("stats-header", "player" to sender.name))
+                sender.sendMessage(plugin.getMessageComponent("stats-chambers", "count" to stats.chambersCompleted))
+                sender.sendMessage(plugin.getMessageComponent("stats-normal-vaults", "count" to stats.normalVaultsOpened))
+                sender.sendMessage(plugin.getMessageComponent("stats-ominous-vaults", "count" to stats.ominousVaultsOpened))
+                sender.sendMessage(plugin.getMessageComponent("stats-mobs", "count" to stats.mobsKilled))
+                sender.sendMessage(plugin.getMessageComponent("stats-deaths", "count" to stats.deaths))
+                sender.sendMessage(plugin.getMessageComponent("stats-time",
                     "time" to plugin.statisticsManager.formatTime(stats.timeSpent)))
             } else {
                 // Show another player's stats
                 if (!sender.hasPermission("tcp.admin.stats")) {
-                    sender.sendMessage(plugin.getMessage("no-permission"))
+                    sender.sendMessage(plugin.getMessageComponent("no-permission"))
                     return@launchAsync
                 }
 
                 val targetPlayer = plugin.server.getPlayer(args[1])
                 if (targetPlayer == null) {
-                    sender.sendMessage(plugin.getMessage("player-not-found", "player" to args[1]))
+                    sender.sendMessage(plugin.getMessageComponent("player-not-found", "player" to args[1]))
                     return@launchAsync
                 }
 
                 val stats = plugin.statisticsManager.getStats(targetPlayer.uniqueId)
-                sender.sendMessage(plugin.getMessage("stats-header", "player" to targetPlayer.name))
-                sender.sendMessage(plugin.getMessage("stats-chambers", "count" to stats.chambersCompleted))
-                sender.sendMessage(plugin.getMessage("stats-normal-vaults", "count" to stats.normalVaultsOpened))
-                sender.sendMessage(plugin.getMessage("stats-ominous-vaults", "count" to stats.ominousVaultsOpened))
-                sender.sendMessage(plugin.getMessage("stats-mobs", "count" to stats.mobsKilled))
-                sender.sendMessage(plugin.getMessage("stats-deaths", "count" to stats.deaths))
-                sender.sendMessage(plugin.getMessage("stats-time",
+                sender.sendMessage(plugin.getMessageComponent("stats-header", "player" to targetPlayer.name))
+                sender.sendMessage(plugin.getMessageComponent("stats-chambers", "count" to stats.chambersCompleted))
+                sender.sendMessage(plugin.getMessageComponent("stats-normal-vaults", "count" to stats.normalVaultsOpened))
+                sender.sendMessage(plugin.getMessageComponent("stats-ominous-vaults", "count" to stats.ominousVaultsOpened))
+                sender.sendMessage(plugin.getMessageComponent("stats-mobs", "count" to stats.mobsKilled))
+                sender.sendMessage(plugin.getMessageComponent("stats-deaths", "count" to stats.deaths))
+                sender.sendMessage(plugin.getMessageComponent("stats-time",
                     "time" to plugin.statisticsManager.formatTime(stats.timeSpent)))
             }
         }
@@ -476,7 +476,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handleLeaderboard(sender: CommandSender, args: Array<out String>) {
         if (!plugin.config.getBoolean("statistics.enabled", true)) {
-            sender.sendMessage(plugin.getMessage("statistics-disabled"))
+            sender.sendMessage(plugin.getMessageComponent("statistics-disabled"))
             return
         }
 
@@ -492,7 +492,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 "mobs", "kills" -> "mobs"
                 "time", "playtime" -> "time"
                 else -> {
-                    sender.sendMessage(plugin.getMessage("invalid-stat-type"))
+                    sender.sendMessage(plugin.getMessageComponent("invalid-stat-type"))
                     return@launchAsync
                 }
             }
@@ -508,10 +508,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
             val leaderboard = plugin.statisticsManager.getLeaderboard(statName, limit)
 
-            sender.sendMessage(plugin.getMessage("leaderboard-header", "stat" to displayName))
+            sender.sendMessage(plugin.getMessageComponent("leaderboard-header", "stat" to displayName))
 
             if (leaderboard.isEmpty()) {
-                sender.sendMessage(plugin.getMessage("leaderboard-empty"))
+                sender.sendMessage(plugin.getMessageComponent("leaderboard-empty"))
                 return@launchAsync
             }
 
@@ -536,27 +536,27 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
     private fun handlePaste(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.generate")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (sender !is Player) {
-            sender.sendMessage(plugin.getMessage("player-only"))
+            sender.sendMessage(plugin.getMessageComponent("player-only"))
             return
         }
 
         if (!plugin.schematicManager.isAvailable()) {
-            sender.sendMessage(plugin.getMessage("worldedit-not-available"))
+            sender.sendMessage(plugin.getMessageComponent("worldedit-not-available"))
             return
         }
 
         val availableList = plugin.schematicManager.listSchematics().joinToString(", ")
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("schematic-usage-hint"))
+            sender.sendMessage(plugin.getMessageComponent("schematic-usage-hint"))
             if (availableList.isNotEmpty()) {
-                sender.sendMessage(plugin.getMessage("schematic-usage", "list" to availableList))
+                sender.sendMessage(plugin.getMessageComponent("schematic-usage", "list" to availableList))
             } else {
-                sender.sendMessage(plugin.getMessage("schematic-no-schematics"))
+                sender.sendMessage(plugin.getMessageComponent("schematic-no-schematics"))
             }
             return
         }
@@ -565,9 +565,9 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
         // Validate schematic exists
         if (!plugin.schematicManager.schematicExists(schematicName)) {
-            sender.sendMessage(plugin.getMessage("schematic-not-found", "name" to schematicName))
+            sender.sendMessage(plugin.getMessageComponent("schematic-not-found", "name" to schematicName))
             if (availableList.isNotEmpty()) {
-                sender.sendMessage(plugin.getMessage("schematic-usage", "list" to availableList))
+                sender.sendMessage(plugin.getMessageComponent("schematic-usage", "list" to availableList))
             }
             return
         }
@@ -580,7 +580,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val z = args[4].toIntOrNull()
 
             if (x == null || y == null || z == null) {
-                sender.sendMessage(plugin.getMessage("error-invalid-coordinates"))
+                sender.sendMessage(plugin.getMessageComponent("error-invalid-coordinates"))
                 return
             }
 
@@ -590,13 +590,13 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             sender.location
         }
 
-        sender.sendMessage(plugin.getMessage("paste-loading"))
+        sender.sendMessage(plugin.getMessageComponent("paste-loading"))
 
         // Load schematic and calculate actual paste bounds
         plugin.launchAsync {
             val bounds = plugin.schematicManager.getSchematicBounds(schematicName, location)
             if (bounds == null) {
-                sender.sendMessage(plugin.getMessage("paste-failed"))
+                sender.sendMessage(plugin.getMessageComponent("paste-failed"))
                 return@launchAsync
             }
 
@@ -615,7 +615,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
 
             // Notify player
             val remaining = plugin.pasteConfirmationManager.getPending(sender)?.getRemainingSeconds() ?: 300
-            sender.sendMessage(plugin.getMessage("paste-preview-shown",
+            sender.sendMessage(plugin.getMessageComponent("paste-preview-shown",
                 "schematic" to schematicName,
                 "x" to location.blockX,
                 "y" to location.blockY,
@@ -625,7 +625,7 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 "length" to length,
                 "time" to remaining
             ))
-            sender.sendMessage(plugin.getMessage("paste-confirm-hint", "time" to remaining))
+            sender.sendMessage(plugin.getMessageComponent("paste-confirm-hint", "time" to remaining))
         }
     }
 
