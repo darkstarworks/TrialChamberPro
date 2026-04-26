@@ -87,6 +87,16 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
                         location.getNearbyPlayers(detectionRadius.toDouble()).forEach { player ->
                             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
                         }
+                        // v1.3.3: notify third-party plugins with chamber + wave context
+                        plugin.server.pluginManager.callEvent(
+                            io.github.darkstarworks.trialChamberPro.api.events.ChamberMobSpawnedEvent(
+                                entity = custom,
+                                spawnerLocation = spawnerLocation,
+                                chamber = chamber,
+                                isOminous = isOminous,
+                                providerId = provider.id
+                            )
+                        )
                         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                             plugin.logger.info("[CustomProvider] Replaced vanilla spawn with ${provider.id}:$mobId at ${spawnerLocation.blockX},${spawnerLocation.blockY},${spawnerLocation.blockZ}")
                         }
@@ -109,6 +119,18 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         location.getNearbyPlayers(detectionRadius.toDouble()).forEach { player ->
             plugin.spawnerWaveManager.addPlayerToWave(player, spawnerLocation)
         }
+
+        // v1.3.3: notify third-party plugins with chamber + wave context.
+        // Fires for both chamber and wild spawners; chamber is null for the latter.
+        plugin.server.pluginManager.callEvent(
+            io.github.darkstarworks.trialChamberPro.api.events.ChamberMobSpawnedEvent(
+                entity = entity,
+                spawnerLocation = spawnerLocation,
+                chamber = chamber,
+                isOminous = isOminous,
+                providerId = "vanilla"
+            )
+        )
     }
 
     /**

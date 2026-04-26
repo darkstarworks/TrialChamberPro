@@ -253,16 +253,37 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
     ) {
         // Resolve the effective loot table (chamber override > vault default)
         val chamber = plugin.chamberManager.getChamberById(vaultData.chamberId)
-        val effectiveLootTable = plugin.chamberManager.getEffectiveLootTable(
+        val resolvedLootTable = plugin.chamberManager.getEffectiveLootTable(
             chamber, vaultType, vaultData.lootTable
         )
+
+        // v1.3.3: PreVaultOpenEvent — give third-party plugins (e.g. premium
+        // Vault Crate / custom-keys module) a chance to cancel the open or
+        // substitute a different loot table. Fired AFTER all gates passed
+        // (cooldown, spam-click, key validation) but BEFORE any side effects.
+        val preEvent = io.github.darkstarworks.trialChamberPro.api.events.PreVaultOpenEvent(
+            player = player,
+            vault = vaultData,
+            chamber = chamber,
+            vaultType = vaultType,
+            lootTableOverride = null
+        )
+        plugin.server.pluginManager.callEvent(preEvent)
+        if (preEvent.isCancelled) {
+            if (plugin.config.getBoolean("debug.verbose-logging", false)) {
+                plugin.logger.info("[PreVaultOpenEvent] Open cancelled by listener for vault ID ${vaultData.id}")
+            }
+            return  // Listener owns user-facing feedback; don't consume key, don't mark vault.
+        }
+        val effectiveLootTable = preEvent.lootTableOverride ?: resolvedLootTable
 
         // Debug logging
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
             val chamberOverride = chamber?.getLootTable(vaultType)
             plugin.logger.info("Opening vault ID ${vaultData.id}: type=${vaultData.type}, " +
                 "vaultDefault='${vaultData.lootTable}', chamberOverride='$chamberOverride', " +
-                "effective='$effectiveLootTable'")
+                "resolved='$resolvedLootTable', effective='$effectiveLootTable' " +
+                "(override-set=${preEvent.lootTableOverride != null})")
         }
 
         // Check if the loot table exists BEFORE generating loot

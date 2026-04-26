@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.3.3] <gray>- <white>2026-04-26
+<lime>+ <white>NEW: <green>Public extension API — third-party plugins can now hook vault opens (<yellow>PreVaultOpenEvent<green>, cancellable + loot-table override) and trial-spawner mob spawns (<yellow>ChamberMobSpawnedEvent<green>) with full chamber + wave context.
+<lime>+ <white>NEW: <green>Module SPI (<yellow>TCPModule<green> + registry) — uniform lifecycle contract for plugins that extend TCP. Auto-unregisters on backing-plugin disable.
+<lime>+ <white>NEW: <green>Jitpack publication — premium add-on devs declare <yellow>compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3")<green> to integrate.
 <aqua>[1.3.2] <gray>- <white>2026-04-26
 <lime>+ <white>FIX: <green>Trial spawner wave size now respects the spawner's <yellow>total_mobs<green> / <yellow>total_mobs_added_per_player<green> config (was hard-coded to 6).
 <lime>+ <white>FIX: <green>Boss bar no longer hangs when a tracked mob despawns or is removed without an EntityDeathEvent — periodic sweeper drops vanished mobs and closes finished waves.

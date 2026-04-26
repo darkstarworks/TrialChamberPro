@@ -1,0 +1,19 @@
+# Jitpack build configuration for TrialChamberPro.
+#
+# Premium add-on modules and third-party integrations declare TCP as:
+#
+#   repositories { maven("https://jitpack.io") }
+#   dependencies {
+#     compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3")
+#   }
+#
+# At compile time consumers reference classes from the public API package
+# `io.github.darkstarworks.trialChamberPro.api.*` (events, TCPModule SPI).
+# At runtime the host server has TCP installed as a normal Bukkit plugin;
+# the bundled-deps shadow JAR served by Jitpack is inert at runtime.
+
+jdk:
+  - openjdk21
+
+install:
+  - ./gradlew clean shadowJar publishToMavenLocal -x test
