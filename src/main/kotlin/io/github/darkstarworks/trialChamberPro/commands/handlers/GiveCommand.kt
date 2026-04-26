@@ -19,17 +19,17 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.give")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("give-usage"))
+            sender.sendMessage(plugin.getMessageComponent("give-usage"))
             val available = plugin.spawnerPresetManager.getNames()
             if (available.isNotEmpty()) {
-                sender.sendMessage(plugin.getMessage("give-available", "presets" to available.joinToString(", ")))
+                sender.sendMessage(plugin.getMessageComponent("give-available", "presets" to available.joinToString(", ")))
             } else {
-                sender.sendMessage(plugin.getMessage("give-no-presets"))
+                sender.sendMessage(plugin.getMessageComponent("give-no-presets"))
             }
             return
         }
@@ -37,10 +37,10 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         val presetId = args[1]
         val preset = plugin.spawnerPresetManager.get(presetId)
         if (preset == null) {
-            sender.sendMessage(plugin.getMessage("give-unknown-preset", "preset" to presetId))
+            sender.sendMessage(plugin.getMessageComponent("give-unknown-preset", "preset" to presetId))
             val available = plugin.spawnerPresetManager.getNames()
             if (available.isNotEmpty()) {
-                sender.sendMessage(plugin.getMessage("give-available", "presets" to available.joinToString(", ")))
+                sender.sendMessage(plugin.getMessageComponent("give-available", "presets" to available.joinToString(", ")))
             }
             return
         }
@@ -50,13 +50,13 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             val targetName = args[2]
             val resolved = plugin.server.getPlayerExact(targetName)
             if (resolved == null) {
-                sender.sendMessage(plugin.getMessage("player-not-found", "player" to targetName))
+                sender.sendMessage(plugin.getMessageComponent("player-not-found", "player" to targetName))
                 return
             }
             resolved
         } else {
             if (sender !is Player) {
-                sender.sendMessage(plugin.getMessage("give-needs-target-from-console"))
+                sender.sendMessage(plugin.getMessageComponent("give-needs-target-from-console"))
                 return
             }
             sender
@@ -65,7 +65,7 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         val amount = if (args.size >= 4) {
             val parsed = args[3].toIntOrNull()
             if (parsed == null || parsed < 1) {
-                sender.sendMessage(plugin.getMessage("give-bad-amount", "value" to args[3]))
+                sender.sendMessage(plugin.getMessageComponent("give-bad-amount", "value" to args[3]))
                 return
             }
             parsed
@@ -75,7 +75,7 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             plugin.spawnerPresetManager.getItem(preset, amount)
         } catch (e: IllegalArgumentException) {
             // Bad NBT in the preset — surface to the admin running the command.
-            sender.sendMessage(plugin.getMessage("give-build-failed", "preset" to preset.id, "error" to (e.message ?: "unknown")))
+            sender.sendMessage(plugin.getMessageComponent("give-build-failed", "preset" to preset.id, "error" to (e.message ?: "unknown")))
             plugin.logger.warning("Failed to build trial_spawner item for preset '${preset.id}': ${e.message}")
             return
         }
@@ -88,16 +88,16 @@ class GiveCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 leftover.values.forEach { stack ->
                     target.world.dropItemNaturally(target.location, stack)
                 }
-                target.sendMessage(plugin.getMessage("give-inventory-full"))
+                target.sendMessage(plugin.getMessageComponent("give-inventory-full"))
             }
 
-            target.sendMessage(plugin.getMessage(
+            target.sendMessage(plugin.getMessageComponent(
                 "give-received",
                 "amount" to item.amount,
                 "preset" to preset.id
             ))
             if (sender !== target) {
-                sender.sendMessage(plugin.getMessage(
+                sender.sendMessage(plugin.getMessageComponent(
                     "give-sent",
                     "amount" to item.amount,
                     "preset" to preset.id,

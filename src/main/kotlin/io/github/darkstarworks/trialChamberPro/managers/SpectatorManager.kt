@@ -67,15 +67,15 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
         pendingSpectate[player.uniqueId] = data
 
         // Send offer message
-        player.sendMessage(plugin.getMessage("spectate-offer", "chamber" to chamber.name))
-        player.sendMessage(plugin.getMessage("spectate-hint"))
+        player.sendMessage(plugin.getMessageComponent("spectate-offer", "chamber" to chamber.name))
+        player.sendMessage(plugin.getMessageComponent("spectate-hint"))
 
         // Expire the offer after configured time
         val timeoutSeconds = plugin.config.getInt("spectator-mode.offer-timeout", 30)
         plugin.scheduler.runTaskLater(Runnable {
             if (pendingSpectate.remove(player.uniqueId) != null) {
                 if (player.isOnline) {
-                    player.sendMessage(plugin.getMessage("spectate-offer-expired"))
+                    player.sendMessage(plugin.getMessageComponent("spectate-offer-expired"))
                 }
             }
         }, (timeoutSeconds * 20).toLong())
@@ -92,14 +92,14 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
         // Get the chamber
         val chamber = plugin.chamberManager.getCachedChamberById(data.chamberId)
         if (chamber == null) {
-            player.sendMessage(plugin.getMessage("spectate-chamber-not-found"))
+            player.sendMessage(plugin.getMessageComponent("spectate-chamber-not-found"))
             return false
         }
 
         // Check if there are other players in the chamber
         val playersInChamber = chamber.getPlayersInside(plugin.server).filter { it.uniqueId != player.uniqueId }
         if (playersInChamber.isEmpty() && !plugin.config.getBoolean("spectator-mode.allow-solo-spectate", false)) {
-            player.sendMessage(plugin.getMessage("spectate-no-players"))
+            player.sendMessage(plugin.getMessageComponent("spectate-no-players"))
             return false
         }
 
@@ -108,8 +108,8 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
 
         // Folia-safe: All player operations must run on entity's region thread
         val center = chamber.getCenter()
-        val startMessage = plugin.getMessage("spectate-started", "chamber" to chamber.name)
-        val exitHintMessage = plugin.getMessage("spectate-exit-hint")
+        val startMessage = plugin.getMessageComponent("spectate-started", "chamber" to chamber.name)
+        val exitHintMessage = plugin.getMessageComponent("spectate-exit-hint")
 
         plugin.scheduler.runAtEntity(player, Runnable {
             if (!player.isOnline) return@Runnable
@@ -137,7 +137,7 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
      */
     fun declineSpectatorMode(player: Player): Boolean {
         if (pendingSpectate.remove(player.uniqueId) != null) {
-            player.sendMessage(plugin.getMessage("spectate-declined"))
+            player.sendMessage(plugin.getMessageComponent("spectate-declined"))
             return true
         }
         return false
@@ -150,7 +150,7 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
         val data = spectators.remove(player.uniqueId) ?: return false
 
         // Folia-safe: All player operations must run on entity's region thread
-        val exitMessage = plugin.getMessage("spectate-exited")
+        val exitMessage = plugin.getMessageComponent("spectate-exited")
         val exitLocation = if (teleportToExit) {
             val chamber = plugin.chamberManager.getCachedChamberById(data.chamberId)
             chamber?.getExitLocation() ?: data.previousLocation

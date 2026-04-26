@@ -153,9 +153,9 @@ class CustomMobProviderView(
             val ok = plugin.chamberManager.updateCustomMobProvider(chamber.id, stored)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (ok) {
-                    player.sendMessage(plugin.getMessage("gui-provider-set", "id" to (stored ?: "vanilla")))
+                    player.sendMessage(plugin.getMessageComponent("gui-provider-set", "id" to (stored ?: "vanilla")))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openCustomMobProvider(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-provider-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-provider-failed"))
             })
         }
     }
@@ -163,7 +163,7 @@ class CustomMobProviderView(
     private fun promptAdd(player: Player, section: MobIdInputListener.Section) {
         MobIdInputListener.awaitInput(player.uniqueId, chamber.id, section)
         player.closeInventory()
-        player.sendMessage(plugin.getMessage("gui-mob-input-prompt",
+        player.sendMessage(plugin.getMessageComponent("gui-mob-input-prompt",
             "section" to section.name.lowercase()))
     }
 
@@ -175,7 +175,7 @@ class CustomMobProviderView(
             val removed = target.removeAll { it.equals(id, ignoreCase = true) }
             if (!removed) {
                 plugin.scheduler.runAtEntity(player, Runnable {
-                    player.sendMessage(plugin.getMessage("gui-mob-remove-missing", "id" to id))
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-remove-missing", "id" to id))
                 })
                 return@launchAsync
             }
@@ -184,9 +184,9 @@ class CustomMobProviderView(
             )
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (ok) {
-                    player.sendMessage(plugin.getMessage("gui-mob-removed", "id" to id))
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-removed", "id" to id))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openCustomMobProvider(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-mob-remove-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-mob-remove-failed"))
             })
         }
     }

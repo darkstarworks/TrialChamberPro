@@ -109,29 +109,41 @@ class SpawnerPresetManager(private val plugin: TrialChamberPro) {
         val item = Bukkit.getItemFactory().createItemStack(itemArg)
         item.amount = amount.coerceIn(1, item.maxStackSize)
 
-        // Apply display name + lore via ItemMeta (NOT NBT) so the values survive
-        // any future component remap and don't fight the block_entity_data tag.
-        val displayName = preset.displayName
-        if (displayName != null || preset.lore.isNotEmpty()) {
-            item.editMeta { meta ->
-                if (displayName != null) {
-                    meta.displayName(
-                        LegacyComponentSerializer.legacyAmpersand()
-                            .deserialize(displayName)
-                            .decoration(TextDecoration.ITALIC, false)
-                    )
-                }
-                if (preset.lore.isNotEmpty()) {
-                    meta.lore(preset.lore.map { line ->
-                        LegacyComponentSerializer.legacyAmpersand()
-                            .deserialize(line)
-                            .decoration(TextDecoration.ITALIC, false)
-                    })
-                }
+        // v1.4.0: tag the item with its source preset id so a downstream
+        // BlockPlaceEvent listener can copy the tag onto the placed
+        // TileState, and the (premium) WildSpawnerResolver can identify
+        // which preset a wild spawner came from. Always-on so premium
+        // doesn't have to modify free code to enable the seam.
+        val presetIdKey = presetIdKey()  // requires plugin to be initialized; getItem is only called post-init
+        item.editMeta { meta ->
+            meta.persistentDataContainer.set(
+                presetIdKey,
+                org.bukkit.persistence.PersistentDataType.STRING,
+                preset.id
+            )
+
+            // Apply display name + lore via ItemMeta (NOT NBT) so the values survive
+            // any future component remap and don't fight the block_entity_data tag.
+            preset.displayName?.let { displayName ->
+                meta.displayName(
+                    LegacyComponentSerializer.legacyAmpersand()
+                        .deserialize(displayName)
+                        .decoration(TextDecoration.ITALIC, false)
+                )
+            }
+            if (preset.lore.isNotEmpty()) {
+                meta.lore(preset.lore.map { line ->
+                    LegacyComponentSerializer.legacyAmpersand()
+                        .deserialize(line)
+                        .decoration(TextDecoration.ITALIC, false)
+                })
             }
         }
         return item
     }
+
+    private fun presetIdKey(): org.bukkit.NamespacedKey =
+        org.bukkit.NamespacedKey(plugin, PRESET_ID_KEY_NAME)
 
     private fun buildBlockEntitySnbt(preset: SpawnerPreset): String {
         // Build the SNBT compound by hand. We deliberately keep this string-based
@@ -168,5 +180,17 @@ class SpawnerPresetManager(private val plugin: TrialChamberPro) {
 
     companion object {
         const val FILE_NAME = "spawner_presets.yml"
+
+        /**
+         * Local-name (not full-namespaced) key used for the `tcp:preset_id`
+         * PDC tag written onto preset items by [getItem] and copied onto
+         * placed `TrialSpawner` TileStates by `SpawnerPresetPlaceListener`.
+         * The full key is `tcp:preset_id`, formed via [org.bukkit.NamespacedKey]
+         * with the TCP plugin instance.
+         *
+         * Used by the (premium) `WildSpawnerResolver` to identify which
+         * preset a wild spawner originated from. v1.4.0+.
+         */
+        const val PRESET_ID_KEY_NAME = "preset_id"
     }
 }

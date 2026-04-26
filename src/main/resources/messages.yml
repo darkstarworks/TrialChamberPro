@@ -1,6 +1,26 @@
 # TrialChamberPro Messages
-# Use & for color codes
-# Available placeholders vary by message
+# =====================================================================
+# v1.4.0+ — MiniMessage support is now first-class.
+#
+# You can use either (or mix both in the same line):
+#
+#   1. Legacy & codes:    &aHello &lworld&r!
+#   2. MiniMessage tags:  <green>Hello <bold>world</bold>!</green>
+#   3. Hex colors:        &#FF5500Custom color   OR   <#FF5500>Custom color
+#   4. Gradients:         <gradient:#ff5500:#0000ff>Sunset to ocean</gradient>
+#   5. Click events:      <click:run_command:'/tcp menu'>Click me</click>
+#   6. Hover events:      <hover:show_text:'Tooltip text'>Hover me</hover>
+#
+# Existing messages with only & codes continue to work unchanged.
+# Migrating an entry to MiniMessage is opt-in, line by line.
+#
+# Note: chat messages (sent via player.sendMessage) get full MiniMessage
+# fidelity in v1.4.0+. Boss bars, GUI item names, and lore also have
+# full fidelity. Some MM features (gradients, click, hover) require
+# Component-based delivery — TCP routes them correctly automatically.
+#
+# Available placeholders vary by message; see surrounding comments.
+# =====================================================================
 
 prefix: "&8[&6TCP&8]&r "
 

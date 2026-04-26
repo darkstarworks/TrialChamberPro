@@ -24,12 +24,12 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
                 event.isCancelled = true
                 if (pending == null) {
                     UndoTracker.setPending(player.uniqueId, last.chamberName, confirmWindowSeconds)
-                    player.sendMessage(plugin.getMessage("undo-confirm",
+                    player.sendMessage(plugin.getMessageComponent("undo-confirm",
                         "chamber" to last.chamberName,
                         "seconds" to confirmWindowSeconds
                     ))
                 } else {
-                    player.sendMessage(plugin.getMessage("undo-confirm-pending",
+                    player.sendMessage(plugin.getMessageComponent("undo-confirm-pending",
                         "chamber" to pending.chamberName,
                         "seconds" to ((pending.expiresAt - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
                     ))
@@ -62,10 +62,10 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
                     plugin.scheduler.runAtEntity(player, Runnable {
                         if (player.isOnline) {
                             if (success) {
-                                player.sendMessage(plugin.getMessage("undo-deleted", "chamber" to pending.chamberName))
+                                player.sendMessage(plugin.getMessageComponent("undo-deleted", "chamber" to pending.chamberName))
                                 UndoTracker.clearLast(player.uniqueId)
                             } else {
-                                player.sendMessage(plugin.getMessage("undo-failed", "chamber" to pending.chamberName))
+                                player.sendMessage(plugin.getMessageComponent("undo-failed", "chamber" to pending.chamberName))
                             }
                         }
                     })
@@ -74,13 +74,13 @@ class UndoListener(private val plugin: TrialChamberPro) : Listener {
             "cancel" -> {
                 event.isCancelled = true
                 UndoTracker.clearPending(player.uniqueId)
-                player.sendMessage(plugin.getMessage("undo-cancelled"))
+                player.sendMessage(plugin.getMessageComponent("undo-cancelled"))
             }
             else -> {
                 // If expired meanwhile, inform player
                 if (System.currentTimeMillis() > pending.expiresAt) {
                     UndoTracker.clearPending(player.uniqueId)
-                    player.sendMessage(plugin.getMessage("undo-expired"))
+                    player.sendMessage(plugin.getMessageComponent("undo-expired"))
                 }
             }
         }

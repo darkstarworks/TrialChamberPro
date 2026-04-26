@@ -62,8 +62,8 @@ class PoolSelectorView(
             val col = 1 + (index % 7)
             pane.addItem(GuiItem(createNewPoolItem(pools.size, maxPools)) { event ->
                 event.isCancelled = true
-                player.sendMessage(plugin.getMessage("gui-pool-create-hint"))
-                player.sendMessage(plugin.getMessage("gui-pool-create-coming-soon"))
+                player.sendMessage(plugin.getMessageComponent("gui-pool-create-hint"))
+                player.sendMessage(plugin.getMessageComponent("gui-pool-create-coming-soon"))
             }, col, row)
         }
 

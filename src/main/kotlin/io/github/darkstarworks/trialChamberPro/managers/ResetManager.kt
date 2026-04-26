@@ -113,7 +113,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
      */
     private fun sendResetWarning(chamber: Chamber, secondsRemaining: Long) {
         val timeString = MessageUtil.formatTimeSeconds(secondsRemaining)
-        val message = plugin.getMessage("chamber-reset-warning",
+        val message = plugin.getMessageComponent("chamber-reset-warning",
             "chamber" to chamber.name,
             "time" to timeString
         )
@@ -164,15 +164,39 @@ class ResetManager(private val plugin: TrialChamberPro) {
             plugin.spawnerWaveManager.clearWavesInChamber(chamber)
 
             // Step 3: Restore from snapshot
-            val snapshotFile = chamber.getSnapshotFile()
-            if (snapshotFile != null && snapshotFile.exists()) {
-                // restoreFromSnapshot now suspends until every region-thread batch
-                // finishes, so spawner reset (Step 4) and vault cooldown clear
-                // (Step 6) are guaranteed to act on the restored blocks.
-                restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
-                blocksRestored = chamber.getVolume()
+            // v1.4.0: ChamberResetEvent.snapshotOverride lets listeners substitute
+            // a different snapshot for this reset cycle (premium / schematic
+            // injection use case). Falls back to the on-disk snapshot if the
+            // override fails to load.
+            val overrideBytes = preEvent.snapshotOverride
+            if (overrideBytes != null) {
+                val overrideBlocks = plugin.snapshotManager.loadSnapshotFromBytes(overrideBytes, chamber.name)
+                if (overrideBlocks != null) {
+                    restoreFromSnapshotBlocks(chamber, overrideBlocks, initiatingPlayer)
+                    blocksRestored = overrideBlocks.size
+                } else {
+                    plugin.logger.warning(
+                        "Snapshot override for chamber ${chamber.name} failed to load — falling back to on-disk snapshot"
+                    )
+                    val snapshotFile = chamber.getSnapshotFile()
+                    if (snapshotFile != null && snapshotFile.exists()) {
+                        restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
+                        blocksRestored = chamber.getVolume()
+                    } else {
+                        plugin.logger.warning("No on-disk snapshot found for chamber ${chamber.name}, skipping block restoration")
+                    }
+                }
             } else {
-                plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
+                val snapshotFile = chamber.getSnapshotFile()
+                if (snapshotFile != null && snapshotFile.exists()) {
+                    // restoreFromSnapshot now suspends until every region-thread batch
+                    // finishes, so spawner reset (Step 4) and vault cooldown clear
+                    // (Step 6) are guaranteed to act on the restored blocks.
+                    restoreFromSnapshot(chamber, snapshotFile, initiatingPlayer)
+                    blocksRestored = chamber.getVolume()
+                } else {
+                    plugin.logger.warning("No snapshot found for chamber ${chamber.name}, skipping block restoration")
+                }
             }
 
             // Step 4: Reset trial spawners (clear tracked players so they drop keys again)
@@ -195,7 +219,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
 
             // Send completion message
             plugin.scheduler.runTask(Runnable {
-                val message = plugin.getMessage("chamber-reset-complete")
+                val message = plugin.getMessageComponent("chamber-reset-complete")
                 Bukkit.getOnlinePlayers().forEach { it.sendMessage(message) }
             })
 
@@ -247,7 +271,7 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                 }
 
                                 player.teleport(destination)
-                                player.sendMessage(plugin.getMessage("teleported-to-exit", "chamber" to chamber.name))
+                                player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.name))
 
                                 // Track completion (thread-safe decrement)
                                 synchronized(this) {
@@ -504,6 +528,19 @@ class ResetManager(private val plugin: TrialChamberPro) {
             return
         }
 
+        restoreFromSnapshotBlocks(chamber, snapshot, initiatingPlayer)
+    }
+
+    /**
+     * Shared block-restoration tail used by both the on-disk path and the
+     * v1.4.0 [ChamberResetEvent.snapshotOverride] path. Suspends until every
+     * region-thread batch completes.
+     */
+    private suspend fun restoreFromSnapshotBlocks(
+        chamber: Chamber,
+        snapshot: Map<org.bukkit.Location, io.github.darkstarworks.trialChamberPro.models.BlockSnapshot>,
+        initiatingPlayer: Player? = null
+    ) {
         val blockRestorer = BlockRestorer(plugin)
         blockRestorer.restoreBlocks(
             snapshot,

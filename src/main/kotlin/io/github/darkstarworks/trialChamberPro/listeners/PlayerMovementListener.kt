@@ -76,7 +76,7 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
                 if (plugin.config.getBoolean("messages.chamber-entry-message", false)) {
                     val chamber = plugin.chamberManager.getChamberAt(to)
                     player.sendMessage(
-                        plugin.getMessage("chamber-entered", "chamber" to chamber?.name)
+                        plugin.getMessageComponent("chamber-entered", "chamber" to chamber?.name)
                     )
                 }
             }
@@ -90,7 +90,7 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
 
                 // Optional: Send exit message
                 if (plugin.config.getBoolean("messages.chamber-exit-message", false)) {
-                    player.sendMessage(plugin.getMessage("chamber-exited"))
+                    player.sendMessage(plugin.getMessageComponent("chamber-exited"))
                 }
             }
         }

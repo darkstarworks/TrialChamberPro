@@ -220,18 +220,18 @@ class ChamberDetailView(
     private fun handleTeleport(player: Player, left: Boolean, right: Boolean) {
         val world = chamber.getWorld()
         if (world == null) {
-            player.sendMessage(plugin.getMessage("gui-chamber-world-not-loaded"))
+            player.sendMessage(plugin.getMessageComponent("gui-chamber-world-not-loaded"))
             return
         }
         when {
             right -> {
                 val exitLoc = chamber.getExitLocation()
                 if (exitLoc == null) {
-                    player.sendMessage(plugin.getMessage("gui-no-exit-location"))
+                    player.sendMessage(plugin.getMessageComponent("gui-no-exit-location"))
                     return
                 }
                 player.teleport(exitLoc)
-                player.sendMessage(plugin.getMessage("gui-teleport-to-exit", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit", "chamber" to chamber.name))
             }
             else -> {
                 val centerX = (chamber.minX + chamber.maxX) / 2.0
@@ -239,7 +239,7 @@ class ChamberDetailView(
                 val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
                 val location = org.bukkit.Location(world, centerX, centerY, centerZ)
                 player.teleport(location)
-                player.sendMessage(plugin.getMessage("gui-teleport-to-center", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-teleport-to-center", "chamber" to chamber.name))
             }
         }
         player.closeInventory()
@@ -248,7 +248,7 @@ class ChamberDetailView(
     private fun handleResetChamberClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         when {
             shift && right -> {
-                player.sendMessage(plugin.getMessage("gui-forcing-reset", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-forcing-reset", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
                         plugin.resetManager.resetChamber(
@@ -256,12 +256,12 @@ class ChamberDetailView(
                             io.github.darkstarworks.trialChamberPro.api.events.ChamberResetEvent.Reason.FORCED
                         )
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
+                            player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
                             player.closeInventory()
                         })
                     } catch (e: Exception) {
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
+                            player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                         })
                     }
                 }
@@ -274,13 +274,13 @@ class ChamberDetailView(
     private fun handleExitPlayersClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         val playersInChamber = chamber.getPlayersInside()
         if (playersInChamber.isEmpty()) {
-            player.sendMessage(plugin.getMessage("gui-no-players-in-chamber"))
+            player.sendMessage(plugin.getMessageComponent("gui-no-players-in-chamber"))
             return
         }
         when {
             shift && right -> {
                 exitPlayers(playersInChamber)
-                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersInChamber.size, "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to playersInChamber.size, "chamber" to chamber.name))
                 player.closeInventory()
             }
             left -> scheduleExit(player, playersInChamber, 15)
@@ -293,34 +293,34 @@ class ChamberDetailView(
             shift && left -> {
                 val snapshotFile = chamber.getSnapshotFile()
                 if (snapshotFile == null || !snapshotFile.exists()) {
-                    player.sendMessage(plugin.getMessage("gui-no-snapshot-exists"))
+                    player.sendMessage(plugin.getMessageComponent("gui-no-snapshot-exists"))
                     return
                 }
-                player.sendMessage(plugin.getMessage("gui-restoring-snapshot", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-restoring-snapshot", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
                         plugin.resetManager.resetChamber(chamber, player)
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-snapshot-restored"))
+                            player.sendMessage(plugin.getMessageComponent("gui-snapshot-restored"))
                         })
                     } catch (e: Exception) {
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-restore-failed", "error" to (e.message ?: "Unknown error")))
+                            player.sendMessage(plugin.getMessageComponent("gui-restore-failed", "error" to (e.message ?: "Unknown error")))
                         })
                     }
                 }
             }
             left -> {
-                player.sendMessage(plugin.getMessage("gui-creating-snapshot", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-creating-snapshot", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
                         plugin.snapshotManager.createSnapshot(chamber)
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-snapshot-created"))
+                            player.sendMessage(plugin.getMessageComponent("gui-snapshot-created"))
                         })
                     } catch (e: Exception) {
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-snapshot-create-failed", "error" to (e.message ?: "Unknown error")))
+                            player.sendMessage(plugin.getMessageComponent("gui-snapshot-create-failed", "error" to (e.message ?: "Unknown error")))
                         })
                     }
                 }
@@ -331,17 +331,17 @@ class ChamberDetailView(
     // ==================== Utility Methods ====================
 
     private fun scheduleReset(player: Player, seconds: Int) {
-        player.sendMessage(plugin.getMessage("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
+        player.sendMessage(plugin.getMessageComponent("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
         plugin.scheduler.runTaskLater(Runnable {
             plugin.launchAsync {
                 try {
                     plugin.resetManager.resetChamber(chamber, player)
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
+                        player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
                     })
                 } catch (e: Exception) {
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
+                        player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                     })
                 }
             }
@@ -349,16 +349,16 @@ class ChamberDetailView(
     }
 
     private fun scheduleExit(player: Player, playersToExit: List<Player>, seconds: Int) {
-        player.sendMessage(plugin.getMessage("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
+        player.sendMessage(plugin.getMessageComponent("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
         playersToExit.forEach { p ->
             plugin.scheduler.runAtEntity(p, Runnable {
-                p.sendMessage(plugin.getMessage("gui-exit-warning", "seconds" to seconds))
+                p.sendMessage(plugin.getMessageComponent("gui-exit-warning", "seconds" to seconds))
             })
         }
         plugin.scheduler.runTaskLater(Runnable {
             exitPlayers(playersToExit)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
             })
         }, seconds * 20L)
     }
@@ -369,7 +369,7 @@ class ChamberDetailView(
             plugin.scheduler.runAtEntity(p, Runnable {
                 if (p.isOnline) {
                     p.teleport(dest)
-                    p.sendMessage(plugin.getMessage("gui-player-ejected"))
+                    p.sendMessage(plugin.getMessageComponent("gui-player-ejected"))
                 }
             })
         }

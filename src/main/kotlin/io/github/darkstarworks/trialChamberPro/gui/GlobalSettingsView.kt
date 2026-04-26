@@ -96,7 +96,7 @@ class GlobalSettingsView(
         val valueText = plugin.getMessage(
             if (newValue) "gui.common.setting-enabled" else "gui.common.setting-disabled"
         )
-        player.sendMessage(plugin.getMessage("gui.common.setting-toggled",
+        player.sendMessage(plugin.getMessageComponent("gui.common.setting-toggled",
             "setting" to settingLabel, "value" to valueText))
 
         menu.openGlobalSettings(player)
