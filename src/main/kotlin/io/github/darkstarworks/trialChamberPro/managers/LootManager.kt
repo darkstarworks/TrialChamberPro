@@ -888,7 +888,7 @@ class LootManager(private val plugin: TrialChamberPro) {
         }
 
         // Notify player
-        player.sendMessage(plugin.getMessage("loot-received", "item" to reward.displayName))
+        player.sendMessage(plugin.getMessageComponent("loot-received", "item" to reward.displayName))
     }
 
     /**

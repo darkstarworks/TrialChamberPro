@@ -32,7 +32,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (synchronous, cache-based)
         if (plugin.chamberManager.isInChamber(location)) {
             event.isCancelled = true
-            player.sendMessage(plugin.getMessage("cannot-break-blocks"))
+            player.sendMessage(plugin.getMessageComponent("cannot-break-blocks"))
         }
     }
 
@@ -50,7 +50,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (synchronous, cache-based)
         if (plugin.chamberManager.isInChamber(location)) {
             event.isCancelled = true
-            player.sendMessage(plugin.getMessage("cannot-place-blocks"))
+            player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
         }
     }
 
@@ -74,7 +74,7 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check if in chamber (cache-only, sync)
         if (plugin.chamberManager.isInChamber(location)) {
             event.isCancelled = true
-            player.sendMessage(plugin.getMessage("cannot-access-container"))
+            player.sendMessage(plugin.getMessageComponent("cannot-access-container"))
         }
     }
 

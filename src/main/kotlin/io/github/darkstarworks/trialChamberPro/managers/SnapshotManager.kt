@@ -185,6 +185,58 @@ class SnapshotManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Loads a snapshot from in-memory gzip-compressed bytes (the same format
+     * a snapshot file holds). Used by the public `ChamberResetEvent.snapshotOverride`
+     * hook (v1.4.0+) so listeners can substitute reset content without
+     * touching the chamber's persisted snapshot file.
+     *
+     * Returns null if the bytes fail to decompress, fail validation, or
+     * reference an unknown world. Caller falls back to the on-disk snapshot
+     * in that case.
+     *
+     * @param bytes Gzip-compressed serialized [SnapshotData].
+     * @param contextLabel Short label included in log messages (e.g. the
+     *                     chamber name) so admins can trace which override
+     *                     produced a parse failure.
+     */
+    suspend fun loadSnapshotFromBytes(
+        bytes: ByteArray,
+        contextLabel: String = "<override>"
+    ): Map<Location, BlockSnapshot>? = withContext(Dispatchers.IO) {
+        try {
+            val snapshotData = CompressionUtil.decompressObject<SnapshotData>(bytes)
+
+            if (!validateSnapshot(snapshotData)) {
+                plugin.logger.warning("Snapshot override validation failed for $contextLabel")
+                return@withContext null
+            }
+
+            val world = plugin.server.getWorld(snapshotData.worldName)
+            if (world == null) {
+                plugin.logger.warning("Snapshot override references unknown world '${snapshotData.worldName}' for $contextLabel")
+                return@withContext null
+            }
+
+            val blocks = mutableMapOf<Location, BlockSnapshot>()
+            snapshotData.blocks.forEach { (relativePos, blockSnapshot) ->
+                val location = Location(
+                    world,
+                    (snapshotData.originX + relativePos.first).toDouble(),
+                    (snapshotData.originY + relativePos.second).toDouble(),
+                    (snapshotData.originZ + relativePos.third).toDouble()
+                )
+                blocks[location] = blockSnapshot
+            }
+
+            plugin.logger.info("Loaded snapshot override for $contextLabel (${blocks.size} blocks)")
+            blocks
+        } catch (e: Exception) {
+            plugin.logger.warning("Failed to load snapshot override for $contextLabel: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * Validates a snapshot's data integrity.
      *
      * @param snapshotData The snapshot data to validate

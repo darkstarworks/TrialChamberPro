@@ -88,7 +88,7 @@ class LootTypeSelectView(
     private fun handleResetChamberClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         when {
             shift && right -> {
-                player.sendMessage(plugin.getMessage("gui-forcing-reset", "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-forcing-reset", "chamber" to chamber.name))
                 plugin.launchAsync {
                     try {
                         plugin.resetManager.resetChamber(
@@ -96,12 +96,12 @@ class LootTypeSelectView(
                             io.github.darkstarworks.trialChamberPro.api.events.ChamberResetEvent.Reason.FORCED
                         )
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
+                            player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
                             player.closeInventory()
                         })
                     } catch (e: Exception) {
                         plugin.scheduler.runAtEntity(player, Runnable {
-                            player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
+                            player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                         })
                     }
                 }
@@ -114,13 +114,13 @@ class LootTypeSelectView(
     private fun handleExitPlayersClick(player: Player, left: Boolean, right: Boolean, shift: Boolean) {
         val playersInChamber = chamber.getPlayersInside()
         if (playersInChamber.isEmpty()) {
-            player.sendMessage(plugin.getMessage("gui-no-players-in-chamber"))
+            player.sendMessage(plugin.getMessageComponent("gui-no-players-in-chamber"))
             return
         }
         when {
             shift && right -> {
                 exitPlayers(playersInChamber)
-                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersInChamber.size, "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to playersInChamber.size, "chamber" to chamber.name))
                 player.closeInventory()
             }
             left -> scheduleExit(player, playersInChamber, 15)
@@ -129,17 +129,17 @@ class LootTypeSelectView(
     }
 
     private fun scheduleReset(player: Player, seconds: Int) {
-        player.sendMessage(plugin.getMessage("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
+        player.sendMessage(plugin.getMessageComponent("gui-reset-scheduled", "chamber" to chamber.name, "seconds" to seconds))
         plugin.scheduler.runTaskLater(Runnable {
             plugin.launchAsync {
                 try {
                     plugin.resetManager.resetChamber(chamber, player)
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(plugin.getMessage("gui-chamber-reset-complete", "chamber" to chamber.name))
+                        player.sendMessage(plugin.getMessageComponent("gui-chamber-reset-complete", "chamber" to chamber.name))
                     })
                 } catch (e: Exception) {
                     plugin.scheduler.runAtEntity(player, Runnable {
-                        player.sendMessage(plugin.getMessage("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
+                        player.sendMessage(plugin.getMessageComponent("gui-reset-failed", "error" to (e.message ?: "Unknown error")))
                     })
                 }
             }
@@ -147,16 +147,16 @@ class LootTypeSelectView(
     }
 
     private fun scheduleExit(player: Player, playersToExit: List<Player>, seconds: Int) {
-        player.sendMessage(plugin.getMessage("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
+        player.sendMessage(plugin.getMessageComponent("gui-exit-scheduled", "chamber" to chamber.name, "seconds" to seconds))
         playersToExit.forEach { p ->
             plugin.scheduler.runAtEntity(p, Runnable {
-                p.sendMessage(plugin.getMessage("gui-exit-warning", "seconds" to seconds))
+                p.sendMessage(plugin.getMessageComponent("gui-exit-warning", "seconds" to seconds))
             })
         }
         plugin.scheduler.runTaskLater(Runnable {
             exitPlayers(playersToExit)
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessage("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
+                player.sendMessage(plugin.getMessageComponent("gui-players-ejected", "count" to playersToExit.size, "chamber" to chamber.name))
             })
         }, seconds * 20L)
     }
@@ -167,7 +167,7 @@ class LootTypeSelectView(
             plugin.scheduler.runAtEntity(p, Runnable {
                 if (p.isOnline) {
                     p.teleport(dest)
-                    p.sendMessage(plugin.getMessage("gui-player-ejected"))
+                    p.sendMessage(plugin.getMessageComponent("gui-player-ejected"))
                 }
             })
         }

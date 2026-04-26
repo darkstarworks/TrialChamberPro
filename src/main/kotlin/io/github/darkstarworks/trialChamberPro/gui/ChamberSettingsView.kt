@@ -177,9 +177,9 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.updateResetInterval(chamber.id, newInterval)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-reset-interval-set", "value" to newName))
+                    player.sendMessage(plugin.getMessageComponent("gui-reset-interval-set", "value" to newName))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-reset-interval-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-reset-interval-failed"))
             })
         }
     }
@@ -192,9 +192,9 @@ class ChamberSettingsView(
             )
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-exit-location-set"))
+                    player.sendMessage(plugin.getMessageComponent("gui-exit-location-set"))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-exit-location-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-exit-location-failed"))
             })
         }
     }
@@ -202,18 +202,18 @@ class ChamberSettingsView(
     private fun teleportToExit(player: Player) {
         val exitLoc = chamber.getExitLocation()
         if (exitLoc == null) {
-            player.sendMessage(plugin.getMessage("gui-no-exit-location"))
+            player.sendMessage(plugin.getMessageComponent("gui-no-exit-location"))
             return
         }
         player.teleport(exitLoc)
-        player.sendMessage(plugin.getMessage("gui-teleport-to-exit"))
+        player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit"))
         player.closeInventory()
     }
 
     private fun cycleLootTable(player: Player, vaultType: VaultType, direction: Int) {
         val tables = plugin.lootManager.getLootTableNames().sorted()
         if (tables.isEmpty()) {
-            player.sendMessage(plugin.getMessage("gui-no-loot-tables"))
+            player.sendMessage(plugin.getMessageComponent("gui-no-loot-tables"))
             return
         }
         val currentOverride = when (vaultType) {
@@ -230,9 +230,9 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, newTable)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-loot-table-set", "type" to vaultType.displayName, "table" to newTable))
+                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-set", "type" to vaultType.displayName, "table" to newTable))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-loot-table-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-loot-table-failed"))
             })
         }
     }
@@ -242,9 +242,9 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.setLootTable(chamber.name, vaultType, null)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-loot-table-cleared", "type" to vaultType.displayName))
+                    player.sendMessage(plugin.getMessageComponent("gui-loot-table-cleared", "type" to vaultType.displayName))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-loot-clear-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-loot-clear-failed"))
             })
         }
     }
@@ -261,9 +261,9 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, newCooldown)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-set", "value" to newName))
+                    player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-set", "value" to newName))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-spawner-cooldown-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-failed"))
             })
         }
     }
@@ -273,9 +273,9 @@ class ChamberSettingsView(
             val success = plugin.chamberManager.updateSpawnerCooldown(chamber.id, null)
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (success) {
-                    player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset"))
+                    player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-reset"))
                     plugin.chamberManager.getCachedChamberById(chamber.id)?.let { menu.openChamberSettings(player, it) }
-                } else player.sendMessage(plugin.getMessage("gui-spawner-cooldown-reset-failed"))
+                } else player.sendMessage(plugin.getMessageComponent("gui-spawner-cooldown-reset-failed"))
             })
         }
     }

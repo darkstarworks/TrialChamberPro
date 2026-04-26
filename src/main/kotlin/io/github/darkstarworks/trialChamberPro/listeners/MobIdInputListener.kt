@@ -70,7 +70,7 @@ class MobIdInputListener(private val plugin: TrialChamberPro) : Listener {
         val raw = PlainTextComponentSerializer.plainText().serialize(event.message()).trim()
         if (raw.isEmpty() || raw.equals("cancel", ignoreCase = true)) {
             plugin.scheduler.runAtEntity(player, Runnable {
-                player.sendMessage(plugin.getMessage("gui-mob-input-cancelled"))
+                player.sendMessage(plugin.getMessageComponent("gui-mob-input-cancelled"))
                 reopen(player.uniqueId, p.chamberId)
             })
             return
@@ -80,7 +80,7 @@ class MobIdInputListener(private val plugin: TrialChamberPro) : Listener {
             val chamber = plugin.chamberManager.getCachedChamberById(p.chamberId)
             if (chamber == null) {
                 plugin.scheduler.runAtEntity(player, Runnable {
-                    player.sendMessage(plugin.getMessage("gui-mob-input-no-chamber"))
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-input-no-chamber"))
                 })
                 return@launchAsync
             }
@@ -91,7 +91,7 @@ class MobIdInputListener(private val plugin: TrialChamberPro) : Listener {
 
             if (targetList.any { it.equals(raw, ignoreCase = true) }) {
                 plugin.scheduler.runAtEntity(player, Runnable {
-                    player.sendMessage(plugin.getMessage("gui-mob-input-duplicate", "id" to raw))
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-input-duplicate", "id" to raw))
                     reopen(player.uniqueId, p.chamberId)
                 })
                 return@launchAsync
@@ -106,11 +106,11 @@ class MobIdInputListener(private val plugin: TrialChamberPro) : Listener {
             )
             plugin.scheduler.runAtEntity(player, Runnable {
                 if (ok) {
-                    player.sendMessage(plugin.getMessage("gui-mob-input-added",
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-input-added",
                         "id" to raw,
                         "section" to p.section.name.lowercase()))
                 } else {
-                    player.sendMessage(plugin.getMessage("gui-mob-input-failed"))
+                    player.sendMessage(plugin.getMessageComponent("gui-mob-input-failed"))
                 }
                 reopen(player.uniqueId, p.chamberId)
             })

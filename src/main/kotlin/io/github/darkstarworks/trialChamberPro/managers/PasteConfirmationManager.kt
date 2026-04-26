@@ -44,7 +44,7 @@ class PasteConfirmationManager(private val plugin: TrialChamberPro) {
             if (hasPending(player)) {
                 // Send message on player's region thread
                 plugin.scheduler.runAtEntity(player, Runnable {
-                    player.sendMessage(plugin.getMessage("paste-timeout"))
+                    player.sendMessage(plugin.getMessageComponent("paste-timeout"))
                 })
                 cancelPending(player, silent = true)
             }
@@ -76,7 +76,7 @@ class PasteConfirmationManager(private val plugin: TrialChamberPro) {
         plugin.particleVisualizer.stopVisualization(player)
 
         if (!silent) {
-            player.sendMessage(plugin.getMessage("paste-cancelled"))
+            player.sendMessage(plugin.getMessageComponent("paste-cancelled"))
         }
     }
 

@@ -1,4 +1,13 @@
 <black>.
+<aqua>[1.4.0] <gray>- <white>2026-04-26
+<lime>+ <white>NEW: <green>Phase 2 extension API — three more seams for premium add-ons and third-party integrations.
+<lime>+ <white>NEW: <green>Pre-reset snapshot substitution (<yellow>ChamberResetEvent.snapshotOverride<green>) — listeners can swap in a different snapshot per reset cycle without modifying the chamber's saved file.
+<lime>+ <white>NEW: <green>WildSpawnerResolver SPI — pluggable hook that lets premium add-ons spawn custom-plugin mobs from trial spawners outside registered chambers (was previously chamber-only).
+<lime>+ <white>NEW: <green>Preset-spawner PDC tagging — items from <yellow>/tcp give<green> are tagged with their preset id, copied onto the placed block so resolvers can identify the source.
+<lime>+ <white>NEW: <green>DatabaseManager opened for extension + auto-registered with Bukkit's ServicesManager.
+<lime>+ <white>NEW: <green>Full <yellow>MiniMessage<green> support across every text surface — gradients, clickable text, hover tooltips, custom fonts. Existing <yellow>&<green> codes continue to work unchanged; mix freely.
+<lime>+ <white>NEW: <green>349 chat sites migrated to Component-based delivery so MM features render correctly in chat, boss bars, GUI item names, and lore.
+<lime>+ <white>FIX: <green>Wave-size off-by-one — bars no longer over-count by <yellow>perPlayer<green>×nearby players. Now matches Mojang's <yellow>floor(base + perPlayer × max(0, players - 1))<green> exactly.
 <aqua>[1.3.3] <gray>- <white>2026-04-26
 <lime>+ <white>NEW: <green>Public extension API — third-party plugins can now hook vault opens (<yellow>PreVaultOpenEvent<green>, cancellable + loot-table override) and trial-spawner mob spawns (<yellow>ChamberMobSpawnedEvent<green>) with full chamber + wave context.
 <lime>+ <white>NEW: <green>Module SPI (<yellow>TCPModule<green> + registry) — uniform lifecycle contract for plugins that extend TCP. Auto-unregisters on backing-plugin disable.

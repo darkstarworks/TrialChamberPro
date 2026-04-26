@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.0] - 2026-04-26
+### Added
+- **Phase 2 of the public extension API** — three more seams aimed at premium add-on modules and third-party integrations. No breaking changes; all existing behavior preserved when no listener / service is registered.
+- **`DatabaseManager` opened for extension.** Class is now `open` (was final) and the `plugin` constructor parameter is `protected` so subclasses in other packages can access it. The instance is auto-registered with Bukkit's `ServicesManager` at TCP startup so consumers can resolve it via `Bukkit.getServicesManager().load(DatabaseManager::class.java)`. Designed for the planned premium "Network Sync" module that adds Postgres / MariaDB / Redis backends. (Note: TCP itself currently still references its own `databaseManager` field directly throughout its own codebase, so subclass replacement only takes effect for callers that explicitly resolve via the services manager — full runtime substitution at every call site is planned for a future major version.)
+- **`ChamberResetEvent.snapshotOverride`** (mutable `ByteArray?`) — pre-reset hook lets listeners substitute a different snapshot for a single reset cycle without persistently modifying the chamber's on-disk snapshot. Bytes must be a gzip-compressed serialized `SnapshotData` (TCP's native snapshot format). New `SnapshotManager.loadSnapshotFromBytes(bytes, contextLabel)` deserializes the override; falls back to the on-disk snapshot with a logged warning if the override fails to load. Designed for premium / third-party "schematic injection" or "instance variant" workflows.
+- **`WildSpawnerResolver`** SPI in `api/` — pluggable lookup for the question "should this wild trial spawner spawn custom-plugin mobs, and if so, which provider + mob ids?". Lifts the long-standing limitation that TCP's Custom Mob Provider only worked inside registered chambers. Implementations register as a Bukkit service (`ServicesManager.register(WildSpawnerResolver::class.java, ...)`); TCP's `SpawnerWaveListener` consults the active resolver on every wild-spawner spawn observation. Returning a non-null `Config(providerId, normalIds, ominousIds)` triggers TCP's existing replace-after-spawn logic — vanilla mob removed the same tick, custom provider mob spawned at the same location, wave tracking and key drops preserved. **The seam lives in free TCP; the resolver implementation will ship in the planned premium "Wild Custom-Mob Spawners" module** (per the v1.3.1 architectural boundary: trial-spawner-only is the line, wild-spawner custom mobs are premium territory).
+- **`SpawnerPresetManager.PRESET_ID_KEY_NAME`** + automatic PDC tagging — every item produced by `SpawnerPresetManager.getItem` (i.e. given out via `/tcp give <preset>`) now carries a `tcp:preset_id` PersistentDataContainer tag with the source preset's id.
+- **`SpawnerPresetPlaceListener`** — copies the `tcp:preset_id` tag from a placed trial-spawner item onto the resulting block's `TileState`. Lets `WildSpawnerResolver` implementations identify which preset a placed wild spawner originated from, even after the source ItemStack is gone. Tag survives chamber resets, chunk unloads, and world reloads via Minecraft's standard TileEntity persistence. Vanilla `/give minecraft:trial_spawner` items (no tag) are ignored.
+
+### Added — MiniMessage support
+- **First-class [MiniMessage](https://docs.advntr.dev/minimessage/format.html) support across every user-facing text surface.** New `MessageParser` utility (`utils/MessageParser.kt`) translates raw `messages.yml` entries through MiniMessage as the primary syntax while remaining fully backwards-compatible with legacy `&` colour/format codes (and `&#RRGGBB` hex). Existing `messages.yml` files render unchanged; users adopt MM syntax entry-by-entry on their own schedule. Mixed input works too — `&aHello <gradient:#ff0000:#0000ff>world</gradient>` renders correctly.
+- **MM features now usable in TCP messages** that legacy `&` codes can't express:
+  - Gradients: `<gradient:#ff5500:#0000ff>Sunset to ocean</gradient>`
+  - Click events: `<click:run_command:'/tcp menu'>[Open menu]</click>`
+  - Hover tooltips: `<hover:show_text:'Bonus active'><gold>★</gold></hover>`
+  - Custom fonts (resource-pack supplied): `<font:server:fancy>...</font>`
+  - Cleaner hex syntax: `<#FF5500>` instead of `&#FF5500`
+- **New `TrialChamberPro.getMessageComponent(key, ...): Component`** — companion to the existing `getMessage()` String method. Returns a fully-styled Adventure Component preserving all MiniMessage features (gradients, click/hover, fonts) end-to-end through `Player.sendMessage(Component)`.
+- **All ~349 `sendMessage` call sites in TCP migrated** from the legacy String path to `getMessageComponent` so chat messages get full MiniMessage fidelity. Includes boss bar text, chat notifications (vault opened, chamber entered, reset warnings, spectator messages, discovery announcements, wave completion), death messages, and all command feedback.
+- **GUI helpers (`getGuiText`, `getGuiLore`) now route through MessageParser** — item names and lore in all 18 admin GUI views support full MM fidelity.
+- **Documentation updated** ([docs/configuration/messages.yml.md](docs/configuration/messages.yml.md)) — comprehensive coverage of both syntaxes side-by-side, mixed-format examples, and MM-only feature documentation. The `messages.yml` resource header explains the two formats with examples.
+- **Conflict-free with other plugins** — TCP parses its own messages internally; chat plugins (DiscordSRV, EssentialsXChat, ChatControl) only intercept `AsyncChatEvent` (player-typed chat), not plugin-sent notifications, so there's no double-processing risk. This is the same pattern MythicMobs, EcoEnchants, LuckPerms, and CMI use.
+
+### Fixed
+- **Trial-spawner wave size off-by-one (the v1.3.2 follow-up).** v1.3.2 introduced `SpawnerWaveManager.computeExpectedMobs` to read the spawner's actual `total_mobs` / `total_mobs_added_per_player` config instead of hard-coding 6. The formula was `base + perPlayer × players`, but Mojang's actual `TrialSpawnerData` formula is `base + perPlayer × max(0, players - 1)` — the FIRST detected player gets the base count, each ADDITIONAL player adds the per-player bonus. The off-by-one over-counted by `perPlayer` per nearby player, producing the user-reported bug "spawner has 20 configured, bar shows 1/30, wave actually ends at 20". Plugin now matches vanilla exactly: `floor(base + perPlayer × additional)` where `additional = max(0, players - 1)`. Also switched `ceil` → `floor` to match Mojang's rounding.
+- **Secondary fallback bug surfaced by the same code path.** When Paper's `state.trackedPlayers` returned empty (e.g. between waves), the recompute fell back to `wave.participatingPlayers.size` — which counts players within the boss-bar detection radius (default 20 blocks), not within the spawner's `requiredPlayerRange` (default 14). With more players in the boss-bar radius than vanilla actually tracked, the fallback could inflate the result beyond what `state.trackedPlayers.size` would have produced. Fallback is now `1` so it can never exceed what the authoritative API would say.
+
+### Changed
+- `ResetManager.resetChamber` now consults `ChamberResetEvent.snapshotOverride` after firing the pre-event. If non-null, the override bytes are restored instead of the on-disk snapshot; if the override fails to load, the on-disk snapshot is used and a warning is logged. Internal helper `restoreFromSnapshotBlocks` extracted to share the BlockRestorer call between the on-disk and override paths.
+- `SpawnerWaveListener` gains a wild-spawner-replacement branch that fires immediately after `configureWildSpawnerCooldown`. When no `WildSpawnerResolver` service is registered (the default in free TCP), the branch is a single nullable lookup and a return-false — zero behavior change for end users.
+- `TrialChamberPro.onEnable` registers `SpawnerPresetPlaceListener` alongside the existing listener block, and registers the `DatabaseManager` instance with `ServicesManager` immediately after it initializes.
+- `TrialChamberPro.getMessage` and `getMessageComponent` share a new private helper `rawMessageWithPrefix` for placeholder substitution + chat-prefix logic. Behavior is identical to v1.3.x but the Component path now exists alongside the String path.
+- `SpawnerWaveManager`'s private boss-bar `getMessageComponent` helper now delegates to `plugin.getMessageComponent` so boss bars inherit the same MM-aware parsing as chat messages. The local `LegacyComponentSerializer` import is removed.
+
 ## [1.3.3] - 2026-04-26
 ### Added
 - **Public extension API** — first instalment of the prerequisite seams that third-party plugins (and the planned premium add-on modules) need to integrate with TCP cleanly. No behavior change for end users; pure new surface area.
@@ -1138,6 +1172,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.0...v1.3.1

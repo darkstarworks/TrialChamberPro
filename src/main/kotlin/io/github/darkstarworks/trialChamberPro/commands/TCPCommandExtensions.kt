@@ -13,19 +13,19 @@ import org.bukkit.inventory.ItemStack
 
 fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out String>) {
     if (!sender.hasPermission("tcp.admin.vault")) {
-        sender.sendMessage(plugin.getMessage("no-permission"))
+        sender.sendMessage(plugin.getMessageComponent("no-permission"))
         return
     }
 
     if (args.size < 2) {
-        sender.sendMessage(plugin.getMessage("usage-vault-reset"))
+        sender.sendMessage(plugin.getMessageComponent("usage-vault-reset"))
         return
     }
 
     when (args[1].lowercase()) {
         "reset" -> {
             if (args.size < 4) {
-                sender.sendMessage(plugin.getMessage("usage-vault-reset"))
+                sender.sendMessage(plugin.getMessageComponent("usage-vault-reset"))
                 return
             }
 
@@ -36,7 +36,7 @@ fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
             plugin.launchAsync {
                 val chamber = plugin.chamberManager.getChamber(chamberName)
                 if (chamber == null) {
-                    sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                     return@launchAsync
                 }
 
@@ -63,33 +63,33 @@ fun handleVault(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
                     }
                 }
 
-                sender.sendMessage(plugin.getMessage("vault-reset",
+                sender.sendMessage(plugin.getMessageComponent("vault-reset",
                     "player" to playerName,
                     "count" to resetCount
                 ))
             }
         }
         else -> {
-            sender.sendMessage(plugin.getMessage("usage-vault-reset"))
+            sender.sendMessage(plugin.getMessageComponent("usage-vault-reset"))
         }
     }
 }
 
 fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out String>) {
     if (!sender.hasPermission("tcp.admin.key")) {
-        sender.sendMessage(plugin.getMessage("no-permission"))
+        sender.sendMessage(plugin.getMessageComponent("no-permission"))
         return
     }
 
     if (args.size < 2) {
-        sender.sendMessage(plugin.getMessage("usage-key-give"))
+        sender.sendMessage(plugin.getMessageComponent("usage-key-give"))
         return
     }
 
     when (args[1].lowercase()) {
         "give" -> {
             if (args.size < 4) {
-                sender.sendMessage(plugin.getMessage("usage-key-give"))
+                sender.sendMessage(plugin.getMessageComponent("usage-key-give"))
                 return
             }
 
@@ -99,13 +99,13 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
 
             val amount = amountStr.toIntOrNull()
             if (amount == null || amount <= 0) {
-                sender.sendMessage(plugin.getMessage("key-invalid-amount"))
+                sender.sendMessage(plugin.getMessageComponent("key-invalid-amount"))
                 return
             }
 
             val targetPlayer = Bukkit.getPlayer(playerName)
             if (targetPlayer == null) {
-                sender.sendMessage(plugin.getMessage("error-player-not-found"))
+                sender.sendMessage(plugin.getMessageComponent("error-player-not-found"))
                 return
             }
 
@@ -115,7 +115,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
                     try {
                         Material.valueOf("OMINOUS_TRIAL_KEY")
                     } catch (_: IllegalArgumentException) {
-                        sender.sendMessage(plugin.getMessage("error-ominous-key-unavailable"))
+                        sender.sendMessage(plugin.getMessageComponent("error-ominous-key-unavailable"))
                         return
                     }
                 }
@@ -125,7 +125,7 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
             val keyItem = ItemStack(keyMaterial, amount)
             targetPlayer.inventory.addItem(keyItem)
 
-            sender.sendMessage(plugin.getMessage("key-given",
+            sender.sendMessage(plugin.getMessageComponent("key-given",
                 "amount" to amount,
                 "type" to keyTypeStr.replaceFirstChar { it.uppercase() },
                 "player" to playerName
@@ -133,14 +133,14 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
         }
         "check" -> {
             if (args.size < 3) {
-                sender.sendMessage(plugin.getMessage("usage-key-check"))
+                sender.sendMessage(plugin.getMessageComponent("usage-key-check"))
                 return
             }
 
             val playerName = args[2]
             val targetPlayer = Bukkit.getPlayer(playerName)
             if (targetPlayer == null) {
-                sender.sendMessage(plugin.getMessage("error-player-not-found"))
+                sender.sendMessage(plugin.getMessageComponent("error-player-not-found"))
                 return
             }
 
@@ -163,14 +163,14 @@ fun handleKey(plugin: TrialChamberPro, sender: CommandSender, args: Array<out St
                 }
             }
 
-            sender.sendMessage(plugin.getMessage("key-check",
+            sender.sendMessage(plugin.getMessageComponent("key-check",
                 "player" to playerName,
                 "normal" to normalKeys,
                 "ominous" to ominousKeys
             ))
         }
         else -> {
-            sender.sendMessage(plugin.getMessage("usage-key"))
+            sender.sendMessage(plugin.getMessageComponent("usage-key"))
         }
     }
 }

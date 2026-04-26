@@ -40,12 +40,12 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
 
         // Set custom death message synchronously (while event is still being processed)
         if (plugin.config.getBoolean("messages.custom-death-message", false)) {
+            // v1.4.0: deathMessage takes a Component — use the MM-aware
+            // getMessageComponent directly instead of wrapping legacy String.
             event.deathMessage(
-                net.kyori.adventure.text.Component.text(
-                    plugin.getMessage("player-died-in-chamber",
-                        "player" to player.name,
-                        "chamber" to chamber.name
-                    )
+                plugin.getMessageComponent("player-died-in-chamber",
+                    "player" to player.name,
+                    "chamber" to chamber.name
                 )
             )
         }

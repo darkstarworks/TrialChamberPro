@@ -13,23 +13,23 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.mobs")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("mobs-usage-root"))
-            sender.sendMessage(plugin.getMessage("mobs-usage-providers"))
+            sender.sendMessage(plugin.getMessageComponent("mobs-usage-root"))
+            sender.sendMessage(plugin.getMessageComponent("mobs-usage-providers"))
             return
         }
 
         if (args[1].equals("providers", ignoreCase = true)) {
-            sender.sendMessage(plugin.getMessage("mobs-providers-header"))
+            sender.sendMessage(plugin.getMessageComponent("mobs-providers-header"))
             plugin.trialMobProviderRegistry.all().forEach { p ->
                 val status = plugin.getMessage(
                     if (p.isAvailable()) "mobs-status-available" else "mobs-status-unavailable"
                 )
-                sender.sendMessage(plugin.getMessage(
+                sender.sendMessage(plugin.getMessageComponent(
                     "mobs-providers-entry",
                     "id" to p.id,
                     "name" to p.displayName,
@@ -41,7 +41,7 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
         val chamberName = args[1]
         if (args.size < 3) {
-            sender.sendMessage(plugin.getMessage("mobs-usage-chamber", "chamber" to chamberName))
+            sender.sendMessage(plugin.getMessageComponent("mobs-usage-chamber", "chamber" to chamberName))
             return
         }
         val action = args[2].lowercase()
@@ -49,7 +49,7 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
@@ -62,23 +62,23 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     val ominousList = chamber.customMobIdsOminous.takeIf { it.isNotEmpty() }
                         ?.joinToString(", ")
                         ?: plugin.getMessage("mobs-list-falls-back")
-                    sender.sendMessage(plugin.getMessage(
+                    sender.sendMessage(plugin.getMessageComponent(
                         "mobs-list-provider",
                         "chamber" to chamber.name,
                         "provider" to provider
                     ))
-                    sender.sendMessage(plugin.getMessage("mobs-list-normal", "mobs" to normalList))
-                    sender.sendMessage(plugin.getMessage("mobs-list-ominous", "mobs" to ominousList))
+                    sender.sendMessage(plugin.getMessageComponent("mobs-list-normal", "mobs" to normalList))
+                    sender.sendMessage(plugin.getMessageComponent("mobs-list-ominous", "mobs" to ominousList))
                 }
                 "provider" -> {
                     if (args.size < 4) {
-                        sender.sendMessage(plugin.getMessage("mobs-usage-provider", "chamber" to chamber.name))
+                        sender.sendMessage(plugin.getMessageComponent("mobs-usage-provider", "chamber" to chamber.name))
                         return@launchAsync
                     }
                     val raw = args[3].lowercase()
                     val provider = if (raw == "none" || raw == "vanilla") null else raw
                     if (provider != null && plugin.trialMobProviderRegistry.get(provider) == null) {
-                        sender.sendMessage(plugin.getMessage("mobs-provider-unknown", "provider" to provider))
+                        sender.sendMessage(plugin.getMessageComponent("mobs-provider-unknown", "provider" to provider))
                         return@launchAsync
                     }
                     val ok = plugin.chamberManager.updateCustomMobProvider(chamber.id, provider)
@@ -89,7 +89,7 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 }
                 "add", "remove" -> {
                     if (args.size < 5) {
-                        sender.sendMessage(plugin.getMessage(
+                        sender.sendMessage(plugin.getMessageComponent(
                             "mobs-usage-addremove",
                             "chamber" to chamber.name,
                             "action" to action
@@ -99,7 +99,7 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     val waveType = args[3].lowercase()
                     val mobId = args[4]
                     if (waveType != "normal" && waveType != "ominous") {
-                        sender.sendMessage(plugin.getMessage("mobs-bad-wave-type"))
+                        sender.sendMessage(plugin.getMessageComponent("mobs-bad-wave-type"))
                         return@launchAsync
                     }
 
@@ -109,13 +109,13 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
                     if (action == "add") {
                         if (target.contains(mobId)) {
-                            sender.sendMessage(plugin.getMessage("mobs-already-present", "id" to mobId, "wave" to waveType))
+                            sender.sendMessage(plugin.getMessageComponent("mobs-already-present", "id" to mobId, "wave" to waveType))
                             return@launchAsync
                         }
                         target.add(mobId)
                     } else {
                         if (!target.remove(mobId)) {
-                            sender.sendMessage(plugin.getMessage("mobs-not-present", "id" to mobId, "wave" to waveType))
+                            sender.sendMessage(plugin.getMessageComponent("mobs-not-present", "id" to mobId, "wave" to waveType))
                             return@launchAsync
                         }
                     }
@@ -128,20 +128,20 @@ class MobsCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     )
                     if (ok) {
                         val key = if (action == "add") "mobs-added" else "mobs-removed"
-                        sender.sendMessage(plugin.getMessage(
+                        sender.sendMessage(plugin.getMessageComponent(
                             key,
                             "id" to mobId,
                             "wave" to waveType,
                             "chamber" to chamber.name
                         ))
                         if (chamber.customMobProvider.isNullOrBlank() || chamber.customMobProvider.equals("vanilla", ignoreCase = true)) {
-                            sender.sendMessage(plugin.getMessage("mobs-vanilla-warning", "chamber" to chamber.name))
+                            sender.sendMessage(plugin.getMessageComponent("mobs-vanilla-warning", "chamber" to chamber.name))
                         }
                     } else {
-                        sender.sendMessage(plugin.getMessage("mobs-update-failed"))
+                        sender.sendMessage(plugin.getMessageComponent("mobs-update-failed"))
                     }
                 }
-                else -> sender.sendMessage(plugin.getMessage("mobs-unknown-action", "action" to action))
+                else -> sender.sendMessage(plugin.getMessageComponent("mobs-unknown-action", "action" to action))
             }
         }
     }

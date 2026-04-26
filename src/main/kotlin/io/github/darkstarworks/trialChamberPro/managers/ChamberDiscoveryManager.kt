@@ -203,7 +203,7 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
                 plugin.logger.info("[Discovery] Registered chamber '$name' (${result.sizeX}x${result.sizeY}x${result.sizeZ}, ${result.vaultCount} vaults, ${result.spawnerCount} spawners)")
 
                 if (plugin.config.getBoolean("discovery.notify-ops", true)) {
-                    val msg = plugin.getMessage(
+                    val msg = plugin.getMessageComponent(
                         "discovery-registered",
                         "name" to name,
                         "vaults" to result.vaultCount,

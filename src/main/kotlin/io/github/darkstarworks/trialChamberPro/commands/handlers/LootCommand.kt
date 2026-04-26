@@ -15,12 +15,12 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.loot")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 2) {
-            sender.sendMessage(plugin.getMessage("usage-loot"))
+            sender.sendMessage(plugin.getMessageComponent("usage-loot"))
             return
         }
 
@@ -29,14 +29,14 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             "clear" -> handleClear(sender, args)
             "info" -> handleInfo(sender, args)
             "list" -> handleList(sender)
-            else -> sender.sendMessage(plugin.getMessage("usage-loot"))
+            else -> sender.sendMessage(plugin.getMessageComponent("usage-loot"))
         }
     }
 
     /** `/tcp loot set <chamber> <normal|ominous> <table>` */
     private fun handleSet(sender: CommandSender, args: Array<out String>) {
         if (args.size < 5) {
-            sender.sendMessage(plugin.getMessage("usage-loot-set"))
+            sender.sendMessage(plugin.getMessageComponent("usage-loot-set"))
             return
         }
 
@@ -48,31 +48,31 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             "normal" -> VaultType.NORMAL
             "ominous" -> VaultType.OMINOUS
             else -> {
-                sender.sendMessage(plugin.getMessage("error-invalid-type"))
+                sender.sendMessage(plugin.getMessageComponent("error-invalid-type"))
                 return
             }
         }
 
         if (plugin.lootManager.getTable(tableName) == null) {
-            sender.sendMessage(plugin.getMessage("loot-table-not-found", "table" to tableName))
+            sender.sendMessage(plugin.getMessageComponent("loot-table-not-found", "table" to tableName))
             return
         }
 
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
             val success = plugin.chamberManager.setLootTable(chamberName, vaultType, tableName)
             if (success) {
-                sender.sendMessage(plugin.getMessage("loot-set-success",
+                sender.sendMessage(plugin.getMessageComponent("loot-set-success",
                     "type" to vaultType.displayName,
                     "chamber" to chamberName,
                     "table" to tableName))
             } else {
-                sender.sendMessage(plugin.getMessage("error-loot-set-failed"))
+                sender.sendMessage(plugin.getMessageComponent("error-loot-set-failed"))
             }
         }
     }
@@ -80,7 +80,7 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
     /** `/tcp loot clear <chamber> [normal|ominous|all]` */
     private fun handleClear(sender: CommandSender, args: Array<out String>) {
         if (args.size < 3) {
-            sender.sendMessage(plugin.getMessage("usage-loot-clear"))
+            sender.sendMessage(plugin.getMessageComponent("usage-loot-clear"))
             return
         }
 
@@ -90,25 +90,25 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
             when (typeStr) {
                 "normal" -> {
                     plugin.chamberManager.setLootTable(chamberName, VaultType.NORMAL, null)
-                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("loot-clear-success", "chamber" to chamberName))
                 }
                 "ominous" -> {
                     plugin.chamberManager.setLootTable(chamberName, VaultType.OMINOUS, null)
-                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("loot-clear-success", "chamber" to chamberName))
                 }
                 "all" -> {
                     plugin.chamberManager.setLootTable(chamberName, VaultType.NORMAL, null)
                     plugin.chamberManager.setLootTable(chamberName, VaultType.OMINOUS, null)
-                    sender.sendMessage(plugin.getMessage("loot-clear-success", "chamber" to chamberName))
+                    sender.sendMessage(plugin.getMessageComponent("loot-clear-success", "chamber" to chamberName))
                 }
-                else -> sender.sendMessage(plugin.getMessage("error-invalid-type-loot-clear"))
+                else -> sender.sendMessage(plugin.getMessageComponent("error-invalid-type-loot-clear"))
             }
         }
     }
@@ -116,7 +116,7 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
     /** `/tcp loot info <chamber>` */
     private fun handleInfo(sender: CommandSender, args: Array<out String>) {
         if (args.size < 3) {
-            sender.sendMessage(plugin.getMessage("usage-loot-info"))
+            sender.sendMessage(plugin.getMessageComponent("usage-loot-info"))
             return
         }
 
@@ -125,15 +125,15 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         plugin.launchAsync {
             val chamber = plugin.chamberManager.getChamber(chamberName)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
                 return@launchAsync
             }
 
-            sender.sendMessage(plugin.getMessage("loot-info-header", "chamber" to chamberName))
+            sender.sendMessage(plugin.getMessageComponent("loot-info-header", "chamber" to chamberName))
             val normalTable = chamber.normalLootTable ?: plugin.getMessage("loot-info-default")
             val ominousTable = chamber.ominousLootTable ?: plugin.getMessage("loot-info-default")
-            sender.sendMessage(plugin.getMessage("loot-info-normal", "table" to normalTable))
-            sender.sendMessage(plugin.getMessage("loot-info-ominous", "table" to ominousTable))
+            sender.sendMessage(plugin.getMessageComponent("loot-info-normal", "table" to normalTable))
+            sender.sendMessage(plugin.getMessageComponent("loot-info-ominous", "table" to ominousTable))
         }
     }
 
@@ -141,13 +141,13 @@ class LootCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
     private fun handleList(sender: CommandSender) {
         val tables = plugin.lootManager.getLootTableNames()
         if (tables.isEmpty()) {
-            sender.sendMessage(plugin.getMessage("error-no-loot-tables"))
+            sender.sendMessage(plugin.getMessageComponent("error-no-loot-tables"))
             return
         }
 
-        sender.sendMessage(plugin.getMessage("loot-list-header"))
+        sender.sendMessage(plugin.getMessageComponent("loot-list-header"))
         tables.sorted().forEach { tableName ->
-            sender.sendMessage(plugin.getMessage("loot-list-item", "table" to tableName))
+            sender.sendMessage(plugin.getMessageComponent("loot-list-item", "table" to tableName))
         }
     }
 }

@@ -3,7 +3,6 @@ package io.github.darkstarworks.trialChamberPro.managers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import net.kyori.adventure.bossbar.BossBar
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
@@ -80,16 +79,29 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      * Reads the spawner's actual `total_mobs` / `total_mobs_added_per_player` from its
      * configuration NBT and computes the expected wave size. Falls back to 6 if the block
      * isn't a trial spawner or the API call fails.
+     *
+     * v1.4.0: matches Mojang's `TrialSpawnerData` formula exactly. The previous v1.3.2
+     * implementation used `× players` (over-counting by `perPlayer` per nearby player),
+     * which produced bars showing e.g. "1/30" when vanilla actually completed at 20.
+     * Vanilla counts the FIRST tracked player as the trigger (gets `base` mobs only) and
+     * each ADDITIONAL player as a `perPlayer` bonus — i.e. `additional = max(0, players - 1)`.
      */
     private fun computeExpectedMobs(location: Location, isOminous: Boolean, playerCountFallback: Int): Int {
         return try {
             val world = location.world ?: return 6
             val state = world.getBlockAt(location).state as? org.bukkit.block.TrialSpawner ?: return 6
             val cfg = if (isOminous) state.ominousConfiguration else state.normalConfiguration
+            // `trackedPlayers` is Paper's mirror of Mojang's `detectedPlayers` — snapshotted
+            // at trigger time. Falls back to caller-provided count (clamped >= 1) only if
+            // the API returns empty (e.g. between waves or post-cooldown).
             val players = state.trackedPlayers.size.takeIf { it > 0 } ?: playerCountFallback.coerceAtLeast(1)
             val base = cfg.baseSpawnsBeforeCooldown
             val perPlayer = cfg.additionalSpawnsBeforeCooldown
-            kotlin.math.ceil(base + perPlayer * players).toInt().coerceAtLeast(1)
+            // Mojang formula (net.minecraft.world.level.block.entity.trialspawner.TrialSpawnerData):
+            //   additional = max(0, detectedPlayers.size - 1)
+            //   totalMobsToSpawn = floor(totalMobs + totalMobsAddedPerPlayer * additional)
+            val additional = (players - 1).coerceAtLeast(0)
+            kotlin.math.floor(base + perPlayer * additional).toInt().coerceAtLeast(1)
         } catch (_: Throwable) {
             6
         }
@@ -170,7 +182,12 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
 
         // Ratchet expected count: max of (configured base+per-player), actual spawn count, and
         // current value. The configured value can grow as more players join (additional per-player).
-        val recomputed = computeExpectedMobs(spawnerLocation, isOminous, wave.participatingPlayers.size)
+        // v1.4.0: fallback was `wave.participatingPlayers.size` (boss-bar detection radius,
+        // default 20 blocks) — which over-counted relative to vanilla's `requiredPlayerRange`
+        // (default 14). Pass `1` instead so the fallback can never inflate beyond what
+        // `state.trackedPlayers.size` would say. Vanilla's count is authoritative; the
+        // fallback only matters if Paper returns an empty trackedPlayers (rare).
+        val recomputed = computeExpectedMobs(spawnerLocation, isOminous, 1)
         wave.totalMobsExpected.updateAndGet { current -> maxOf(current, maxOf(spawned, recomputed)) }
 
         // Update boss bar
@@ -427,7 +444,7 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
         // Send completion message to participants
         if (plugin.config.getBoolean("spawner-waves.completion-message", true)) {
             val typeStr = if (wave.isOminous) "Ominous" else "Trial"
-            val message = plugin.getMessage("spawner-wave-complete",
+            val message = plugin.getMessageComponent("spawner-wave-complete",
                 "type" to typeStr,
                 "killed" to wave.mobsKilled.get(),
                 "duration" to formatDuration(durationSeconds)
@@ -839,9 +856,14 @@ class SpawnerWaveManager(private val plugin: TrialChamberPro) {
      * Converts a message key with placeholders to a Component for boss bars.
      * Uses the messages.yml translations without the plugin prefix.
      */
+    /**
+     * Boss-bar message lookup. v1.4.0: delegates to the plugin's MM-aware
+     * `getMessageComponent` so boss bars get full MiniMessage fidelity
+     * (gradients, hover, etc.) instead of being routed through the legacy
+     * section-string path.
+     */
     private fun getMessageComponent(key: String, vararg replacements: Pair<String, Any?>): Component {
-        val message = plugin.getMessage(key, *replacements)
-        return LegacyComponentSerializer.legacySection().deserialize(message)
+        return plugin.getMessageComponent(key, *replacements)
     }
 
     /**

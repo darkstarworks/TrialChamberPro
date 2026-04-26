@@ -35,7 +35,7 @@ class PasteConfirmListener(private val plugin: TrialChamberPro) : Listener {
                 val pending = plugin.pasteConfirmationManager.getPending(player) ?: return
                 plugin.pasteConfirmationManager.cancelPending(player, silent = true)
                 
-                player.sendMessage(plugin.getMessage("paste-confirming"))
+                player.sendMessage(plugin.getMessageComponent("paste-confirming"))
                 
                 listenerScope.launch {
                     val success = plugin.schematicManager.pasteSchematic(
@@ -45,15 +45,15 @@ class PasteConfirmListener(private val plugin: TrialChamberPro) : Listener {
                     )
                     
                     if (success) {
-                        player.sendMessage(plugin.getMessage("paste-success",
+                        player.sendMessage(plugin.getMessageComponent("paste-success",
                             "schematic" to pending.schematicName,
                             "x" to pending.location.blockX,
                             "y" to pending.location.blockY,
                             "z" to pending.location.blockZ
                         ))
-                        player.sendMessage(plugin.getMessage("paste-undo-hint"))
+                        player.sendMessage(plugin.getMessageComponent("paste-undo-hint"))
                     } else {
-                        player.sendMessage(plugin.getMessage("paste-failed"))
+                        player.sendMessage(plugin.getMessageComponent("paste-failed"))
                     }
                 }
             }

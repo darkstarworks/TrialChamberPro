@@ -86,7 +86,7 @@ class SpectatorListener(private val plugin: TrialChamberPro) : Listener {
             // Optionally teleport back to chamber center
             val chamber = plugin.spectatorManager.getSpectatingChamber(player)
             if (chamber != null) {
-                player.sendMessage(plugin.getMessage("spectate-boundary-warning"))
+                player.sendMessage(plugin.getMessageComponent("spectate-boundary-warning"))
             }
         }
     }
@@ -109,7 +109,7 @@ class SpectatorListener(private val plugin: TrialChamberPro) : Listener {
             // Only cancel non-plugin teleports (allow our exit teleport)
             if (event.cause != PlayerTeleportEvent.TeleportCause.PLUGIN) {
                 event.isCancelled = true
-                player.sendMessage(plugin.getMessage("spectate-boundary-warning"))
+                player.sendMessage(plugin.getMessageComponent("spectate-boundary-warning"))
             }
         }
     }

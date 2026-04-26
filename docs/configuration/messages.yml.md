@@ -18,11 +18,18 @@ After making changes, reload with `/tcp reload`
 
 ---
 
-## 🎨 Color Codes & Formatting
+## 🎨 Text formatting — MiniMessage and legacy `&` codes
 
-All messages support Minecraft color codes using `&`:
+**Added in v1.4.0.** TCP now supports the modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax in every message — alongside the original `&` colour codes. You can use either format, or freely mix both in the same line.
 
-### Colors
+<div data-gb-custom-block data-tag="hint" data-style="success">
+
+**Existing `messages.yml` files keep working unchanged.** Migrating an entry to MiniMessage is opt-in, line by line. Use whichever feels more natural — the parser handles both transparently.
+
+</div>
+
+### Legacy `&` codes (still supported)
+
 ```yaml
 &0 - Black          &8 - Dark Gray
 &1 - Dark Blue      &9 - Blue
@@ -32,29 +39,62 @@ All messages support Minecraft color codes using `&`:
 &5 - Dark Purple    &d - Light Purple
 &6 - Gold           &e - Yellow
 &7 - Gray           &f - White
+&l - Bold           &o - Italic
+&n - Underline      &m - Strikethrough
+&k - Magic          &r - Reset
+&#FF5500 - Hex colour (any 6-digit code)
 ```
 
-### Formatting
+### MiniMessage tags
+
 ```yaml
-&l - Bold
-&o - Italic
-&n - Underline
-&m - Strikethrough
-&k - Magic/Obfuscated
-&r - Reset (removes all formatting)
+<black>          <dark_gray>      <bold>            <italic>
+<dark_blue>      <blue>           <underlined>      <strikethrough>
+<dark_green>     <green>          <obfuscated>      <reset>
+<dark_aqua>      <aqua>           <#FF5500>          (any hex)
+<dark_red>       <red>
+<dark_purple>    <light_purple>
+<gold>           <yellow>
+<gray>           <white>
 ```
 
-### Examples
+Plus features that **`&` codes can't do** (these need MiniMessage):
+
 ```yaml
-"&6&lBOLD GOLD TEXT"
-"&c&oItalic red text"
-"&a✓ &fGreen checkmark, white text"
-"&k?????? &r&eMystery text revealed!"
+# Gradients
+"<gradient:#ff0000:#00ff00>Sunset to ocean</gradient>"
+
+# Clickable text — runs a command when clicked
+"<click:run_command:'/tcp menu'><yellow>[Open Menu]</yellow></click>"
+
+# Hover tooltips — show extra text on hover
+"<hover:show_text:'Bonus loot table active!'><gold>★</gold></hover>"
+
+# Custom fonts (resource-pack supplied)
+"<font:my_font:fancy>Stylised text</font>"
 ```
+
+### Mixed examples
+
+Both formats work on the same line:
+
+```yaml
+"&6&lBOLD GOLD TEXT"                           # legacy
+"<gold><bold>BOLD GOLD TEXT</bold></gold>"     # MiniMessage
+"&aHello <gradient:#ff0000:#0000ff>world</gradient>"   # mixed
+"&#FF5500Custom hex"                           # legacy hex
+"<#FF5500>Custom hex"                          # MM hex
+```
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Where MiniMessage shines:** GUI item names and lore, boss bars, and chat messages all support **full MiniMessage fidelity** in v1.4.0+ — gradients, click events, and hover tooltips render correctly everywhere.
+
+</div>
 
 <div data-gb-custom-block data-tag="hint" data-style="success">
 
-**Pro tip:** Use `&r` to reset formatting before starting new text. Prevents colors bleeding into placeholders!
+**Pro tip:** Use `&r` (or `<reset>`) to clear formatting before placeholders, so player names and chamber names don't inherit the previous colour. Example: `"&aWelcome &r&e{player}!"` resets to default before the yellow name.
 
 </div>
 

@@ -12,12 +12,12 @@ private val resetCommandScope = CoroutineScope(Dispatchers.Default + SupervisorJ
 
 fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out String>) {
     if (!sender.hasPermission("tcp.admin.reset")) {
-        sender.sendMessage(plugin.getMessage("no-permission"))
+        sender.sendMessage(plugin.getMessageComponent("no-permission"))
         return
     }
 
     if (args.size < 2) {
-        sender.sendMessage(plugin.getMessage("usage-reset"))
+        sender.sendMessage(plugin.getMessageComponent("usage-reset"))
         return
     }
 
@@ -26,19 +26,19 @@ fun handleReset(plugin: TrialChamberPro, sender: CommandSender, args: Array<out 
     resetCommandScope.launch {
         val chamber = plugin.chamberManager.getChamber(chamberName)
         if (chamber == null) {
-            sender.sendMessage(plugin.getMessage("chamber-not-found", "chamber" to chamberName))
+            sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
             return@launch
         }
 
-        sender.sendMessage(plugin.getMessage("chamber-resetting", "chamber" to chamberName))
+        sender.sendMessage(plugin.getMessageComponent("chamber-resetting", "chamber" to chamberName))
 
         // Pass player for WorldEdit undo support if sender is a player
         val initiatingPlayer = sender as? Player
         val success = plugin.resetManager.resetChamber(chamber, initiatingPlayer)
         if (success) {
-            sender.sendMessage(plugin.getMessage("reset-success", "chamber" to chamberName))
+            sender.sendMessage(plugin.getMessageComponent("reset-success", "chamber" to chamberName))
         } else {
-            sender.sendMessage(plugin.getMessage("reset-failed", "error" to "Check console for details"))
+            sender.sendMessage(plugin.getMessageComponent("reset-failed", "error" to "Check console for details"))
         }
     }
 }

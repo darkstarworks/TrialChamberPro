@@ -41,16 +41,16 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
     override fun execute(sender: CommandSender, args: Array<out String>) {
         if (!sender.hasPermission("tcp.admin.generate")) {
-            sender.sendMessage(plugin.getMessage("no-permission"))
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
             return
         }
 
         if (args.size < 3) {
-            sender.sendMessage(plugin.getMessage("usage-generate-help-value"))
-            sender.sendMessage(plugin.getMessage("usage-generate-help-or-coords"))
-            sender.sendMessage(plugin.getMessage("usage-generate-coords-legacy"))
-            sender.sendMessage(plugin.getMessage("usage-generate-help-or-wand"))
-            sender.sendMessage(plugin.getMessage("usage-generate-help-or-blocks"))
+            sender.sendMessage(plugin.getMessageComponent("usage-generate-help-value"))
+            sender.sendMessage(plugin.getMessageComponent("usage-generate-help-or-coords"))
+            sender.sendMessage(plugin.getMessageComponent("usage-generate-coords-legacy"))
+            sender.sendMessage(plugin.getMessageComponent("usage-generate-help-or-wand"))
+            sender.sendMessage(plugin.getMessageComponent("usage-generate-help-or-blocks"))
             return
         }
 
@@ -60,39 +60,39 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 when (args[2].lowercase()) {
                     "save" -> {
                         if (!WorldEditUtil.isAvailable()) {
-                            sender.sendMessage(plugin.getMessage("worldedit-not-found"))
+                            sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                             return
                         }
                         if (sender !is Player) {
-                            sender.sendMessage(plugin.getMessage("player-only"))
+                            sender.sendMessage(plugin.getMessageComponent("player-only"))
                             return
                         }
                         val varName = args.getOrNull(3)
                         if (varName.isNullOrBlank()) {
-                            sender.sendMessage(plugin.getMessage("usage-generate-value-save"))
+                            sender.sendMessage(plugin.getMessageComponent("usage-generate-value-save"))
                             return
                         }
                         val selection = WorldEditUtil.getSelection(sender)
                         if (selection == null) {
-                            sender.sendMessage(plugin.getMessage("no-selection"))
+                            sender.sendMessage(plugin.getMessageComponent("no-selection"))
                             return
                         }
                         val ok = WEVarStore.save(plugin.dataFolder, varName, selection.first, selection.second)
                         if (ok) {
-                            sender.sendMessage(plugin.getMessage("wevar-saved", "name" to varName))
+                            sender.sendMessage(plugin.getMessageComponent("wevar-saved", "name" to varName))
                         } else {
-                            sender.sendMessage(plugin.getMessage("wevar-save-failed", "name" to varName))
+                            sender.sendMessage(plugin.getMessageComponent("wevar-save-failed", "name" to varName))
                         }
                         return
                     }
                     "list" -> {
                         val list = WEVarStore.list(plugin.dataFolder)
                         if (list.isEmpty()) {
-                            sender.sendMessage(plugin.getMessage("wevar-list-empty"))
+                            sender.sendMessage(plugin.getMessageComponent("wevar-list-empty"))
                         } else {
-                            sender.sendMessage(plugin.getMessage("wevar-list-header"))
+                            sender.sendMessage(plugin.getMessageComponent("wevar-list-header"))
                             list.forEach { (name, r) ->
-                                sender.sendMessage(plugin.getMessage("wevar-list-item",
+                                sender.sendMessage(plugin.getMessageComponent("wevar-list-item",
                                     "name" to name,
                                     "world" to r.world,
                                     "minX" to r.minX, "minY" to r.minY, "minZ" to r.minZ,
@@ -105,12 +105,12 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     "delete" -> {
                         val varName = args.getOrNull(3)
                         if (varName.isNullOrBlank()) {
-                            sender.sendMessage(plugin.getMessage("usage-generate-value-delete"))
+                            sender.sendMessage(plugin.getMessageComponent("usage-generate-value-delete"))
                             return
                         }
                         val ok = WEVarStore.delete(plugin.dataFolder, varName)
-                        if (ok) sender.sendMessage(plugin.getMessage("wevar-deleted", "name" to varName))
-                        else sender.sendMessage(plugin.getMessage("wevar-not-found", "name" to varName))
+                        if (ok) sender.sendMessage(plugin.getMessageComponent("wevar-deleted", "name" to varName))
+                        else sender.sendMessage(plugin.getMessageComponent("wevar-not-found", "name" to varName))
                         return
                     }
                 }
@@ -119,8 +119,8 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 val varName = args.getOrNull(2)
                 val chamberName = args.getOrNull(3) ?: varName
                 if (varName.isNullOrBlank() || chamberName.isNullOrBlank()) {
-                    sender.sendMessage(plugin.getMessage("usage-generate-value"))
-                    sender.sendMessage(plugin.getMessage("usage-generate-value-extra"))
+                    sender.sendMessage(plugin.getMessageComponent("usage-generate-value"))
+                    sender.sendMessage(plugin.getMessageComponent("usage-generate-value-extra"))
                     return
                 }
 
@@ -128,7 +128,7 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                 if (saved != null) {
                     val locs = WEVarStore.toLocations(saved)
                     if (locs == null) {
-                        sender.sendMessage(plugin.getMessage("error-world-not-loaded", "world" to saved.world, "name" to varName))
+                        sender.sendMessage(plugin.getMessageComponent("error-world-not-loaded", "world" to saved.world, "name" to varName))
                         return
                     }
                     val (loc1, loc2) = locs
@@ -139,12 +139,12 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                     // Fallback: if player with WE selection, treat varName as chamber name (legacy behavior)
                     if (sender is Player) {
                         if (!WorldEditUtil.isAvailable()) {
-                            sender.sendMessage(plugin.getMessage("worldedit-not-found"))
+                            sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                             return
                         }
                         val selection = WorldEditUtil.getSelection(sender)
                         if (selection == null) {
-                            sender.sendMessage(plugin.getMessage("wevar-not-found", "name" to varName))
+                            sender.sendMessage(plugin.getMessageComponent("wevar-not-found", "name" to varName))
                             return
                         }
                         val (loc1, loc2) = selection
@@ -152,14 +152,14 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
                         if (!validateRegionAndNotify(sender, box)) return
                         createChamberAsync(sender, chamberName, loc1, loc2)
                     } else {
-                        sender.sendMessage(plugin.getMessage("wevar-not-found", "name" to varName))
+                        sender.sendMessage(plugin.getMessageComponent("wevar-not-found", "name" to varName))
                     }
                 }
             }
             "coords" -> {
                 val parsed = parseCoordsArgs(sender, args)
                 if (parsed == null) {
-                    sender.sendMessage(plugin.getMessage("usage-generate-coords"))
+                    sender.sendMessage(plugin.getMessageComponent("usage-generate-coords"))
                     return
                 }
                 val (world, p1, p2, name) = parsed
@@ -172,21 +172,21 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             }
             "wand" -> {
                 if (sender !is Player) {
-                    sender.sendMessage(plugin.getMessage("player-only"))
+                    sender.sendMessage(plugin.getMessageComponent("player-only"))
                     return
                 }
                 if (!WorldEditUtil.isAvailable()) {
-                    sender.sendMessage(plugin.getMessage("worldedit-not-found"))
+                    sender.sendMessage(plugin.getMessageComponent("worldedit-not-found"))
                     return
                 }
                 val name = args.getOrNull(2)
                 if (name.isNullOrBlank()) {
-                    sender.sendMessage(plugin.getMessage("usage-generate-wand"))
+                    sender.sendMessage(plugin.getMessageComponent("usage-generate-wand"))
                     return
                 }
                 val selection = WorldEditUtil.getSelection(sender)
                 if (selection == null) {
-                    sender.sendMessage(plugin.getMessage("no-selection"))
+                    sender.sendMessage(plugin.getMessageComponent("no-selection"))
                     return
                 }
                 val (loc1, loc2) = selection
@@ -196,12 +196,12 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             }
             "blocks" -> {
                 if (sender !is Player) {
-                    sender.sendMessage(plugin.getMessage("player-only"))
+                    sender.sendMessage(plugin.getMessageComponent("player-only"))
                     return
                 }
                 val amount = args.getOrNull(2)?.toIntOrNull()
                 if (amount == null || amount <= 0) {
-                    sender.sendMessage(plugin.getMessage("usage-generate-blocks"))
+                    sender.sendMessage(plugin.getMessageComponent("usage-generate-blocks"))
                     return
                 }
                 val name = args.getOrNull(3) ?: "chamber-${System.currentTimeMillis()}"
@@ -216,15 +216,15 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
 
                 val overhead = volume - amount
                 if (overhead > allowance) {
-                    sender.sendMessage(plugin.getMessage("generate-rounding-note",
+                    sender.sendMessage(plugin.getMessageComponent("generate-rounding-note",
                         "requested" to amount, "actual" to volume, "overhead" to overhead))
                 } else {
-                    sender.sendMessage(plugin.getMessage("generate-rounding-info",
+                    sender.sendMessage(plugin.getMessageComponent("generate-rounding-info",
                         "volume" to volume, "overhead" to overhead))
                 }
                 createChamberAsync(sender, name, loc1, loc2)
             }
-            else -> sender.sendMessage(plugin.getMessage("usage-generate"))
+            else -> sender.sendMessage(plugin.getMessageComponent("usage-generate"))
         }
     }
 
@@ -237,29 +237,29 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         plugin.launchAsync {
             val existing = plugin.chamberManager.getChamber(name)
             if (existing != null) {
-                sender.sendMessage(plugin.getMessage("generation-cancelled-name-in-use", "name" to name))
+                sender.sendMessage(plugin.getMessageComponent("generation-cancelled-name-in-use", "name" to name))
                 return@launchAsync
             }
             val chamber = plugin.chamberManager.createChamber(name, loc1, loc2)
             if (chamber == null) {
-                sender.sendMessage(plugin.getMessage("error-chamber-creation-failed"))
+                sender.sendMessage(plugin.getMessageComponent("error-chamber-creation-failed"))
                 return@launchAsync
             }
-            sender.sendMessage(plugin.getMessage("chamber-created", "chamber" to name))
+            sender.sendMessage(plugin.getMessageComponent("chamber-created", "chamber" to name))
             if (sender is Player) {
                 io.github.darkstarworks.trialChamberPro.utils.UndoTracker.setLast(sender.uniqueId, chamber.name)
             }
             if (plugin.config.getBoolean("global.auto-scan-on-register", true)) {
-                sender.sendMessage(plugin.getMessage("scan-started", "chamber" to name))
+                sender.sendMessage(plugin.getMessageComponent("scan-started", "chamber" to name))
                 val (vaults, spawners, pots) = plugin.chamberManager.scanChamber(chamber)
-                sender.sendMessage(plugin.getMessage("scan-complete",
+                sender.sendMessage(plugin.getMessageComponent("scan-complete",
                     "vaults" to vaults, "spawners" to spawners, "pots" to pots))
             }
             if (plugin.config.getBoolean("global.auto-snapshot-on-register", true)) {
-                sender.sendMessage(plugin.getMessage("snapshot-creating", "chamber" to name))
+                sender.sendMessage(plugin.getMessageComponent("snapshot-creating", "chamber" to name))
                 val file = plugin.snapshotManager.createSnapshot(chamber)
                 plugin.chamberManager.setSnapshotFile(name, file.absolutePath)
-                sender.sendMessage(plugin.getMessage("snapshot-created",
+                sender.sendMessage(plugin.getMessageComponent("snapshot-created",
                     "chamber" to name,
                     "blocks" to chamber.getVolume(),
                     "size" to io.github.darkstarworks.trialChamberPro.utils.CompressionUtil.formatSize(file.length())))
@@ -274,14 +274,14 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
         val volume = dx * dy * dz
 
         if (dx < MIN_XZ || dz < MIN_XZ || dy < MIN_Y) {
-            sender.sendMessage(plugin.getMessage("error-region-too-small",
+            sender.sendMessage(plugin.getMessageComponent("error-region-too-small",
                 "minXZ" to MIN_XZ, "minY" to MIN_Y, "dx" to dx, "dy" to dy, "dz" to dz))
             return false
         }
 
         val maxVolume = plugin.config.getInt("generation.max-volume", 500000).coerceAtLeast(1)
         if (volume > maxVolume) {
-            sender.sendMessage(plugin.getMessage("error-region-too-large",
+            sender.sendMessage(plugin.getMessageComponent("error-region-too-large",
                 "maxVolume" to maxVolume, "volume" to volume))
             return false
         }
