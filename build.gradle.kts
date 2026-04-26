@@ -2,10 +2,16 @@ plugins {
     kotlin("jvm") version "2.3.0-Beta1"
     id("com.gradleup.shadow") version "8.3.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    // v1.3.3: enable Maven publication so Jitpack can serve TCP as a
+    // compile-time dependency to premium add-on modules and third-party
+    // integrations. Premium devs declare:
+    //   compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3")
+    // and import classes from the io.github.darkstarworks.trialChamberPro.api.* package.
+    `maven-publish`
 }
 
 group = "io.github.darkstarworks"
-version = "1.3.2"
+version = "1.3.3"
 
 repositories {
     mavenCentral()
@@ -128,5 +134,20 @@ tasks.processResources {
 tasks {
     assemble {
         dependsOn(shadowJar)
+    }
+}
+
+// v1.3.3: Maven publication for Jitpack consumption.
+// Premium add-on modules and third-party integrations declare TCP as a
+// compileOnly dependency and import from the api/* package. The shadow JAR
+// is published as the main artifact — at compile time only the api classes
+// are referenced; at runtime the consuming server has TCP installed
+// separately so the fat JAR's bundled deps are inert.
+publishing {
+    publications {
+        create<MavenPublication>("shadow") {
+            artifactId = "TrialChamberPro"
+            artifact(tasks.shadowJar.get())
+        }
     }
 }
