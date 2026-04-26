@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.3.3] - 2026-04-26
+### Added
+- **Public extension API** — first instalment of the prerequisite seams that third-party plugins (and the planned premium add-on modules) need to integrate with TCP cleanly. No behavior change for end users; pure new surface area.
+  - **`PreVaultOpenEvent`** (cancellable, `api/events/`) — fires immediately before a vault open resolves its loot table, after all gates pass (cooldown, spam-click, key validation). Listeners can cancel the open entirely (no key consumed, no reward marked) or set `lootTableOverride` to a non-null table id to substitute a different loot table for that specific open. Designed for premium custom-keys / vault-crate workflows where the consumed key dictates the loot tier.
+  - **`ChamberMobSpawnedEvent`** (`api/events/`) — fires after a trial-spawner wave mob is spawned and recorded by `SpawnerWaveManager`. Carries chamber + spawner location + ominous flag + provider id. Fires for both vanilla spawns (`providerId = "vanilla"`) and replacement spawns from custom mob providers. Gives third-party plugins a single hook with full chamber/wave context — what `CreatureSpawnEvent` doesn't carry. Designed for difficulty-scaling addons, analytics pipelines, and the planned premium "Legendary Trials" module.
+  - **`TCPModule` SPI + `TCPModuleRegistry`** (`api/`) — uniform lifecycle contract for plugins that extend TCP. Implementations register themselves with `plugin.moduleRegistry.register(this)` during their own `onEnable`; the registry calls back into `onLoad(tcp)` once TCP reaches `isReady = true` (or immediately if TCP was already ready). Modules unregister automatically when their backing plugin is disabled (via `PluginDisableEvent` observer). Reverse-registration-order shutdown is preserved so modules with cross-dependencies tear down safely. Lifecycle callbacks always dispatch on the primary thread regardless of caller context.
+  - **Jitpack publication** — `jitpack.yml` + `maven-publish` configuration so consumers can declare TCP as a compile-time dependency:
+    ```kotlin
+    repositories { maven("https://jitpack.io") }
+    dependencies { compileOnly("com.github.darkstarworks:TrialChamberPro:v1.3.3") }
+    ```
+    Compile-time consumers reference classes from the public `io.github.darkstarworks.trialChamberPro.api.*` package; at runtime the host server has TCP installed as a normal Bukkit plugin so the bundled-deps shadow JAR is inert.
+
+### Changed
+- `TrialChamberPro.onEnable` instantiates the module registry synchronously (right after the scheduler), so external plugins can register modules before TCP's async startup completes. `loadAllPending()` runs at the end of startup to flush queued registrations. `onDisable` invokes `shutdownAll()` first so modules can still touch TCP managers and the database during their own teardown.
+- `VaultInteractListener.openVault` now fires `PreVaultOpenEvent` after the loot table is resolved but before any side effect. The event's `lootTableOverride` (when set) takes priority over chamber overrides and vault defaults; the existing override-resolution chain is unchanged when no listener intervenes.
+- `SpawnerWaveListener.onCreatureSpawn` fires `ChamberMobSpawnedEvent` once per recorded spawn — once on the provider-replaced path with the actual provider id, once on the vanilla fallback with `providerId = "vanilla"`. Wild spawners deliver the event with `chamber = null`.
+
 ## [1.3.2] - 2026-04-26
 ### Fixed
 - **Trial spawner wave size now reads the spawner's actual `total_mobs` config.** Previous behavior fell back to a hard-coded `6` and only ratcheted upward as mobs visibly spawned — server-set values like `total_mobs: 8` / `total_mobs_added_per_player: 4` were invisible to the wave tracker, so the boss bar reported `?/6` regardless of what the spawner was configured to do. New `SpawnerWaveManager.computeExpectedMobs(location, isOminous, playerCount)` reads `TrialSpawnerConfiguration.baseSpawnsBeforeCooldown` + `additionalSpawnsBeforeCooldown × players` straight from the block state and uses that as the initial expected count; subsequent spawns re-ratchet against the same formula so the figure grows correctly as more players join the spawner's tracked-player set.
@@ -1120,6 +1138,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.3.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.2...v1.3.3
+[1.3.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.29...v1.3.0
 [1.2.29]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.2.28...v1.2.29

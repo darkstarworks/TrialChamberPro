@@ -93,6 +93,11 @@ class TrialChamberPro : JavaPlugin() {
     lateinit var spawnerPresetManager: SpawnerPresetManager
         private set
 
+    // Module registry (v1.3.3) — lifecycle hub for premium add-on plugins
+    // and third-party integrations implementing TCPModule.
+    lateinit var moduleRegistry: io.github.darkstarworks.trialChamberPro.api.TCPModuleRegistry
+        private set
+
     // Vault interaction listener (stored for proper shutdown)
     private lateinit var vaultInteractListener: VaultInteractListener
 
@@ -135,6 +140,14 @@ class TrialChamberPro : JavaPlugin() {
         } else {
             logger.info("Paper/Spigot detected - using standard scheduling")
         }
+
+        // v1.3.3: Module registry instantiated synchronously so that external
+        // plugins can call `plugin.moduleRegistry.register(myModule)` from
+        // their own onEnable, even while TCP's async startup is still in
+        // flight. Modules registered early are queued and loaded by
+        // `loadAllPending()` once TCP reaches isReady = true.
+        moduleRegistry = io.github.darkstarworks.trialChamberPro.api.TCPModuleRegistry(this)
+        server.pluginManager.registerEvents(moduleRegistry, this)
 
         // Initialize update checker
         updateChecker = UpdateChecker(
@@ -384,6 +397,12 @@ class TrialChamberPro : JavaPlugin() {
                     this@TrialChamberPro.isReady = true
                     logger.info("✓ TrialChamberPro is fully initialized and ready!")
 
+                    // v1.3.3: load any premium / third-party modules whose
+                    // backing plugins registered with the module registry
+                    // before TCP became ready. New registrations after this
+                    // point load immediately.
+                    moduleRegistry.loadAllPending()
+
                     // Sweep already-loaded chunks for chambers that existed before the
                     // ChunkLoadEvent listener was registered (spawn regions, pre-loaded worlds).
                     chamberDiscoveryManager.runStartupSweep()
@@ -412,6 +431,13 @@ class TrialChamberPro : JavaPlugin() {
 
     override fun onDisable() {
         logger.info("Shutting down TrialChamberPro...")
+
+        // v1.3.3: unload modules FIRST so they can still touch TCP
+        // managers / database during their onUnload before everything
+        // tears down. Reverse-registration-order is handled inside.
+        if (::moduleRegistry.isInitialized) {
+            moduleRegistry.shutdownAll()
+        }
 
         // Cancel all coroutines
         pluginScope.cancel()
