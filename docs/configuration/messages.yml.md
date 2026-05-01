@@ -917,6 +917,37 @@ Want to support multiple languages? You can create separate message files!
 
 ---
 
+## ⬆️ Keeping messages.yml up-to-date after plugin upgrades
+
+`messages.yml` is only generated once — when the plugin first runs and the file does not yet exist. **It is never overwritten automatically**, so your translations and customisations are always safe. However, this means that when a new plugin version adds new messages (GUI labels, error strings, etc.) your existing file will be missing those keys.
+
+**What happens when a key is missing?** The plugin falls back to the literal text `<missing: key.name>` wherever that key is referenced — in chat, GUI item names, boss bars, etc.
+
+**How to spot missing keys** — since v1.4.1 the plugin checks at startup and logs a warning if your file is behind. Look for a block like this in your console:
+
+```
+[messages.yml] Your file is missing 12 key(s) that this version of
+[messages.yml] TrialChamberPro expects.
+[messages.yml]   - gui.help-menu.mobs-cmd-name
+[messages.yml]   - gui.help-menu.give-cmd-name
+[messages.yml]   ...
+[messages.yml] To fix:
+[messages.yml]   1. Stop the server.
+[messages.yml]   2. Rename plugins/TrialChamberPro/messages.yml to messages.yml.bak
+[messages.yml]   3. Start the server.
+[messages.yml]   4. Port your translations from the .bak file into the new one.
+```
+
+Follow those four steps and you'll have a fresh, complete file. Then copy any custom values you care about from the `.bak`.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Prefer not to migrate right now?** You can silence the check with `debug.skip-messages-schema-check: true` in `config.yml`. The plugin will still work — only the missing keys will fall back to the `<missing: …>` placeholder text.
+
+</div>
+
+---
+
 ## 🔄 Applying Changes
 
 After editing `messages.yml`:

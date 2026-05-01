@@ -3,6 +3,8 @@ package io.github.darkstarworks.trialChamberPro.managers
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.bukkit.Location
 import org.bukkit.Material
@@ -40,6 +42,12 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
 
     // Region-buckets currently being scanned, prevents duplicate concurrent BFS.
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
+
+    // Serializes the registration step so two near-simultaneous discoveries (e.g. startup
+    // sweep) can't both read "no existing nearby chamber" and both register before either
+    // commits. Without this, two adjacent vanilla chambers (~500 blocks apart) would each
+    // create a separate registration instead of merging.
+    private val registrationMutex = Mutex()
 
     /**
      * Register a seed block location to kick off discovery.
@@ -167,13 +175,138 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
         val worldName = world.name
         val name = "auto_${worldName}_${result.centerX}_${result.centerZ}"
 
-        // Skip if a chamber already registered covering this AABB center (e.g. manual /tcp generate)
-        val centerLoc = Location(world, result.centerX.toDouble(), result.centerY.toDouble(), result.centerZ.toDouble())
-        if (plugin.chamberManager.getCachedChamberAt(centerLoc) != null) {
-            finalizeFailed(key, "location already covered by existing chamber")
+        plugin.launchAsync {
+            registrationMutex.withLock {
+                try {
+                    val nearby = findNearbyChamber(worldName, result)
+                    if (nearby != null) {
+                        mergeIntoExisting(world, nearby, result, key, method)
+                    } else {
+                        registerNew(world, name, result, key, method)
+                    }
+                } catch (e: Exception) {
+                    plugin.logger.severe("[Discovery] Unexpected error during registration: ${e.message}")
+                    e.printStackTrace()
+                    finalizeFailed(key, "registration exception")
+                }
+            }
+        }
+    }
+
+    /**
+     * Looks for a registered chamber in the same world whose AABB is within
+     * `discovery.merge-distance-blocks` (Chebyshev distance, edge-to-edge) of the
+     * BFS result. Used to fold multiple seeds from the same physical chamber, and
+     * to absorb seeds from chambers that the BFS truncated due to radius caps,
+     * into a single registration.
+     */
+    private fun findNearbyChamber(
+        worldName: String,
+        result: BfsResult
+    ): io.github.darkstarworks.trialChamberPro.models.Chamber? {
+        val mergeDistance = plugin.config.getInt("discovery.merge-distance-blocks", 250)
+        if (mergeDistance < 0) return null
+        return plugin.chamberManager.getCachedChambers().firstOrNull { c ->
+            c.world == worldName && aabbsWithin(
+                result.minX, result.minY, result.minZ, result.maxX, result.maxY, result.maxZ,
+                c.minX, c.minY, c.minZ, c.maxX, c.maxY, c.maxZ,
+                mergeDistance
+            )
+        }
+    }
+
+    /** Chebyshev edge-to-edge distance check between two AABBs. */
+    private fun aabbsWithin(
+        aMinX: Int, aMinY: Int, aMinZ: Int, aMaxX: Int, aMaxY: Int, aMaxZ: Int,
+        bMinX: Int, bMinY: Int, bMinZ: Int, bMaxX: Int, bMaxY: Int, bMaxZ: Int,
+        distance: Int
+    ): Boolean {
+        val dx = maxOf(0, maxOf(aMinX - bMaxX, bMinX - aMaxX))
+        val dy = maxOf(0, maxOf(aMinY - bMaxY, bMinY - aMaxY))
+        val dz = maxOf(0, maxOf(aMinZ - bMaxZ, bMinZ - aMaxZ))
+        return maxOf(dx, dy, dz) <= distance
+    }
+
+    private suspend fun mergeIntoExisting(
+        world: World,
+        existing: io.github.darkstarworks.trialChamberPro.models.Chamber,
+        result: BfsResult,
+        key: String,
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+    ) {
+        val newMinX = minOf(existing.minX, result.minX)
+        val newMinY = minOf(existing.minY, result.minY)
+        val newMinZ = minOf(existing.minZ, result.minZ)
+        val newMaxX = maxOf(existing.maxX, result.maxX)
+        val newMaxY = maxOf(existing.maxY, result.maxY)
+        val newMaxZ = maxOf(existing.maxZ, result.maxZ)
+
+        // Cap the merged volume so a runaway BFS or pathological geometry can't
+        // swallow half the world into one logical chamber.
+        val newVolume = (newMaxX - newMinX + 1).toLong() *
+                (newMaxY - newMinY + 1).toLong() *
+                (newMaxZ - newMinZ + 1).toLong()
+        val maxMerged = plugin.config.getLong("discovery.max-merged-volume", 1_500_000L)
+        if (newVolume > maxMerged) {
+            finalizeFailed(key, "merge with '${existing.name}' would exceed max-merged-volume ($newVolume > $maxMerged) — leaving as separate region")
             return
         }
 
+        if (newMinX == existing.minX && newMinY == existing.minY && newMinZ == existing.minZ &&
+            newMaxX == existing.maxX && newMaxY == existing.maxY && newMaxZ == existing.maxZ) {
+            // Result fully contained in existing chamber — no work needed
+            finalizeFailed(key, "region fully covered by existing chamber '${existing.name}'")
+            return
+        }
+
+        val ok = plugin.chamberManager.updateBounds(existing.id, newMinX, newMinY, newMinZ, newMaxX, newMaxY, newMaxZ)
+        if (!ok) {
+            finalizeFailed(key, "updateBounds failed for chamber '${existing.name}'")
+            return
+        }
+
+        // Re-fetch the refreshed chamber for the rescan.
+        val refreshed = plugin.chamberManager.getChamber(existing.name)
+        if (refreshed != null) {
+            plugin.chamberManager.scanChamber(refreshed)
+
+            if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
+                try {
+                    plugin.snapshotManager.createSnapshot(refreshed)
+                } catch (e: Exception) {
+                    plugin.logger.warning("[Discovery] Auto-snapshot after merge failed for '${existing.name}': ${e.message}")
+                }
+            }
+        }
+
+        plugin.logger.info("[Discovery] Merged region into existing chamber '${existing.name}' " +
+                "(new bounds ${newMaxX - newMinX + 1}x${newMaxY - newMinY + 1}x${newMaxZ - newMinZ + 1}, " +
+                "absorbed ${result.vaultCount} vaults / ${result.spawnerCount} spawners from new region)")
+
+        if (plugin.config.getBoolean("discovery.notify-ops", true)) {
+            val msg = plugin.getMessageComponent(
+                "discovery-merged",
+                "name" to existing.name,
+                "vaults" to result.vaultCount,
+                "spawners" to result.spawnerCount
+            )
+            plugin.scheduler.runTask(Runnable {
+                plugin.server.onlinePlayers
+                    .filter { it.hasPermission("tcp.discovery.notify") }
+                    .forEach { it.sendMessage(msg) }
+            })
+        }
+
+        markProcessed(key)
+    }
+
+    private suspend fun registerNew(
+        world: World,
+        name: String,
+        result: BfsResult,
+        key: String,
+        method: io.github.darkstarworks.trialChamberPro.api.events.ChamberDiscoveredEvent.Method
+    ) {
         // Fire pre-registration event; listeners may abort.
         val corner1 = Location(world, result.minX.toDouble(), result.minY.toDouble(), result.minZ.toDouble())
         val corner2 = Location(world, result.maxX.toDouble(), result.maxY.toDouble(), result.maxZ.toDouble())
@@ -192,48 +325,39 @@ class ChamberDiscoveryManager(private val plugin: TrialChamberPro) {
             return
         }
 
-        plugin.launchAsync {
+        val chamber = plugin.chamberManager.createChamber(name, corner1, corner2)
+        if (chamber == null) {
+            finalizeFailed(key, "createChamber returned null (duplicate name or DB error)")
+            return
+        }
+
+        plugin.logger.info("[Discovery] Registered chamber '$name' (${result.sizeX}x${result.sizeY}x${result.sizeZ}, ${result.vaultCount} vaults, ${result.spawnerCount} spawners)")
+
+        if (plugin.config.getBoolean("discovery.notify-ops", true)) {
+            val msg = plugin.getMessageComponent(
+                "discovery-registered",
+                "name" to name,
+                "vaults" to result.vaultCount,
+                "spawners" to result.spawnerCount
+            )
+            plugin.scheduler.runTask(Runnable {
+                plugin.server.onlinePlayers
+                    .filter { it.hasPermission("tcp.discovery.notify") }
+                    .forEach { it.sendMessage(msg) }
+            })
+        }
+
+        plugin.chamberManager.scanChamber(chamber)
+
+        if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
             try {
-                val chamber = plugin.chamberManager.createChamber(name, corner1, corner2)
-                if (chamber == null) {
-                    finalizeFailed(key, "createChamber returned null (duplicate name or DB error)")
-                    return@launchAsync
-                }
-
-                plugin.logger.info("[Discovery] Registered chamber '$name' (${result.sizeX}x${result.sizeY}x${result.sizeZ}, ${result.vaultCount} vaults, ${result.spawnerCount} spawners)")
-
-                if (plugin.config.getBoolean("discovery.notify-ops", true)) {
-                    val msg = plugin.getMessageComponent(
-                        "discovery-registered",
-                        "name" to name,
-                        "vaults" to result.vaultCount,
-                        "spawners" to result.spawnerCount
-                    )
-                    plugin.scheduler.runTask(Runnable {
-                        plugin.server.onlinePlayers
-                            .filter { it.hasPermission("tcp.discovery.notify") }
-                            .forEach { it.sendMessage(msg) }
-                    })
-                }
-
-                // createChamber does not auto-scan; command flows call scanChamber themselves.
-                plugin.chamberManager.scanChamber(chamber)
-
-                if (plugin.config.getBoolean("discovery.auto-snapshot", false)) {
-                    try {
-                        plugin.snapshotManager.createSnapshot(chamber)
-                    } catch (e: Exception) {
-                        plugin.logger.warning("[Discovery] Auto-snapshot failed for '$name': ${e.message}")
-                    }
-                }
-
-                markProcessed(key)
+                plugin.snapshotManager.createSnapshot(chamber)
             } catch (e: Exception) {
-                plugin.logger.severe("[Discovery] Failed to register chamber '$name': ${e.message}")
-                e.printStackTrace()
-                finalizeFailed(key, "registration exception")
+                plugin.logger.warning("[Discovery] Auto-snapshot failed for '$name': ${e.message}")
             }
         }
+
+        markProcessed(key)
     }
 
     private fun finalizeFailed(key: String, reason: String) {

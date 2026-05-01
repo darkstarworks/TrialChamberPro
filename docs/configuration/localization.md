@@ -103,7 +103,7 @@ All GUI strings live under a single nested `gui:` tree, organized one sub-sectio
 | `gui.custom-mob` | Per-chamber mob provider config |
 | `gui.loot-table-list` / `gui.pool-selector` / `gui.loot-editor` / `gui.amount-editor` | Loot editing flow |
 | `gui.stats-menu` / `gui.leaderboard` / `gui.player-stats` | Statistics views |
-| `gui.settings-menu` / `gui.global-settings` / `gui.protection-menu` | Settings hub + toggle screens |
+| `gui.global-settings` / `gui.protection-menu` | Toggle screens (reachable directly from the main menu) |
 | `gui.help-menu` | In-GUI command reference |
 
 Within a section, key suffixes follow a consistent pattern:
