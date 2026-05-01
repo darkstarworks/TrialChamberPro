@@ -170,14 +170,27 @@ class LootEditorView(
         val lore = mutableListOf<Component>()
         lore += plugin.getGuiText("gui.loot-editor.item-amount",
             "min" to li.amountMin, "max" to li.amountMax)
+        val avgAmount = (li.amountMin + li.amountMax) / 2.0
         if (weighted) {
             if (totalWeight > 0.0 && li.enabled) {
-                val pct = String.format("%.1f", (li.weight / totalWeight) * 100.0)
+                val chancePerDraw = li.weight / totalWeight
+                val pct = String.format("%.1f", chancePerDraw * 100.0)
                 lore += plugin.getGuiText("gui.loot-editor.item-chance", "percent" to pct)
+
+                // Expected count per vault opening = avg(draws) × per-draw chance × avg(amount).
+                // Helps players reason about real drop rates without doing the math themselves.
+                val avgDraws = (draft.minRolls + draft.maxRolls) / 2.0
+                val expected = avgDraws * chancePerDraw * avgAmount
+                lore += plugin.getGuiText("gui.loot-editor.item-expected",
+                    "count" to formatExpected(expected))
             } else {
                 lore += plugin.getGuiText("gui.loot-editor.item-weight",
                     "weight" to String.format("%.1f", li.weight))
             }
+        } else if (li.enabled) {
+            // Guaranteed items always drop once per opening; expected count = avg(amount).
+            lore += plugin.getGuiText("gui.loot-editor.item-expected",
+                "count" to formatExpected(avgAmount))
         }
         lore += plugin.getGuiText(if (li.enabled) "gui.loot-editor.item-enabled" else "gui.loot-editor.item-disabled")
         lore += Component.empty()
@@ -349,5 +362,15 @@ class LootEditorView(
 
         if (poolName != null) player.sendMessage(plugin.getMessageComponent("gui-loot-pool-saved", "pool" to poolName))
         else player.sendMessage(plugin.getMessageComponent("gui-loot-changes-saved"))
+    }
+
+    /**
+     * Formats an expected-count number for display. Sub-1.0 values get two decimals
+     * so a "1 in 50" tier item still reads as "≈0.02" rather than rounding to 0.
+     */
+    private fun formatExpected(v: Double): String = when {
+        v >= 10.0 -> String.format("%.0f", v)
+        v >= 1.0 -> String.format("%.1f", v)
+        else -> String.format("%.2f", v)
     }
 }

@@ -800,6 +800,52 @@ class ChamberManager(private val plugin: TrialChamberPro) {
     }
 
     /**
+     * Updates the chamber's bounding box. Used by [ChamberDiscoveryManager] when
+     * merging a newly-discovered region into an existing chamber.
+     *
+     * Caller is responsible for re-scanning vaults/spawners and refreshing the
+     * snapshot afterwards if needed — this method only persists the new bounds.
+     */
+    suspend fun updateBounds(
+        chamberId: Int,
+        minX: Int, minY: Int, minZ: Int,
+        maxX: Int, maxY: Int, maxZ: Int
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement(
+                    "UPDATE chambers SET min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ? WHERE id = ?"
+                ).use { stmt ->
+                    stmt.setInt(1, minX)
+                    stmt.setInt(2, minY)
+                    stmt.setInt(3, minZ)
+                    stmt.setInt(4, maxX)
+                    stmt.setInt(5, maxY)
+                    stmt.setInt(6, maxZ)
+                    stmt.setInt(7, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        plugin.logger.info("Updated bounds for chamber $chamberId: ($minX,$minY,$minZ)-($maxX,$maxY,$maxZ)")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to update chamber bounds: ${e.message}")
+            false
+        }
+    }
+
+    /**
      * Updates the spawner cooldown for a chamber.
      *
      * @param chamberId The chamber ID

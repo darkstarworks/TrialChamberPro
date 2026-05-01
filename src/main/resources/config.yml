@@ -193,7 +193,20 @@ discovery:
   notify-ops: true                 # Broadcast registration to players with tcp.discovery.notify
   cooldown-seconds: 300            # Per-region debounce after a successful or failed discovery
   pending-retry-seconds: 30        # How long to keep a partial-load seed pending while adjacent chunks load
+  merge-distance-blocks: 250       # If a newly-discovered region's AABB is within this many blocks (Chebyshev,
+                                   # edge-to-edge) of an already-registered chamber in the same world, the region
+                                   # is merged into the existing chamber instead of being registered separately.
+                                   # Vanilla chambers are typically ~500 blocks apart, so 250 keeps real neighbours
+                                   # separate while still folding partial detections (e.g. radius-capped BFS) together.
+                                   # Set to -1 to disable merging entirely.
+  max-merged-volume: 1500000       # Hard cap on the post-merge bounding-box volume (blocks). Prevents pathological
+                                   # daisy-chaining from swallowing huge regions into a single logical chamber.
 
 # Debug mode
 debug:
   verbose-logging: false
+  # When true, skip the startup check that compares your messages.yml against
+  # the JAR-bundled defaults. Leave this false unless the warning is noisy and
+  # you have a reason to ignore it — when keys are missing, GUI tooltips and
+  # chat messages render as literal "<missing: key.name>" text.
+  skip-messages-schema-check: false

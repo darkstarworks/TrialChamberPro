@@ -10,53 +10,68 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 
 /**
- * Main menu view — the central hub for the TrialChamberPro admin GUI.
- * All strings are sourced from `messages.yml` under `gui.main-menu.*` (v1.3.0).
+ * Main menu view — central hub for the TrialChamberPro admin GUI.
+ *
+ * v1.4.x: Flattened the previous "Settings → Plugin Settings → Global Settings"
+ * navigation. Global Settings, Protection Settings, Performance Info and Reload
+ * Configuration are now top-level entries on this hub instead of being hidden
+ * one level deeper. The intermediate `SettingsMenuView` was removed.
+ *
+ * All strings are sourced from `messages.yml` under `gui.main-menu.*`.
  */
 class MainMenuView(
     private val plugin: TrialChamberPro,
     private val menu: MenuService
 ) {
     fun build(player: Player): ChestGui {
-        val gui = ChestGui(4, plainText("gui.main-menu.title"))
-        val pane = StaticPane(0, 0, 9, 4)
+        val gui = ChestGui(6, plainText("gui.main-menu.title"))
+        val pane = StaticPane(0, 0, 9, 6)
 
+        // Row 0: header
         pane.addItem(GuiItem(createHeaderItem()) { it.isCancelled = true }, 4, 0)
 
-        // Row 1
+        // Row 1: primary action tiles
         pane.addItem(GuiItem(createChambersItem()) { event ->
             event.isCancelled = true
             menu.openChamberList(player)
-        }, 2, 1)
+        }, 1, 1)
 
         pane.addItem(GuiItem(createLootTablesItem()) { event ->
             event.isCancelled = true
             menu.openLootTableList(player)
-        }, 4, 1)
+        }, 3, 1)
 
-        pane.addItem(GuiItem(createStatisticsItem()) { event ->
+        pane.addItem(GuiItem(createGlobalSettingsItem()) { event ->
             event.isCancelled = true
-            menu.openStatsMenu(player)
-        }, 6, 1)
-
-        // Row 2
-        pane.addItem(GuiItem(createSettingsItem()) { event ->
-            event.isCancelled = true
-            menu.openSettingsMenu(player)
-        }, 2, 2)
+            menu.openGlobalSettings(player)
+        }, 5, 1)
 
         pane.addItem(GuiItem(createProtectionItem()) { event ->
             event.isCancelled = true
             menu.openProtectionMenu(player)
-        }, 4, 2)
+        }, 7, 1)
 
+        // Row 2: secondary tiles + read-only info
         pane.addItem(GuiItem(createHelpItem()) { event ->
             event.isCancelled = true
             menu.openHelpMenu(player)
+        }, 2, 2)
+
+        pane.addItem(GuiItem(createPerformanceInfoItem()) { it.isCancelled = true }, 4, 2)
+
+        pane.addItem(GuiItem(createStatisticsItem()) { event ->
+            event.isCancelled = true
+            menu.openStatsMenu(player)
         }, 6, 2)
 
-        // Close (bottom right)
-        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 3)
+        // Row 4: reload (shift-click to fire so accidental clicks don't reload)
+        pane.addItem(GuiItem(createReloadItem()) { event ->
+            event.isCancelled = true
+            if (event.isShiftClick) reloadConfig(player)
+        }, 4, 4)
+
+        // Row 5: close
+        pane.addItem(GuiComponents.closeButton(plugin, player), 8, 5)
 
         gui.addPane(pane)
         gui.setOnGlobalClick { it.isCancelled = true }
@@ -100,8 +115,11 @@ class MainMenuView(
         return GuiComponents.infoItem(plugin, Material.WRITABLE_BOOK, "gui.main-menu.stats-name", loreKey)
     }
 
-    private fun createSettingsItem(): ItemStack =
-        GuiComponents.infoItem(plugin, Material.COMPARATOR, "gui.main-menu.settings-name", "gui.main-menu.settings-lore")
+    private fun createGlobalSettingsItem(): ItemStack =
+        GuiComponents.infoItem(
+            plugin, Material.COMMAND_BLOCK,
+            "gui.main-menu.global-settings-name", "gui.main-menu.global-settings-lore"
+        )
 
     private fun createProtectionItem(): ItemStack {
         val protectionEnabled = plugin.config.getBoolean("protection.enabled", true)
@@ -111,6 +129,33 @@ class MainMenuView(
 
     private fun createHelpItem(): ItemStack =
         GuiComponents.infoItem(plugin, Material.OAK_SIGN, "gui.main-menu.help-name", "gui.main-menu.help-lore")
+
+    private fun createPerformanceInfoItem(): ItemStack {
+        val dbType = plugin.config.getString("database.type", "SQLITE") ?: "SQLITE"
+        val cacheEnabled = plugin.config.getBoolean("performance.cache-chamber-lookups", true)
+        val cacheDuration = plugin.config.getInt("performance.cache-duration-seconds", 300)
+        val chamberCount = plugin.chamberManager.getCachedChambers().size
+        return GuiComponents.infoItem(
+            plugin, Material.REDSTONE,
+            "gui.main-menu.performance-name", "gui.main-menu.performance-lore",
+            "database" to dbType,
+            "cache" to if (cacheEnabled) "Enabled" else "Disabled",
+            "duration" to cacheDuration,
+            "chambers" to chamberCount
+        )
+    }
+
+    private fun createReloadItem(): ItemStack =
+        GuiComponents.infoItem(
+            plugin, Material.REPEATER,
+            "gui.main-menu.reload-name", "gui.main-menu.reload-lore"
+        )
+
+    private fun reloadConfig(player: Player) {
+        player.sendMessage(plugin.getMessageComponent("config-reloading"))
+        plugin.reloadPluginConfig()
+        player.sendMessage(plugin.getMessageComponent("config-reloaded"))
+    }
 
     private fun plainText(key: String): String =
         net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer

@@ -74,8 +74,7 @@ class MenuService(private val plugin: TrialChamberPro) {
         LEADERBOARD,
         PLAYER_STATS,
 
-        // Settings
-        SETTINGS_MENU,
+        // Settings (top-level — no intermediate menu since v1.4.x)
         GLOBAL_SETTINGS,
         PROTECTION_MENU,
         CUSTOM_MOB_PROVIDER,
@@ -189,7 +188,6 @@ class MenuService(private val plugin: TrialChamberPro) {
                 val targetUuid = s.targetPlayerUuid
                 if (targetUuid != null) openPlayerStats(player, targetUuid) else openStatsMenu(player)
             }
-            Screen.SETTINGS_MENU -> openSettingsMenu(player)
             Screen.GLOBAL_SETTINGS -> openGlobalSettings(player)
             Screen.PROTECTION_MENU -> openProtectionMenu(player)
             Screen.HELP_MENU -> openHelpMenu(player)
@@ -455,15 +453,9 @@ class MenuService(private val plugin: TrialChamberPro) {
     }
 
     // ==================== Settings Screens ====================
-
-    fun openSettingsMenu(player: Player) {
-        val view = SettingsMenuView(plugin, this)
-        val gui = view.build(player)
-        getOrCreateSession(player.uniqueId).apply {
-            screen = Screen.SETTINGS_MENU
-        }
-        gui.show(player)
-    }
+    // SettingsMenuView was removed in v1.4.x; Global Settings, Protection
+    // Settings, Performance Info and Reload Configuration are all reachable
+    // directly from the main menu.
 
     fun openGlobalSettings(player: Player) {
         val view = GlobalSettingsView(plugin, this)
