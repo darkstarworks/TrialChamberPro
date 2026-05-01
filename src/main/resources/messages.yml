@@ -177,13 +177,9 @@ wevar-list-header: "&6=== Saved Regions ==="
 wevar-list-item: "&e{name} &7- &f{world} &7(&f{minX},{minY},{minZ}&7 -> &f{maxX},{maxY},{maxZ}&7)"
 wevar-list-empty: "&7No saved regions yet. Use &e/tcp generate value save <name>&7 to save your selection."
 
-# Undo integration
-undo-confirm: "&eType &aconfirm &eto delete chamber &e{chamber}&e (via //undo). Expires in &f{seconds}&es. Type &ccancel &eto abort."
-undo-confirm-pending: "&eConfirmation pending for &e{chamber}&e. &7Expires in &f{seconds}&7s. Type &aconfirm &7or &ccancel&7."
-undo-deleted: "&aChamber &e{chamber}&a deleted."
-undo-failed: "&cFailed to delete chamber &e{chamber}&c."
-undo-cancelled: "&eUndo cancelled."
-undo-expired: "&eUndo confirmation expired. Run &f//undo &eagain to restart."
+# Undo integration (passive hints — TCP never intercepts //undo)
+undo-cleanup-hint: "&7Tip: if &f//undo &7rolled back chamber &e{chamber}&7's blocks, also run &f/tcp delete {chamber} &7to clear the registration."
+chamber-created-rollback-tip: "&7To roll this back: &f//undo &7for the blocks, then &f/tcp delete {chamber} &7to unregister."
 
 # Schematic paste confirmation
 paste-loading: "&7Loading schematic dimensions..."

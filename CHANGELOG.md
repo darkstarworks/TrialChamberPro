@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.2] - 2026-05-02
+### Fixed
+- **`//undo` no longer gets hijacked by TCP after a chamber generation.** The previous `UndoListener` cancelled `//undo` at HIGHEST priority and demanded `confirm` / `cancel` in chat — but the chat handler only cleared the *pending* state on cancel, leaving the per-player `last` entry forever. Once any chamber had been generated in the session, every subsequent `//undo` (even for unrelated WorldEdit edits made hours later, or by a moderator joining after the fact) was intercepted, the chat prompt fired, and the actual WorldEdit undo never ran. There was also no path to retry: cancelling re-armed the same intercept, and confirming only deleted the DB registration without rolling back the placed blocks. The whole interception model was wrong — chamber registration is a DB write, not a WorldEdit edit, so it doesn't belong on WE's undo stack to begin with. New behavior: TCP never cancels `//undo`. WorldEdit's stack is fully untouched, any depth, any time. A new passive `PostUndoHintListener` observes `//undo` (and `/undo`) at MONITOR priority without cancelling and, *only if the player happens to be standing inside a registered chamber* when they run undo, posts a one-line tip suggesting `/tcp delete <name>` to also clean up the registration. Generation now also emits a one-time `chamber-created-rollback-tip` immediately after `chamber-created` so users learn the two-step rollback (`//undo` for blocks → `/tcp delete` for registration) up front. `UndoListener.kt` and `UndoTracker.kt` deleted.
+
+### Localization
+- **`messages.yml`**: removed obsolete `undo-confirm`, `undo-confirm-pending`, `undo-deleted`, `undo-failed`, `undo-cancelled`, `undo-expired` (the chat-prompt strings from the old confirmation flow). Added `undo-cleanup-hint` (passive post-`//undo` tip) and `chamber-created-rollback-tip` (post-generation tip). The `paste-undo-hint` key is unchanged — schematic paste still references `//undo` correctly because that path always was a normal WorldEdit edit.
+
 ## [1.4.1] - 2026-04-29
 ### Fixed
 - **Auto-discovery now merges adjacent chamber regions instead of double-registering them.** The previous flow registered every BFS result as a fresh chamber and only short-circuited if the candidate's *center* fell inside an existing AABB. Two physically distinct vanilla chambers ~500 blocks apart, or a single physical chamber whose two halves seeded discovery from different chunks, would happily produce two side-by-side `auto_world_*` entries (the user-reported case: `auto_world_851_747` + `auto_world_891_765` registered in the same millisecond, ~40 blocks apart on the X axis). New behavior: after BFS produces a candidate AABB, `ChamberDiscoveryManager` scans cached chambers in the same world for any whose AABB sits within `discovery.merge-distance-blocks` (Chebyshev edge-to-edge, default 250) of the candidate. If found, the existing chamber's bounds are unioned with the candidate via the new `ChamberManager.updateBounds(...)`, the chamber is rescanned to absorb the new vaults/spawners, and (if `discovery.auto-snapshot` is enabled) the snapshot is regenerated. If not found, registration proceeds as before. New `discovery.max-merged-volume` (default 1,500,000 blocks) caps how far a runaway daisy-chain can grow so a pathological geometry can't swallow large regions into a single logical chamber. Set `discovery.merge-distance-blocks: -1` to disable merging entirely and restore the v1.2.25 behavior.
@@ -1194,6 +1201,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.2...v1.3.3
