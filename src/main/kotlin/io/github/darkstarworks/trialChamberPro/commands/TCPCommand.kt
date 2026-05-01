@@ -66,23 +66,33 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
     }
 
     private fun sendHelp(sender: CommandSender) {
+        // Order mirrors the logical grouping in HelpMenuView: browse, create,
+        // manage, loot/mobs, players, admin. Keep this list in sync with both
+        // the GUI tiles and the messages.yml `help-*` keys.
         sender.sendMessage(plugin.getMessageComponent("help-header"))
+        // Browse
+        sender.sendMessage(plugin.getMessageComponent("help-list"))
+        sender.sendMessage(plugin.getMessageComponent("help-info"))
+        // Create
         sender.sendMessage(plugin.getMessageComponent("help-generate"))
+        sender.sendMessage(plugin.getMessageComponent("help-paste"))
+        // Manage
         sender.sendMessage(plugin.getMessageComponent("help-scan"))
         sender.sendMessage(plugin.getMessageComponent("help-setexit"))
         sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
         sender.sendMessage(plugin.getMessageComponent("help-reset"))
-        sender.sendMessage(plugin.getMessageComponent("help-list"))
-        sender.sendMessage(plugin.getMessageComponent("help-info"))
         sender.sendMessage(plugin.getMessageComponent("help-delete"))
+        // Loot & mobs
+        sender.sendMessage(plugin.getMessageComponent("help-loot"))
+        sender.sendMessage(plugin.getMessageComponent("help-mobs"))
+        // Players & rewards
+        sender.sendMessage(plugin.getMessageComponent("help-vault"))
+        sender.sendMessage(plugin.getMessageComponent("help-key"))
+        sender.sendMessage(plugin.getMessageComponent("help-give"))
         sender.sendMessage(plugin.getMessageComponent("help-stats"))
         sender.sendMessage(plugin.getMessageComponent("help-leaderboard"))
-        sender.sendMessage(plugin.getMessageComponent("help-key"))
-        sender.sendMessage(plugin.getMessageComponent("help-vault"))
-        sender.sendMessage(plugin.getMessageComponent("help-paste"))
+        // Admin
         sender.sendMessage(plugin.getMessageComponent("help-menu"))
-        sender.sendMessage(plugin.getMessageComponent("help-loot"))
-        sender.sendMessage(plugin.getMessageComponent("help-give"))
         sender.sendMessage(plugin.getMessageComponent("help-reload"))
     }
 

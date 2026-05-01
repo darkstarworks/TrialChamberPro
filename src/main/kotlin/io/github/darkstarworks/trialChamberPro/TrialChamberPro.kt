@@ -170,6 +170,12 @@ class TrialChamberPro : JavaPlugin() {
         // v1.3.0: sanity-check numeric config values; clamp with warnings rather than hard-fail
         io.github.darkstarworks.trialChamberPro.config.ConfigValidator.validate(this)
 
+        // v1.4.1: warn when the user's messages.yml is missing keys this version expects.
+        // Pure log output — never modifies the file, never blocks startup. See the user
+        // bug report where `<missing: gui.loot-table-list.table-name-normal>` reached the
+        // GUI because the deployed messages.yml was an older copy.
+        io.github.darkstarworks.trialChamberPro.config.MessagesSchemaValidator.validate(this)
+
         // Register command executor and tab completer immediately to avoid early "/tcp [args]" usage messages
         val tcpCommand = TCPCommand(this)
         val tabCompleter = TCPTabCompleter(this)
@@ -293,7 +299,7 @@ class TrialChamberPro : JavaPlugin() {
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
-                        UndoListener(this@TrialChamberPro),
+                        PostUndoHintListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
                     pasteConfirmListener = PasteConfirmListener(this@TrialChamberPro)

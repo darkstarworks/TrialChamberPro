@@ -72,8 +72,8 @@ class ProtectionMenuView(
             }, def.x, def.y)
         }
 
-        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-settings") {
-            menu.openSettingsMenu(player)
+        pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-main-menu") {
+            menu.openMainMenu(player)
         }, 0, 4)
         pane.addItem(GuiComponents.closeButton(plugin, player), 8, 4)
 
