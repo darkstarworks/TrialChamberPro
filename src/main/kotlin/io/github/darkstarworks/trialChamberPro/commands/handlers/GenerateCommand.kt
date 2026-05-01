@@ -247,7 +247,8 @@ class GenerateCommand(private val plugin: TrialChamberPro) : SubcommandHandler {
             }
             sender.sendMessage(plugin.getMessageComponent("chamber-created", "chamber" to name))
             if (sender is Player) {
-                io.github.darkstarworks.trialChamberPro.utils.UndoTracker.setLast(sender.uniqueId, chamber.name)
+                sender.sendMessage(plugin.getMessageComponent("chamber-created-rollback-tip",
+                    "chamber" to chamber.name))
             }
             if (plugin.config.getBoolean("global.auto-scan-on-register", true)) {
                 sender.sendMessage(plugin.getMessageComponent("scan-started", "chamber" to name))

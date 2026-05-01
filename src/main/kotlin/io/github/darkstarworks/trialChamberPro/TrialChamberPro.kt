@@ -299,7 +299,7 @@ class TrialChamberPro : JavaPlugin() {
                         this@TrialChamberPro
                     )
                     server.pluginManager.registerEvents(
-                        UndoListener(this@TrialChamberPro),
+                        PostUndoHintListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
                     pasteConfirmListener = PasteConfirmListener(this@TrialChamberPro)
