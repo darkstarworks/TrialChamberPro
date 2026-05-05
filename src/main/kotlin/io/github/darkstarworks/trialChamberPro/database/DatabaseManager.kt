@@ -283,6 +283,14 @@ open class DatabaseManager(protected val plugin: TrialChamberPro) {
                         // Column already exists - this is expected on subsequent runs
                     }
                 }
+
+                // v1.5.0: Chamber paused state — keeps the DB record while suspending all active behavior
+                try {
+                    stmt.execute("ALTER TABLE chambers ADD COLUMN is_paused BOOLEAN NOT NULL DEFAULT 0")
+                    plugin.logger.info("Migration executed: Added is_paused column")
+                } catch (_: SQLException) {
+                    // Column already exists
+                }
             }
         }
     }

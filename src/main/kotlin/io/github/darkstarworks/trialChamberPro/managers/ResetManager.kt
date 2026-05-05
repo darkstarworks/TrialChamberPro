@@ -56,6 +56,9 @@ class ResetManager(private val plugin: TrialChamberPro) {
         // Skip if already scheduled
         if (scheduledResets.containsKey(chamber.id)) return
 
+        // Skip paused chambers — they have no active behavior including auto-resets
+        if (chamber.isPaused) return
+
         // Skip if automatic resets are disabled (resetInterval <= 0)
         if (chamber.resetInterval <= 0) {
             plugin.logger.fine("Automatic resets disabled for chamber ${chamber.name} (interval: ${chamber.resetInterval})")
@@ -205,9 +208,11 @@ class ResetManager(private val plugin: TrialChamberPro) {
                 resetTrialSpawners(chamber)
             }
 
-            // Step 5: Update last reset time
+            // Step 5: Update last reset time and clear the auto-pause destruction counter
+            // so a reset chamber starts counting from zero again.
             val now = System.currentTimeMillis()
             plugin.chamberManager.updateLastReset(chamber.id, now)
+            plugin.chamberManager.resetDestructionCounter(chamber.id)
 
             // Step 6: Optionally reset vault cooldowns (defaults to true for vanilla behavior)
             if (plugin.config.getBoolean("reset.reset-vault-cooldowns", true)) {

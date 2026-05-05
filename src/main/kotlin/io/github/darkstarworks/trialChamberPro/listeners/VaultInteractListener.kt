@@ -61,10 +61,18 @@ class VaultInteractListener(private val plugin: TrialChamberPro) : Listener {
         }
 
         // Skip plugin logic for vaults outside registered chambers — allow vanilla behavior
-        if (!plugin.chamberManager.isInChamber(block.location)) {
+        val chamberForVault = plugin.chamberManager.getCachedChamberAt(block.location)
+        if (chamberForVault == null) {
             if (plugin.config.getBoolean("debug.verbose-logging", false)) {
                 plugin.logger.info("Vault at ${block.location.toVector()} is outside registered chambers - allowing vanilla behavior")
             }
+            return
+        }
+
+        // Reject vault interactions in paused chambers
+        if (chamberForVault.isPaused) {
+            event.isCancelled = true
+            player.sendMessage(plugin.getMessageComponent("chamber-is-paused"))
             return
         }
 

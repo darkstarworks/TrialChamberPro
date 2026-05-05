@@ -52,8 +52,8 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
         val uuid = player.uniqueId
 
         movementScope.launch {
-            val wasInChamber = plugin.chamberManager.getChamberAt(from) != null
-            val isInChamber = plugin.chamberManager.getChamberAt(to) != null
+            val wasInChamber = plugin.chamberManager.getChamberAt(from)?.takeIf { !it.isPaused } != null
+            val isInChamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused } != null
 
             // Player entered a chamber
             if (!wasInChamber && isInChamber) {
@@ -74,7 +74,7 @@ class PlayerMovementListener(private val plugin: TrialChamberPro) : Listener {
 
                 // Optional: Send entry message
                 if (plugin.config.getBoolean("messages.chamber-entry-message", false)) {
-                    val chamber = plugin.chamberManager.getChamberAt(to)
+                    val chamber = plugin.chamberManager.getChamberAt(to)?.takeIf { !it.isPaused }
                     player.sendMessage(
                         plugin.getMessageComponent("chamber-entered", "chamber" to chamber?.name)
                     )

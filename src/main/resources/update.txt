@@ -1,4 +1,16 @@
 <black>.
+<aqua>[1.5.0] <gray>- <white>2026-05-05
+<lime>+ <white>NEW: <green>Chamber pause state — pause any chamber via <yellow>/tcp pause <name><green> or the GUI toggle. DB record, stats, and vault history are preserved; resets, protection, vault interactions, and mob tracking are suspended until you resume.
+<lime>+ <white>NEW: <green>Auto-pause on destruction (<yellow>protection.auto-pause-on-destruction<green>, default off). Once <yellow>protection.auto-pause-threshold<green> (default <yellow>6<green>) combined vaults + trial spawners are destroyed, the chamber pauses automatically and ops are notified. Counter resets on every pause/resume and on chamber reset.
+<lime>+ <white>NEW: <green>Permission <yellow>tcp.admin.pause<green> (default op) for <yellow>/tcp pause<green> and <yellow>/tcp resume<green>.
+<aqua>[1.4.2] <gray>- <white>2026-05-02
+<lime>+ <white>FIX: <green><yellow>//undo<green> no longer hijacked by TCP after a chamber generation. The old confirm-flow was removed entirely. New passive tip appears only if you run <yellow>//undo<green> while standing inside a registered chamber, suggesting <yellow>/tcp delete<green> to also clean up the DB record.
+<aqua>[1.4.1] <gray>- <white>2026-04-29
+<lime>+ <white>FIX: <green>Auto-discovery now merges adjacent chamber regions (within <yellow>discovery.merge-distance-blocks<green>, default 250) instead of double-registering them.
+<lime>+ <white>FIX: <green>Discovery registration race condition closed — concurrent BFS results are now serialized so two near-simultaneous seeds can't both commit as separate chambers.
+<lime>+ <white>CHANGE: <green>Main menu flattened — Settings hub removed; Global Settings and Protection Settings are now direct buttons on the main menu.
+<lime>+ <white>CHANGE: <green>Loot editor now shows expected drop rate per item (<yellow>≈X per vault opening<green>).
+<lime>+ <white>CHANGE: <green>Help view rebuilt to mirror <yellow>/tcp help<green> and cover every wired subcommand including <yellow>mobs<green> and <yellow>give<green>.
 <aqua>[1.4.0] <gray>- <white>2026-04-26
 <lime>+ <white>NEW: <green>Phase 2 extension API — three more seams for premium add-ons and third-party integrations.
 <lime>+ <white>NEW: <green>Pre-reset snapshot substitution (<yellow>ChamberResetEvent.snapshotOverride<green>) — listeners can swap in a different snapshot per reset cycle without modifying the chamber's saved file.

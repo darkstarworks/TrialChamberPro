@@ -34,6 +34,8 @@ import java.io.File
  * @property customMobProvider Id of the [io.github.darkstarworks.trialChamberPro.providers.TrialMobProvider] driving spawner waves in this chamber (null / "vanilla" = unchanged vanilla behavior)
  * @property customMobIdsNormal Provider-specific mob ids drawn from for normal waves
  * @property customMobIdsOminous Provider-specific mob ids drawn from for ominous waves (falls back to normal if empty)
+ * @property isPaused When true, the chamber is inactive: no resets, no protection, no vault/tracking logic.
+ *   The record stays in the database for historical reference and can be resumed at any time.
  */
 data class Chamber(
     val id: Int,
@@ -59,7 +61,8 @@ data class Chamber(
     val spawnerCooldownMinutes: Int? = null,
     val customMobProvider: String? = null,
     val customMobIdsNormal: List<String> = emptyList(),
-    val customMobIdsOminous: List<String> = emptyList()
+    val customMobIdsOminous: List<String> = emptyList(),
+    val isPaused: Boolean = false
 ) {
     /**
      * Gets the loot table override for a specific vault type.

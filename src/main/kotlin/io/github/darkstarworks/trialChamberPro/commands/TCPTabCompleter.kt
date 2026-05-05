@@ -14,7 +14,8 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
     private val subcommands = listOf(
         "help", "reload", "generate", "paste", "scan", "setexit",
         "snapshot", "list", "info", "delete", "vault", "key",
-        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give"
+        "stats", "leaderboard", "lb", "top", "reset", "menu", "loot", "mobs", "give",
+        "pause", "resume"
     )
 
     private val snapshotActions = listOf("create", "restore")
@@ -48,7 +49,7 @@ class TCPTabCompleter(private val plugin: TrialChamberPro) : TabCompleter {
                             emptyList()
                         }
                     }
-                    "scan", "setexit", "info", "delete", "reset" -> {
+                    "scan", "setexit", "info", "delete", "reset", "pause", "resume" -> {
                         // Chamber names
                         getChamberNames().filter { it.startsWith(args[1].lowercase()) }
                     }

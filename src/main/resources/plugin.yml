@@ -32,6 +32,7 @@ permissions:
       tcp.admin.stats: true
       tcp.admin.generate: true
       tcp.admin.menu: true
+      tcp.admin.pause: true
       tcp.give: true
   tcp.admin.scan:
     description: Scan for chambers
@@ -59,6 +60,9 @@ permissions:
     default: op
   tcp.admin.menu:
     description: Open the admin GUI menu
+    default: op
+  tcp.admin.pause:
+    description: Pause or resume chambers via /tcp pause and /tcp resume
     default: op
   tcp.stats:
     description: View own statistics
