@@ -57,8 +57,9 @@ class SpawnerWaveListener(private val plugin: TrialChamberPro) : Listener {
         val block = world.getBlockAt(spawnerLocation)
         val isOminous = isTrialSpawnerOminous(block)
 
-        // Check if spawner is within a registered chamber
+        // Check if spawner is within a registered, non-paused chamber
         val chamber = plugin.chamberManager.getCachedChamberAt(spawnerLocation)
+            ?.takeIf { !it.isPaused }
 
         if (chamber == null) {
             // Wild spawner - configure cooldown if setting is enabled

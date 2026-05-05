@@ -33,6 +33,8 @@ All commands start with `/tcp` (short for TrialChamberPro). Most require specifi
 | `/tcp mobs <chamber> remove normal\|ominous <mobId>` | Remove a mob id from a chamber's pool | `tcp.admin.mobs` |
 | `/tcp mobs <chamber> list` | Show a chamber's mob provider config | `tcp.admin.mobs` |
 | `/tcp give <preset> [player] [amount]` | Give a preconfigured trial-spawner item — see [spawner\_presets.yml](../configuration/spawner-presets.yml.md) | `tcp.give` |
+| `/tcp pause <chamber>` | Pause a chamber (suspends resets, protection, vault interactions) | `tcp.admin.pause` |
+| `/tcp resume <chamber>` | Resume a paused chamber | `tcp.admin.pause` |
 | `/tcp vault reset <chamber> <player>` | Reset vault cooldowns | `tcp.admin.vault` |
 | `/tcp key give <player> <amount>` | Give trial keys | `tcp.admin.key` |
 | `/tcp key check <player>` | Check player's keys | `tcp.admin.key` |
@@ -416,6 +418,40 @@ When used with a chamber name, shows detailed chamber information:
 - Reset interval
 - Last reset time
 - Snapshot status
+
+---
+
+### `/tcp pause <chamber>` / `/tcp resume <chamber>`
+
+Pause or resume a registered chamber.
+
+**Usage:**
+```
+/tcp pause <chamber_name>
+/tcp resume <chamber_name>
+```
+
+**Permission:** `tcp.admin.pause`
+
+**What pausing does:**
+- DB record, stats, vault history, and snapshot are fully preserved — nothing is deleted.
+- Automatic resets stop scheduling for the chamber.
+- Protection events (block break/place, container access, mob griefing) are skipped.
+- Vault interactions are blocked with a player-visible message.
+- Player entry/exit tracking and spawner wave tracking are silenced.
+
+**What pausing does NOT do:**
+- Does not delete any data.
+- Does not remove mobs or items currently inside the chamber.
+- Does not prevent players from physically entering the region.
+
+**Use case:** Hardcore/anarchy servers where griefing protection is intentionally disabled. If enough critical blocks are demolished you can pause the chamber to freeze its record while the world state reflects the damage, then resume or delete once you decide what to do.
+
+<div data-gb-custom-block data-tag="hint" data-style="info">
+
+**Auto-pause:** Enable `protection.auto-pause-on-destruction: true` in config.yml to let the plugin pause chambers automatically once a configurable number of vaults or trial spawners are destroyed. See [config.yml](../configuration/config.yml.md) → Protection Settings.
+
+</div>
 
 ---
 

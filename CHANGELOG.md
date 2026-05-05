@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.3] - 2026-05-05
+### Added
+- **Chamber pause state.** Registered chambers can now be paused via `/tcp pause <name>` or the new toggle in the Chamber Detail GUI. Pausing preserves the full DB record — no history, stats, or vault data is lost — but suspends all active behavior: automatic resets stop scheduling, protection events skip the chamber, vault interactions are blocked with a `chamber-is-paused` message, and player/mob tracking is silenced. Resume at any time with `/tcp resume <name>` or the GUI toggle.
+- **Auto-pause on destruction.** New `protection.auto-pause-on-destruction: false` opt-in (disabled by default). When enabled, a MONITOR-priority break observer counts vault and trial spawner destructions inside a chamber; once the count reaches `protection.auto-pause-threshold` (default `6`), the chamber auto-pauses and ops with `tcp.discovery.notify` permission are notified. Counter resets on every pause/resume transition and on chamber reset, so a resumed chamber always starts fresh.
+- **New permission `tcp.admin.pause`** (default op) — required to use `/tcp pause` and `/tcp resume`.
+
+### Config additions
+- **`protection.auto-pause-on-destruction`** (default `false`) — master switch for the automatic pause on critical-block destruction.
+- **`protection.auto-pause-threshold`** (default `6`) — how many combined vault + trial spawner destructions inside a chamber trigger the auto-pause. Minimum effective value is `1`. A low value (1-2) catches individual mischief; the default (6) targets systematic demolition. Resets on every pause/resume cycle and on chamber reset.
+
+### Localization
+- New flat keys: `chamber-paused`, `chamber-resumed`, `chamber-already-paused`, `chamber-not-paused`, `chamber-is-paused`, `chamber-auto-paused` (with `{chamber}`, `{block}`, `{count}` placeholders), `info-paused`, `help-pause`, `help-resume`, `usage-pause`, `usage-resume`.
+- New GUI keys under `gui.chamber-detail`: `pause-toggle-name`, `pause-toggle-lore-active`, `pause-toggle-lore-paused`.
+
 ## [1.4.2] - 2026-05-02
 ### Fixed
 - **`//undo` no longer gets hijacked by TCP after a chamber generation.** The previous `UndoListener` cancelled `//undo` at HIGHEST priority and demanded `confirm` / `cancel` in chat — but the chat handler only cleared the *pending* state on cancel, leaving the per-player `last` entry forever. Once any chamber had been generated in the session, every subsequent `//undo` (even for unrelated WorldEdit edits made hours later, or by a moderator joining after the fact) was intercepted, the chat prompt fired, and the actual WorldEdit undo never ran. There was also no path to retry: cancelling re-armed the same intercept, and confirming only deleted the DB registration without rolling back the placed blocks. The whole interception model was wrong — chamber registration is a DB write, not a WorldEdit edit, so it doesn't belong on WE's undo stack to begin with. New behavior: TCP never cancels `//undo`. WorldEdit's stack is fully untouched, any depth, any time. A new passive `PostUndoHintListener` observes `//undo` (and `/undo`) at MONITOR priority without cancelling and, *only if the player happens to be standing inside a registered chamber* when they run undo, posts a one-line tip suggesting `/tcp delete <name>` to also clean up the registration. Generation now also emits a one-time `chamber-created-rollback-tip` immediately after `chamber-created` so users learn the two-step rollback (`//undo` for blocks → `/tcp delete` for registration) up front. `UndoListener.kt` and `UndoTracker.kt` deleted.
@@ -1201,6 +1215,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.3.3...v1.4.0

@@ -286,6 +286,8 @@ protection:
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
+  auto-pause-on-destruction: false
+  auto-pause-threshold: 6
 ```
 
 ### `enabled`
@@ -319,6 +321,24 @@ Stop mobs from breaking blocks (creeper explosions, endermen picking up blocks, 
 **Default:** `true`
 
 If WorldGuard is installed, respect its regions? Usually `true` for compatibility. TrialChamberPro's protection layers on top of WorldGuard's.
+
+### `auto-pause-on-destruction`
+**Default:** `false`
+
+When `true`, a MONITOR-priority observer counts vault and trial spawner destructions inside each chamber. Once the count reaches `auto-pause-threshold`, the chamber is automatically paused and all ops with `tcp.discovery.notify` permission receive a notification. The counter resets every time the chamber is paused, resumed, or reset.
+
+Designed for **hardcore/anarchy servers** where `prevent-block-break` is intentionally disabled. On servers with protection enabled, this setting is redundant (blocks can't be broken in the first place).
+
+### `auto-pause-threshold`
+**Default:** `6`
+
+How many combined vault + trial spawner destructions inside a chamber must occur before `auto-pause-on-destruction` fires. Minimum effective value is `1`.
+
+- **1-2** — catches individual mischief or accidents
+- **6 (default)** — targets systematic demolition (breaking 6 critical blocks suggests deliberate intent)
+- **10+** — only triggers on near-complete chamber destruction
+
+The counter resets to zero on every pause/resume cycle and on chamber reset, so a resumed chamber always starts fresh.
 
 ---
 

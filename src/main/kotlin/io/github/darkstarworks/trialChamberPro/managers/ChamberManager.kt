@@ -24,6 +24,24 @@ class ChamberManager(private val plugin: TrialChamberPro) {
         const val MAX_CACHE_SIZE = 100
     }
 
+    // In-memory destruction counters for auto-pause threshold tracking.
+    // Keyed by chamber ID; reset on any pause-state transition.
+    private val destructionCounters = java.util.concurrent.ConcurrentHashMap<Int, java.util.concurrent.atomic.AtomicInteger>()
+
+    /**
+     * Increments the destruction counter for a chamber and returns the new value.
+     * Used by the auto-pause threshold check in ProtectionListener.
+     */
+    fun incrementDestructionCounter(chamberId: Int): Int =
+        destructionCounters.getOrPut(chamberId) { java.util.concurrent.atomic.AtomicInteger(0) }.incrementAndGet()
+
+    /**
+     * Resets the destruction counter for a chamber (called on pause/resume transitions).
+     */
+    fun resetDestructionCounter(chamberId: Int) {
+        destructionCounters.remove(chamberId)
+    }
+
     @Suppress("UNCHECKED_CAST")
     private val chamberCache = java.util.Collections.synchronizedMap(
         object : LinkedHashMap<String, Chamber>(16, 0.75f, true) {
@@ -547,6 +565,10 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             decodeMobIds(rs.getString("custom_mob_ids_ominous"))
         } catch (_: Exception) { emptyList() }
 
+        val isPaused = try {
+            rs.getBoolean("is_paused")
+        } catch (_: Exception) { false }
+
         return Chamber(
             id = rs.getInt("id"),
             name = rs.getString("name"),
@@ -571,7 +593,8 @@ class ChamberManager(private val plugin: TrialChamberPro) {
             spawnerCooldownMinutes = spawnerCooldown,
             customMobProvider = customProvider,
             customMobIdsNormal = customNormal,
-            customMobIdsOminous = customOminous
+            customMobIdsOminous = customOminous,
+            isPaused = isPaused
         )
     }
 
@@ -655,6 +678,47 @@ class ChamberManager(private val plugin: TrialChamberPro) {
      */
     fun getCachedChamberAt(location: Location): Chamber? {
         return chamberCache.values.firstOrNull { it.contains(location) }
+    }
+
+    /**
+     * Sets the paused state of a chamber.
+     *
+     * Paused chambers stay in the database but have all active behavior suspended:
+     * no resets, no protection enforcement, no vault/tracking logic.
+     *
+     * @param chamberId The chamber ID
+     * @param paused True to pause, false to resume
+     * @return True if the update was applied
+     */
+    suspend fun setPaused(chamberId: Int, paused: Boolean): Boolean = withContext(Dispatchers.IO) {
+        try {
+            plugin.databaseManager.connection.use { conn ->
+                conn.prepareStatement("UPDATE chambers SET is_paused = ? WHERE id = ?").use { stmt ->
+                    stmt.setBoolean(1, paused)
+                    stmt.setInt(2, chamberId)
+
+                    val updated = stmt.executeUpdate() > 0
+                    if (updated) {
+                        val chamber = chamberCache.values.find { it.id == chamberId }
+                        if (chamber != null) {
+                            val refreshed = loadChamberFromDb(chamber.name)
+                            if (refreshed != null) {
+                                chamberCache[chamber.name] = refreshed
+                                updateCacheExpiry(chamber.name)
+                            }
+                        }
+                        // Clear destruction counter on every pause-state transition so the
+                        // count always starts from zero after a pause or a resume.
+                        resetDestructionCounter(chamberId)
+                        plugin.logger.info("Chamber $chamberId ${if (paused) "paused" else "resumed"}")
+                    }
+                    updated
+                }
+            }
+        } catch (e: Exception) {
+            plugin.logger.severe("Failed to set chamber paused state: ${e.message}")
+            false
+        }
     }
 
     /**

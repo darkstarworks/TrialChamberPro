@@ -78,7 +78,18 @@ protection:
   allow-pvp: true
   prevent-mob-griefing: true
   worldguard-integration: true
-
+  # Auto-pause: if enough vaults or trial spawners inside a registered chamber are
+  # destroyed, automatically pause the chamber so its record stays in the database
+  # but all active behavior (resets, protection, tracking, vault interactions) is
+  # suspended. Useful for "hardcore" servers where griefing protection is disabled.
+  # Paused chambers can be manually resumed at any time via /tcp resume <name> or the GUI.
+  auto-pause-on-destruction: false
+  # How many critical blocks (vaults + trial spawners combined) must be destroyed
+  # inside a chamber before auto-pause fires. Minimum effective value is 1.
+  # A low number (1-2) catches individual mischief; a higher number (6-10) targets
+  # deliberate full-chamber demolition. The counter resets whenever the chamber is
+  # paused or resumed, so a resumed chamber always starts counting from zero again.
+  auto-pause-threshold: 6
 # Trial Key settings
 trial-keys:
   fix-paper-bugs: true

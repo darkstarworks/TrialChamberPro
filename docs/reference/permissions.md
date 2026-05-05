@@ -155,6 +155,17 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 
 ---
 
+#### `tcp.admin.pause`
+**Description:** Pause and resume chambers *(1.4.3+)*
+**Default:** Operators only
+**Allows:**
+- `/tcp pause <chamber>` - Suspend all active chamber behavior while preserving the DB record
+- `/tcp resume <chamber>` - Restore a paused chamber to normal operation
+
+**Use this for:** Admins managing chambers on hardcore/anarchy servers where griefing protection is intentionally off. Pausing freezes the chamber's record without deleting any data.
+
+---
+
 #### `tcp.admin.stats`
 **Description:** View other players' statistics
 **Default:** Operators only
@@ -249,20 +260,6 @@ Can reset chambers, manage keys/vaults, view player stats, but can't modify cham
 **Balance Warning:** Giving this to regular players removes cooldown mechanics entirely. Consider carefully!
 
 </div>
-
----
-
-#### `tcp.bypass.droplock`
-**Description:** Bypass owner-only pickup restriction on vault loot drops *(1.2.28+)*
-**Default:** Operators only
-**Effect:**
-- Pick up vault loot dropped by other players even while `drop-loot-owner-only: true` is active and the grace period has not elapsed
-
-**Use this for:**
-- Staff retrieving items from AFK/offline players' vault openings
-- Recovery operations
-
-**Only relevant when** `vaults.drop-loot-at-vault: true` **and** `vaults.drop-loot-owner-only: true` in config.yml.
 
 ---
 
@@ -454,6 +451,7 @@ tcp.admin.*
   ├─ tcp.admin.scan        (Scan chambers)
   ├─ tcp.admin.snapshot    (Manage snapshots)
   ├─ tcp.admin.reset       (Force resets)
+  ├─ tcp.admin.pause       (Pause / resume chambers)
   ├─ tcp.admin.key         (Manage keys)
   ├─ tcp.admin.vault       (Manage vaults)
   ├─ tcp.admin.reload      (Reload config)
