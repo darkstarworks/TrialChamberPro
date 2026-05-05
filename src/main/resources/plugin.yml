@@ -1,7 +1,7 @@
 name: TrialChamberPro
 version: ${version}
 main: io.github.darkstarworks.trialChamberPro.TrialChamberPro
-api-version: '1.21'
+api-version: '26.1'
 prefix: TCP
 load: POSTWORLD
 authors: [ darkstarworks ]
