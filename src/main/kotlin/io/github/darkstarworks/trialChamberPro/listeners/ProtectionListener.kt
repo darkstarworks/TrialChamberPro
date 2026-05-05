@@ -1,6 +1,7 @@
 package io.github.darkstarworks.trialChamberPro.listeners
 
 import io.github.darkstarworks.trialChamberPro.TrialChamberPro
+import org.bukkit.Material
 import org.bukkit.block.Container
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -29,10 +30,56 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check bypass permission
         if (player.hasPermission("tcp.bypass.protection")) return
 
-        // Check if in chamber (synchronous, cache-based)
-        if (plugin.chamberManager.isInChamber(location)) {
-            event.isCancelled = true
-            player.sendMessage(plugin.getMessageComponent("cannot-break-blocks"))
+        // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
+        event.isCancelled = true
+        player.sendMessage(plugin.getMessageComponent("cannot-break-blocks"))
+    }
+
+    /**
+     * MONITOR-priority handler that auto-pauses a chamber when enough critical blocks
+     * (vaults or trial spawners) inside it have been destroyed.
+     *
+     * Only active when `protection.auto-pause-on-destruction: true`.
+     * `protection.auto-pause-threshold` (default 6) sets how many critical blocks must
+     * be broken before the pause fires — so 1–2 stray breaks don't trigger it, but
+     * systematic demolition (≥ threshold) does.
+     *
+     * The counter resets to zero whenever the chamber's pause state changes (via
+     * [ChamberManager.resetDestructionCounter]), so a resumed chamber always starts fresh.
+     *
+     * Fires only on breaks that were NOT cancelled by any higher-priority handler.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    fun onBlockBreakMonitor(event: BlockBreakEvent) {
+        if (!plugin.config.getBoolean("protection.auto-pause-on-destruction", false)) return
+        val type = event.block.type
+        if (type != Material.VAULT && type != Material.TRIAL_SPAWNER) return
+
+        val chamber = plugin.chamberManager.getCachedChamberAt(event.block.location) ?: return
+        if (chamber.isPaused) return
+
+        val threshold = plugin.config.getInt("protection.auto-pause-threshold", 6).coerceAtLeast(1)
+        val count = plugin.chamberManager.incrementDestructionCounter(chamber.id)
+        if (count < threshold) return
+
+        plugin.launchAsync {
+            val success = plugin.chamberManager.setPaused(chamber.id, true)
+            if (success) {
+                plugin.scheduler.runTask(Runnable {
+                    plugin.server.onlinePlayers
+                        .filter { it.hasPermission("tcp.discovery.notify") }
+                        .forEach { p ->
+                            p.sendMessage(plugin.getMessageComponent(
+                                "chamber-auto-paused",
+                                "chamber" to chamber.name,
+                                "block" to type.name.lowercase().replace('_', ' '),
+                                "count" to count
+                            ))
+                        }
+                })
+            }
         }
     }
 
@@ -47,11 +94,11 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Check bypass permission
         if (player.hasPermission("tcp.bypass.protection")) return
 
-        // Check if in chamber (synchronous, cache-based)
-        if (plugin.chamberManager.isInChamber(location)) {
-            event.isCancelled = true
-            player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
-        }
+        // Check if in chamber (synchronous, cache-based); skip protection for paused chambers
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
+        event.isCancelled = true
+        player.sendMessage(plugin.getMessageComponent("cannot-place-blocks"))
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -71,11 +118,11 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Allow vault access (handled by VaultInteractListener)
         if (block.type.name.contains("VAULT")) return
 
-        // Check if in chamber (cache-only, sync)
-        if (plugin.chamberManager.isInChamber(location)) {
-            event.isCancelled = true
-            player.sendMessage(plugin.getMessageComponent("cannot-access-container"))
-        }
+        // Check if in chamber (cache-only, sync); skip protection for paused chambers
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
+        event.isCancelled = true
+        player.sendMessage(plugin.getMessageComponent("cannot-access-container"))
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -85,10 +132,10 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
 
         val location = event.location
 
-        // Use cache-only sync check first; if any cached chamber contains the explosion center,
-        // filter out blocks that would be affected inside its bounds.
+        // Use cache-only sync check first; if any cached non-paused chamber contains the
+        // explosion center, filter out blocks that would be affected inside its bounds.
         val chamber = plugin.chamberManager.getCachedChamberAt(location)
-        if (chamber != null) {
+        if (chamber != null && !chamber.isPaused) {
             event.blockList().removeIf { block ->
                 chamber.contains(block.location)
             }
@@ -105,10 +152,10 @@ class ProtectionListener(private val plugin: TrialChamberPro) : Listener {
         // Allow players
         if (event.entity is Player) return
 
-        // Prevent endermen, silverfish, etc. from modifying blocks
-        if (plugin.chamberManager.isInChamber(location)) {
-            event.isCancelled = true
-        }
+        // Prevent endermen, silverfish, etc. from modifying blocks in non-paused chambers
+        val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
+        event.isCancelled = true
     }
 
     /**

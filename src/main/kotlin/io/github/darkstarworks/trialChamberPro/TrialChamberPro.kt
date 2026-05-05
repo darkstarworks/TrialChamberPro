@@ -129,7 +129,7 @@ class TrialChamberPro : JavaPlugin() {
     override fun onEnable() {
         // ASCII art banner
         logger.info("╔════════════════════════════════════╗")
-        logger.info("║   TrialChamberPro v${pluginMeta.version}          ║")
+        logger.info("║   TrialChamberPro v${pluginMeta.version}           ║")
         logger.info("║   Advanced Trial Chamber Manager   ║")
         logger.info("╚════════════════════════════════════╝")
 

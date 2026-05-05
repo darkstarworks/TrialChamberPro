@@ -30,6 +30,7 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
 
         // Use synchronous cache lookup so we can modify the event before it's processed
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
 
         // Track death statistics asynchronously
         plugin.launchAsync {
@@ -92,6 +93,7 @@ class PlayerDeathListener(private val plugin: TrialChamberPro) : Listener {
 
         // Use synchronous cache lookup, then track stats asynchronously
         val chamber = plugin.chamberManager.getCachedChamberAt(location) ?: return
+        if (chamber.isPaused) return
         plugin.launchAsync {
             plugin.statisticsManager.incrementMobsKilled(killer.uniqueId)
         }

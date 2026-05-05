@@ -59,6 +59,8 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             "loot" -> lootHandler.execute(sender, args)
             "mobs" -> mobsHandler.execute(sender, args)
             "give" -> giveHandler.execute(sender, args)
+            "pause" -> handlePause(sender, args)
+            "resume" -> handleResume(sender, args)
             else -> sender.sendMessage(plugin.getMessageComponent("unknown-command"))
         }
 
@@ -81,6 +83,8 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
         sender.sendMessage(plugin.getMessageComponent("help-setexit"))
         sender.sendMessage(plugin.getMessageComponent("help-snapshot"))
         sender.sendMessage(plugin.getMessageComponent("help-reset"))
+        sender.sendMessage(plugin.getMessageComponent("help-pause"))
+        sender.sendMessage(plugin.getMessageComponent("help-resume"))
         sender.sendMessage(plugin.getMessageComponent("help-delete"))
         // Loot & mobs
         sender.sendMessage(plugin.getMessageComponent("help-loot"))
@@ -311,6 +315,10 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
                 plugin.getMessage("info-snapshot-not-created")
             }
             sender.sendMessage(plugin.getMessageComponent("info-snapshot", "status" to snapshotStatus))
+
+            if (chamber.isPaused) {
+                sender.sendMessage(plugin.getMessageComponent("info-paused"))
+            }
         }
     }
 
@@ -396,6 +404,64 @@ class TCPCommand(private val plugin: TrialChamberPro) : CommandExecutor {
             val success = plugin.chamberManager.deleteChamber(chamberName)
             if (success) {
                 sender.sendMessage(plugin.getMessageComponent("chamber-deleted", "chamber" to chamberName))
+            } else {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+            }
+        }
+    }
+
+    private fun handlePause(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.pause")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        if (args.size < 2) {
+            sender.sendMessage(plugin.getMessageComponent("usage-pause"))
+            return
+        }
+        val chamberName = args[1]
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+            if (chamber.isPaused) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-already-paused", "chamber" to chamberName))
+                return@launchAsync
+            }
+            val success = plugin.chamberManager.setPaused(chamber.id, true)
+            if (success) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-paused", "chamber" to chamberName))
+            } else {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+            }
+        }
+    }
+
+    private fun handleResume(sender: CommandSender, args: Array<out String>) {
+        if (!sender.hasPermission("tcp.admin.pause")) {
+            sender.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        if (args.size < 2) {
+            sender.sendMessage(plugin.getMessageComponent("usage-resume"))
+            return
+        }
+        val chamberName = args[1]
+        plugin.launchAsync {
+            val chamber = plugin.chamberManager.getChamber(chamberName)
+            if (chamber == null) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
+                return@launchAsync
+            }
+            if (!chamber.isPaused) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-not-paused", "chamber" to chamberName))
+                return@launchAsync
+            }
+            val success = plugin.chamberManager.setPaused(chamber.id, false)
+            if (success) {
+                sender.sendMessage(plugin.getMessageComponent("chamber-resumed", "chamber" to chamberName))
             } else {
                 sender.sendMessage(plugin.getMessageComponent("chamber-not-found", "chamber" to chamberName))
             }

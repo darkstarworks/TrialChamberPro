@@ -72,6 +72,11 @@ class ChamberDetailView(
             handleSnapshotClick(player, event.isLeftClick, event.isShiftClick)
         }, 6, 3)
 
+        pane.addItem(GuiItem(createPauseToggleItem()) { event ->
+            event.isCancelled = true
+            handlePauseToggleClick(player)
+        }, 4, 4)
+
         pane.addItem(GuiComponents.backButton(plugin, "gui.common.dest-chambers") {
             menu.openChamberList(player)
         }, 0, 5)
@@ -202,6 +207,17 @@ class ChamberDetailView(
         )
     }
 
+    private fun createPauseToggleItem(): ItemStack =
+        GuiComponents.toggleItem(
+            plugin,
+            enabled = !chamber.isPaused,
+            labelKey = "gui.chamber-detail.pause-toggle-name",
+            descKey = if (chamber.isPaused)
+                "gui.chamber-detail.pause-toggle-lore-paused"
+            else
+                "gui.chamber-detail.pause-toggle-lore-active"
+        )
+
     // ==================== Click Handlers (unchanged behavior) ====================
 
     private fun handleLootKindClick(player: Player, kind: MenuService.LootKind) {
@@ -325,6 +341,32 @@ class ChamberDetailView(
                     }
                 }
             }
+        }
+    }
+
+    private fun handlePauseToggleClick(player: Player) {
+        if (!player.hasPermission("tcp.admin.pause")) {
+            player.sendMessage(plugin.getMessageComponent("no-permission"))
+            return
+        }
+        val nowPaused = !chamber.isPaused
+        plugin.launchAsync {
+            val success = plugin.chamberManager.setPaused(chamber.id, nowPaused)
+            plugin.scheduler.runAtEntity(player, Runnable {
+                if (success) {
+                    val msgKey = if (nowPaused) "chamber-paused" else "chamber-resumed"
+                    player.sendMessage(plugin.getMessageComponent(msgKey, "chamber" to chamber.name))
+                }
+                // Re-open the detail view so the toggle reflects the new state
+                plugin.launchAsync {
+                    val refreshed = plugin.chamberManager.getChamber(chamber.name)
+                    if (refreshed != null) {
+                        plugin.scheduler.runAtEntity(player, Runnable {
+                            menu.openChamberDetail(player, refreshed)
+                        })
+                    }
+                }
+            })
         }
     }
 
