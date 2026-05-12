@@ -2,15 +2,11 @@
 
 # TrialChamberPro
 
-### What's new in 1.4.0 / 1.4.1
+### What's new in 1.4.4
 
-- **MiniMessage everywhere.** Every message in `messages.yml` now accepts modern [MiniMessage](https://docs.advntr.dev/minimessage/format.html) syntax — gradients, click events, hover tooltips — alongside the classic `&` codes. Existing files keep working unchanged; opt in line by line.
-- **Smarter auto-discovery.** Natural Trial Chambers that span multiple adjacent chunks no longer register as several separate chambers. BFS results are automatically merged into the nearest existing chamber (configurable merge distance, hard volume cap) so your chamber list stays clean.
-- **Flatter admin GUI.** The redundant Settings → Plugin Settings → Global Settings click-path is gone. Global Settings and Protection Settings are now directly on the main menu — one click instead of three.
-- **Startup schema check for `messages.yml`.** If your file is missing keys after a plugin upgrade, you'll see a clear console warning listing every absent key and a four-step fix. No more silent `<missing: key.name>` placeholders in chat. Bypass with `debug.skip-messages-schema-check: true` if you prefer not to see it.
-- **Trial spawner wave tracking fixes.** `SpawnerWaveManager` now reads real mob-count values from `TrialSpawnerConfiguration` instead of a hardcoded guess. A periodic sweep force-completes stalled waves, and destroying a spawner mid-wave now clears its boss bar.
+- **Vanilla loot is now one copy-paste away.** Two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — ship inside `loot.yml` as a commented section. They're faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs, so if you (or your players) just want unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Uncomment the block, run `/tcp reload`, done.
 
-Plus everything from the 1.3.x line: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
+Plus everything from the 1.4.x line: **MiniMessage everywhere**, **smarter auto-discovery** that merges chambers spanning multiple chunks, a **flatter admin GUI**, a **startup schema check** for `messages.yml`, **trial spawner wave tracking fixes**, and the **chamber pause state** added in 1.4.3. And from 1.3.x: **custom mobs** (MythicMobs, EliteMobs, EcoMobs, LevelledMobs, InfernalMobs, Citizens), **fully translatable GUI** (~330 `gui.*` keys), **Bukkit events API**, **spawner presets**, **`/tcp give`**, and **Minecraft 26.x support** via the `-mc26` build.
 
 📘 **Full documentation:** https://darkstarworks.gitbook.io/darkstarworks-plugins/tcp-documentation — most questions are answered there, and every section below links to its own detailed page.
 

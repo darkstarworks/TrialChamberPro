@@ -34,6 +34,24 @@ TAB characters will cause the entire YAML file to fail to load silently. This re
 
 ---
 
+## 🪄 Want vanilla loot? It's already in the file.
+
+Everything in `loot.yml` is fully customisable — but if you (or your players) just want the unmodified Minecraft 1.21 Trial Chamber drops, you don't have to build them yourself. Two ready-to-use loot tables — **`vanilla-normal`** and **`vanilla-ominous`** — are bundled inside `loot.yml` as a commented section titled **`VANILLA-ACCURATE LOOT TABLES`**.
+
+They're faithful recreations transcribed directly from Mojang's own datapack JSONs (`data/minecraft/loot_table/chests/trial_chambers/*.json`), reproducing vanilla's three-pool structure (80/20 rare-or-common split, 1-3 common rolls, and a unique-item chance).
+
+**To activate them:**
+
+1. Open `plugins/TrialChamberPro/loot.yml`.
+2. Find the `VANILLA-ACCURATE LOOT TABLES` section.
+3. Copy the `vanilla-normal:` and/or `vanilla-ominous:` block, remove the leading `# ` from every line, and paste it under `loot-tables:` — either replacing the bundled `default` / `ominous-default` examples, or alongside them under a new name.
+4. Run `/tcp reload`.
+5. Either point existing chambers at the new table via the Chamber GUI → Settings → Loot Overrides, or rename your activated copy to `default` / `ominous-default` so every chamber picks it up automatically.
+
+The block includes inline comments explaining the small approximations the plugin's schema requires (e.g. vanilla's 25% unique-pool chance maps to the plugin's `min-rolls: 0, max-rolls: 1` ≈ 50%) so you can tune from there.
+
+---
+
 ## 🎯 Understanding Loot Tables
 
 A **loot table** is a collection of possible rewards. When a player opens a vault, the plugin:
