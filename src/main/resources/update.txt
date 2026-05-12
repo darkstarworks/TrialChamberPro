@@ -1,4 +1,7 @@
 <black>.
+<aqua>[1.4.4] <gray>- <white>2026-05-12
+<lime>+ <white>NEW: <green>Bundled vanilla-accurate loot tables — <yellow>vanilla-normal<green> and <yellow>vanilla-ominous<green> shipped as a commented section inside <yellow>loot.yml<green>. Faithful three-pool recreations transcribed from Mojang's own datapack JSONs. Uncomment to activate.
+<lime>+ <white>DOCS: <green><yellow>loot.yml<green> reference now opens with a "Want vanilla loot? It's already in the file." section explaining how to drop the bundled tables in.
 <aqua>[1.4.3] <gray>- <white>2026-05-05
 <lime>+ <white>NEW: <green>Chamber pause state — pause any chamber via <yellow>/tcp pause <name><green> or the GUI toggle. DB record, stats, and vault history are preserved; resets, protection, vault interactions, and mob tracking are suspended until you resume.
 <lime>+ <white>NEW: <green>Auto-pause on destruction (<yellow>protection.auto-pause-on-destruction<green>, default off). Once <yellow>protection.auto-pause-threshold<green> (default <yellow>6<green>) combined vaults + trial spawners are destroyed, the chamber pauses automatically and ops are notified. Counter resets on every pause/resume and on chamber reset.

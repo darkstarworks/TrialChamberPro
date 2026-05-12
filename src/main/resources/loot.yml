@@ -202,6 +202,469 @@ loot-tables:
 #
 # Note: GUI loot editor supports both legacy and multi-pool formats!
 # ============================================
+# VANILLA-ACCURATE LOOT TABLES (READY TO USE!)
+# ============================================
+# Faithful recreations of Minecraft's vanilla 1.21 Trial Chamber loot,
+# transcribed from the unmodified game's datapack JSONs at
+#   data/minecraft/loot_table/chests/trial_chambers/*.json
+#
+# Vanilla vaults use THREE pools that roll independently:
+#   1. rare-or-common — 1 item: 80% picked from rare table, 20% from common
+#   2. common         — 1-3 additional common items
+#   3. unique         — 25% chance for 1 ultra-rare item (normal vaults)
+#                       75% chance for 1 ultra-rare item (ominous vaults)
+#
+# To activate: copy a block below, remove the leading "# " from each line,
+# and paste it under `loot-tables:` (replacing or alongside `default` /
+# `ominous-default`). You can also reference these by name from per-chamber
+# loot overrides (Chamber GUI → Settings → Loot Overrides).
+#
+# Fidelity notes — places where the plugin's schema can't match vanilla 1:1:
+#  - Vanilla's "unique pool fires 25%/75% of the time" is expressed here as
+#    `min-rolls: 0, max-rolls: 1` (rolls 0 or 1 uniformly → ~50% per opening).
+#    For normal vaults this is ~2x more generous than vanilla; halve every
+#    unique-pool weight to compensate, or set `max-rolls: 0` to disable.
+#    For ominous vaults it's slightly stingier than vanilla 75% — bump
+#    weights if you want more uniques.
+#  - Vanilla `enchant_with_levels` (the enchanting-table algorithm) is
+#    approximated with `random-enchantment-pool` (picks ONE random enchant
+#    from the pool). Most server admins prefer this predictability.
+#  - Vanilla shield uses `set_damage` with fraction 0.5-1.0 → damage 0-168
+#    on a 336-max shield. Reproduced here as `durability-min: 0, max: 168`.
+#  - Vanilla ominous bottles use `set_ominous_bottle_amplifier` with a
+#    random amplifier range. Reproduced here as separate entries per Bad
+#    Omen level, with weights summing to vanilla's total weight.
+#
+# ---------- NORMAL VAULTS ----------
+#
+#  vanilla-normal:
+#    pools:
+#      # Pool 1 — 80% rare / 20% common, one roll. Approximated by mixing
+#      # rare entries (weight × 4) with common entries (weight × 1) in a
+#      # single 1-roll pool. Resulting rare share: (23×4)/((23×4)+(25×1)) = 78.6%
+#      - name: rare-or-common
+#        min-rolls: 1
+#        max-rolls: 1
+#        weighted-items:
+#          # --- rare entries (vanilla weight × 4) ---
+#          - type: EMERALD
+#            amount-min: 2
+#            amount-max: 4
+#            weight: 12.0
+#          - type: SHIELD
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 12.0
+#            durability-min: 0
+#            durability-max: 168       # vanilla: 0.5-1.0 of 336 max = 0-168 damage
+#          - type: BOW
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 12.0
+#            random-enchantment-pool:
+#              - "POWER:1:5"
+#              - "PUNCH:1:2"
+#              - "FLAME:1:1"
+#              - "INFINITY:1:1"
+#              - "UNBREAKING:1:3"
+#              - "MENDING:1:1"
+#          - type: CROSSBOW
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "PIERCING:1:4"
+#              - "MULTISHOT:1:1"
+#              - "QUICK_CHARGE:1:3"
+#              - "UNBREAKING:1:3"
+#              - "MENDING:1:1"
+#          - type: IRON_AXE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "SHARPNESS:1:5"
+#              - "EFFICIENCY:1:5"
+#              - "UNBREAKING:1:3"
+#              - "MENDING:1:1"
+#              - "FORTUNE:1:3"
+#          - type: IRON_CHESTPLATE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "PROTECTION:1:4"
+#              - "FIRE_PROTECTION:1:4"
+#              - "BLAST_PROTECTION:1:4"
+#              - "PROJECTILE_PROTECTION:1:4"
+#              - "UNBREAKING:1:3"
+#              - "MENDING:1:1"
+#          - type: GOLDEN_CARROT
+#            amount-min: 1
+#            amount-max: 2
+#            weight: 8.0
+#          - type: ENCHANTED_BOOK            # vanilla "combat" enchant pool
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "SHARPNESS:1:5"
+#              - "BANE_OF_ARTHROPODS:1:5"
+#              - "EFFICIENCY:1:5"
+#              - "FORTUNE:1:3"
+#              - "SILK_TOUCH:1:1"
+#              - "FEATHER_FALLING:1:4"
+#          - type: ENCHANTED_BOOK            # vanilla "trident" enchant pool
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "RIPTIDE:1:3"
+#              - "LOYALTY:1:3"
+#              - "CHANNELING:1:1"
+#              - "IMPALING:1:5"
+#              - "MENDING:1:1"
+#          - type: DIAMOND_CHESTPLATE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#            random-enchantment-pool:
+#              - "PROTECTION:1:4"
+#              - "UNBREAKING:1:3"
+#              - "MENDING:1:1"
+#          - type: DIAMOND_AXE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#            random-enchantment-pool:
+#              - "SHARPNESS:1:5"
+#              - "EFFICIENCY:1:5"
+#              - "UNBREAKING:1:3"
+#              - "FORTUNE:1:3"
+#          # --- common entries (vanilla weight × 1) ---
+#          - type: ARROW
+#            amount-min: 2
+#            amount-max: 8
+#            weight: 4.0
+#          - type: TIPPED_ARROW
+#            amount-min: 2
+#            amount-max: 8
+#            weight: 4.0
+#            potion-type: POISON
+#            potion-level: 0             # Poison I
+#          - type: EMERALD
+#            amount-min: 2
+#            amount-max: 4
+#            weight: 4.0
+#          - type: WIND_CHARGE
+#            amount-min: 1
+#            amount-max: 3
+#            weight: 3.0
+#          - type: IRON_INGOT
+#            amount-min: 1
+#            amount-max: 4
+#            weight: 3.0
+#          - type: HONEY_BOTTLE
+#            amount-min: 1
+#            amount-max: 2
+#            weight: 3.0
+#          - type: POTION                # vanilla amplifier 0-1, total weight 2 → split
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 0             # Bad Omen I
+#            name: "&5&lOminous Bottle I"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 1             # Bad Omen II
+#            name: "&5&lOminous Bottle II"
+#          - type: WIND_CHARGE
+#            amount-min: 4
+#            amount-max: 12
+#            weight: 1.0
+#          - type: DIAMOND
+#            amount-min: 1
+#            amount-max: 2
+#            weight: 1.0
+#
+#      # Pool 2 — common table, 1-3 rolls.
+#      - name: common
+#        min-rolls: 1
+#        max-rolls: 3
+#        weighted-items:
+#          - type: ARROW
+#            amount-min: 2
+#            amount-max: 8
+#            weight: 4.0
+#          - type: TIPPED_ARROW
+#            amount-min: 2
+#            amount-max: 8
+#            weight: 4.0
+#            potion-type: POISON
+#            potion-level: 0
+#          - type: EMERALD
+#            amount-min: 2
+#            amount-max: 4
+#            weight: 4.0
+#          - type: WIND_CHARGE
+#            amount-min: 1
+#            amount-max: 3
+#            weight: 3.0
+#          - type: IRON_INGOT
+#            amount-min: 1
+#            amount-max: 4
+#            weight: 3.0
+#          - type: HONEY_BOTTLE
+#            amount-min: 1
+#            amount-max: 2
+#            weight: 3.0
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 0
+#            name: "&5&lOminous Bottle I"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 1
+#            name: "&5&lOminous Bottle II"
+#          - type: WIND_CHARGE
+#            amount-min: 4
+#            amount-max: 12
+#            weight: 1.0
+#          - type: DIAMOND
+#            amount-min: 1
+#            amount-max: 2
+#            weight: 1.0
+#
+#      # Pool 3 — vanilla 25% chance for 1 unique. Plugin gives ~50% with
+#      # min-rolls 0, max-rolls 1 (see fidelity note above). Halve the
+#      # weights below to roughly hit vanilla's drop rate.
+#      - name: unique
+#        min-rolls: 0
+#        max-rolls: 1
+#        weighted-items:
+#          - type: GOLDEN_APPLE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#          - type: BOLT_ARMOR_TRIM_SMITHING_TEMPLATE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 3.0
+#          - type: GUSTER_BANNER_PATTERN
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 2.0
+#          - type: MUSIC_DISC_PRECIPICE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 2.0
+#          - type: TRIDENT
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#
+# ---------- OMINOUS VAULTS ----------
+#
+#  vanilla-ominous:
+#    pools:
+#      # Pool 1 — 80% ominous-rare / 20% ominous-common, one roll. Mixed
+#      # with rare × 2, common × 1. Rare share: (29×2)/((29×2)+(15×1)) = 79.5%
+#      - name: rare-or-common
+#        min-rolls: 1
+#        max-rolls: 1
+#        weighted-items:
+#          # --- ominous-rare entries (vanilla weight × 2) ---
+#          - type: EMERALD_BLOCK
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 10.0
+#          - type: IRON_BLOCK
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#          - type: CROSSBOW
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 8.0
+#            random-enchantment-pool:
+#              - "PIERCING:2:4"
+#              - "MULTISHOT:1:1"
+#              - "QUICK_CHARGE:2:3"
+#              - "UNBREAKING:2:3"
+#              - "MENDING:1:1"
+#          - type: GOLDEN_APPLE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 6.0
+#          - type: DIAMOND_AXE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 6.0
+#            random-enchantment-pool:
+#              - "SHARPNESS:3:5"
+#              - "EFFICIENCY:3:5"
+#              - "UNBREAKING:2:3"
+#              - "FORTUNE:2:3"
+#              - "MENDING:1:1"
+#          - type: DIAMOND_CHESTPLATE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 6.0
+#            random-enchantment-pool:
+#              - "PROTECTION:3:4"
+#              - "UNBREAKING:2:3"
+#              - "MENDING:1:1"
+#          - type: ENCHANTED_BOOK          # vanilla "ominous combat" pool
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#            random-enchantment-pool:
+#              - "KNOCKBACK:1:2"
+#              - "PUNCH:1:2"
+#              - "SMITE:1:5"
+#              - "LOOTING:1:3"
+#              - "MULTISHOT:1:1"
+#          - type: ENCHANTED_BOOK          # vanilla "mace" pool
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#            random-enchantment-pool:
+#              - "BREACH:1:4"
+#              - "DENSITY:1:5"
+#          - type: ENCHANTED_BOOK          # vanilla guaranteed wind_burst book
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 4.0
+#            enchantments:
+#              - "WIND_BURST:1"
+#          - type: DIAMOND_BLOCK
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 2.0
+#          # --- ominous-common entries (vanilla weight × 1) ---
+#          - type: EMERALD
+#            amount-min: 4
+#            amount-max: 10
+#            weight: 5.0
+#          - type: WIND_CHARGE
+#            amount-min: 8
+#            amount-max: 12
+#            weight: 4.0
+#          - type: TIPPED_ARROW
+#            amount-min: 4
+#            amount-max: 12
+#            weight: 3.0
+#            potion-type: SLOWNESS
+#            potion-level: 3             # Slowness IV (vanilla strong_slowness)
+#          - type: DIAMOND
+#            amount-min: 2
+#            amount-max: 3
+#            weight: 2.0
+#          - type: POTION                # vanilla amp 2-4, total weight 1 → split III/IV/V
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.33
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 2             # Bad Omen III
+#            name: "&5&lOminous Bottle III"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.33
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 3             # Bad Omen IV
+#            name: "&5&lOminous Bottle IV"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.34
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 4             # Bad Omen V (maximum)
+#            name: "&5&lOminous Bottle V"
+#
+#      # Pool 2 — ominous-common table, 1-3 rolls.
+#      - name: common
+#        min-rolls: 1
+#        max-rolls: 3
+#        weighted-items:
+#          - type: EMERALD
+#            amount-min: 4
+#            amount-max: 10
+#            weight: 5.0
+#          - type: WIND_CHARGE
+#            amount-min: 8
+#            amount-max: 12
+#            weight: 4.0
+#          - type: TIPPED_ARROW
+#            amount-min: 4
+#            amount-max: 12
+#            weight: 3.0
+#            potion-type: SLOWNESS
+#            potion-level: 3
+#          - type: DIAMOND
+#            amount-min: 2
+#            amount-max: 3
+#            weight: 2.0
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.33
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 2
+#            name: "&5&lOminous Bottle III"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.33
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 3
+#            name: "&5&lOminous Bottle IV"
+#          - type: POTION
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 0.34
+#            custom-effect-type: BAD_OMEN
+#            potion-level: 4
+#            name: "&5&lOminous Bottle V"
+#
+#      # Pool 3 — vanilla 75% chance for 1 ultra-rare. Plugin gives ~50%
+#      # (slightly stingier than vanilla; bump weights to compensate).
+#      - name: unique
+#        min-rolls: 0
+#        max-rolls: 1
+#        weighted-items:
+#          - type: ENCHANTED_GOLDEN_APPLE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 3.0
+#          - type: FLOW_ARMOR_TRIM_SMITHING_TEMPLATE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 3.0
+#          - type: FLOW_BANNER_PATTERN
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 2.0
+#          - type: MUSIC_DISC_CREATOR
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#          - type: HEAVY_CORE
+#            amount-min: 1
+#            amount-max: 1
+#            weight: 1.0
+#
+# ============================================
 # ADVANCED LOOT FEATURES (NEW!)
 # ============================================
 # Advanced features to create vanilla-like loot:
