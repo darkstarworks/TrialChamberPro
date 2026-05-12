@@ -12,6 +12,34 @@ Plus everything from the 1.4.x line: **MiniMessage everywhere**, **smarter auto-
 
 ---
 
+## 🎁 Win a Premium Module Licence
+
+Capture your best TrialChamberPro setup — a screenshot or short clip — and post it in **#showcase** on our Discord. The community votes via reactions, and the **3 most-loved entries each win a permanent premium licence** (TCP-WildSpawners or TCP-VaultCrates, your pick). Surprise bonuses for runners-up.
+
+👉 **[Join the Discord →](https://discord.gg/qwYcTpHsNC)**
+
+---
+
+## Premium Add-on Modules
+
+TrialChamberPro is, and always will be, **completely free**. But after a lot of requests from server owners wanting to push things further, we now offer optional premium modules for servers that need more.
+
+### 🔷 TCP-WildSpawners
+Place TCP preset spawners **anywhere on your survival map** — no Trial Chamber required. Hand them out via shops, crates, or staff commands. Wherever a player puts one down, it summons your custom mobs. Includes an in-game GUI editor, per-preset griefing protection, holograms, mob tether, creative pick-block, and state-preserving mining so players can relocate a live spawner without losing cooldown progress.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+👉 **[esmp.fun/plugins](https://esmp.fun/plugins)** — purchase & download
+
+### 🔶 TCP-VaultCrates
+The **first crate plugin that doesn't use chests.** Vanilla Trial Vaults are the only Minecraft block with built-in per-player loot state, two visual tiers (normal + ominous), a key mechanic, and a dramatic open animation that doesn't need a resource pack. TCP-VaultCrates lets you register vaults anywhere on your map as crates with configurable loot pools and per-tier keys. Hand keys out via shops, missions, or — when paired with TCP-WildSpawners — drop them from spawner mobs.
+
+Requires TrialChamberPro v1.4.0+ (free).
+
+👉 **[esmp.fun](https://esmp.fun/plugins)** — purchase & download
+
+---
+
 **The definitive Trial Chamber management plugin for multiplayer servers.**
 
 Transform Minecraft's Trial Chambers from single-use dungeons into renewable, multiplayer-ready content. Automatic resets, per-player loot, custom rewards, griefing protection — and it all works out of the box.
