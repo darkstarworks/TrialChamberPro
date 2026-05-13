@@ -53,6 +53,18 @@ TrialChamberPro fixes all of that: every player gets their own loot roll, chambe
 
 ---
 
+## Premium add-ons
+
+TrialChamberPro is the free foundation. Two premium modules extend it further:
+
+**[TCP-WildSpawners](https://esmp.fun/)** — Place trial spawners anywhere on the survival map, not just inside registered chambers. Players receive spawner items via shop plugins or staff commands, place them wherever they like, and custom-plugin mobs (MythicMobs, EliteMobs, etc.) spawn correctly. Includes configurable mining-and-redeploy (no Silk Touch required), per-spawner holograms, griefing protection, and a full in-game preset editor.
+
+**[TCP-VaultCrates](https://esmp.fun/)** — Turn any vanilla Vault block into a loot crate. Players open crates with keys earned in-game or purchased in a shop. Supports two-tier crates (normal / ominous), weighted loot pools, per-player and server-wide reset modes, and crate-key drops from TCP-WildSpawners mob kills. Full in-game editor included.
+
+Both modules require TrialChamberPro and are available on [Voxel.shop](https://voxel.shop/) and [esmp.fun](https://esmp.fun/) (Stripe + crypto, for regions where Voxel's payment processors don't operate).
+
+---
+
 ## Support
 
 * **[GitHub Issues](https://github.com/darkstarworks/TrialChamberPro/issues)** — bug reports, feature requests
