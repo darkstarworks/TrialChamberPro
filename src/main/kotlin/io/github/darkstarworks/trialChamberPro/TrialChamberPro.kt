@@ -347,7 +347,7 @@ class TrialChamberPro : JavaPlugin() {
                         io.github.darkstarworks.trialChamberPro.listeners.SpawnerPresetPlaceListener(this@TrialChamberPro),
                         this@TrialChamberPro
                     )
-                    // v1.4.4: allow Silk-Touch recovery of TCP-preset spawners
+                    // v1.4.5: allow Silk-Touch recovery of TCP-preset spawners
                     // placed outside any registered chamber.
                     server.pluginManager.registerEvents(
                         io.github.darkstarworks.trialChamberPro.listeners.OrphanSpawnerMineListener(this@TrialChamberPro),
