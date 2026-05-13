@@ -1229,6 +1229,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.1...v1.4.2
