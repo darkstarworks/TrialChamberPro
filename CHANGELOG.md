@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.5] - 2026-05-13
+### Fixed
+- **Orphaned spawner recovery.** TCP-preset trial spawners placed outside any registered chamber (via `/tcp give`) can now be retrieved with a **Silk Touch** tool. Previously, vanilla's silent no-drop behaviour applied to these blocks — once placed outside a chamber they were permanently stuck in the world. Without Silk Touch the break is blocked and a hint message appears (`orphan-spawner-needs-silk-touch` in `messages.yml`). Spawners inside a registered chamber are unaffected; those continue to be managed by `ProtectionListener` as before. If TCP-WildSpawners is also installed, wild-preset spawners are handled by its own mining simulation (no Silk Touch required) and this listener never fires for those blocks.
+
+### Localization
+- New key `orphan-spawner-needs-silk-touch` added to `messages.yml`.
+
 ## [1.4.4] - 2026-05-12
 ### Added
 - **Bundled vanilla-accurate loot tables.** `loot.yml` now ships two ready-to-use loot tables — `vanilla-normal` and `vanilla-ominous` — as a commented section titled "VANILLA-ACCURATE LOOT TABLES". Both are faithful three-pool recreations transcribed directly from Mojang's own datapack JSONs (`data/minecraft/loot_table/chests/trial_chambers/{reward,reward_common,reward_rare,reward_unique,reward_ominous,reward_ominous_common,reward_ominous_rare,reward_ominous_unique}.json`), reproducing vanilla's structure: pool 1 picks 1 item with an 80/20 rare-or-common split, pool 2 rolls 1-3 additional common items, pool 3 has a chance at a single ultra-rare item. Every fidelity compromise the plugin's schema imposes is documented inline — vanilla's 25%/75% unique-pool gate maps to `min-rolls: 0, max-rolls: 1` (≈50%) with tuning instructions; vanilla's `enchant_with_levels` algorithm is approximated with `random-enchantment-pool` (one random enchant per item); shield damage from `set_damage` fraction; ominous bottle amplifier ranges split into separate per-level entries (Bad Omen I/II for normal, III/IV/V for ominous). To activate: uncomment the desired block, paste under `loot-tables:`, optionally rename to `default` / `ominous-default`, and `/tcp reload`.

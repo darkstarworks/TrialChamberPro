@@ -22,7 +22,7 @@ The plugin does **not** generate the datapack for you — that's the part Mojang
 
 <div data-gb-custom-block data-tag="hint" data-style="warning">
 
-**Trial spawners only.** The YAML schema has no `material:` field — every preset always produces a `TRIAL_SPAWNER`. This is deliberate. Custom keys, vault crates, and other custom items are out of scope for this file (they belong to the planned premium "Vault Crate" module).
+**Trial spawners only.** The YAML schema has no `material:` field — every preset always produces a `TRIAL_SPAWNER`. This is deliberate. Custom crate keys and vault crate items are managed by the [TCP-VaultCrates](https://esmp.fun/) premium module, not this file.
 
 </div>
 
@@ -147,13 +147,16 @@ This means:
 
 <div data-gb-custom-block data-tag="hint" data-style="info">
 
-This is by design for the free tier. If your use case is selling sellable, placeable trial spawners that work with custom-plugin mobs anywhere on a survival map without chamber registration, that's the natural shape of an upcoming premium module — drop a note in the [Issues](https://github.com/darkstarworks/TrialChamberPro/issues) tracker if it'd be useful for your server.
+This is by design for the free tier. If your use case is deploying placeable trial spawners that work with custom-plugin mobs anywhere on a survival map — not confined to a registered chamber — that's exactly what the [TCP-WildSpawners](https://esmp.fun/) premium add-on provides.
 
 </div>
 
 ---
 
 ## ❓ Troubleshooting
+
+**Placed a preset spawner outside a chamber and can't mine it back**
+As of v1.4.5, TCP-preset spawners placed outside any registered chamber can be retrieved using a **Silk Touch** tool. Without Silk Touch the break is blocked and a hint message appears. Mining without Silk Touch (no tool requirement) is available for wild-preset spawners managed by [TCP-WildSpawners](https://esmp.fun/).
 
 **"Unknown preset" when running `/tcp give`**
 The preset id wasn't loaded. Check the server log on startup or after `/tcp reload` — parse failures and missing-config skips both log a warning.
