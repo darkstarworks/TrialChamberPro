@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.6] - 2026-05-14
+### Fixed
+- **Folia/Luminol: chamber reset no longer crashes when teleporting players out.** Calling `player.teleport()` on a Folia region thread throws `UnsupportedOperationException: Must use teleportAsync while in region threading`. `ResetManager.teleportPlayersOut` now uses `teleportAsync()` and chains the confirmation message + completion signal onto the returned `CompletableFuture`, so the reset sequence resumes only after every player has actually been moved.
+- **Folia/Luminol: GUI teleport buttons no longer crash.** The "Teleport to Exit" and "Teleport to Center" buttons in `ChamberDetailView`, and the "Teleport to Exit" button in `ChamberSettingsView`, were calling synchronous `teleport()` inside GUI click handlers (which run on the player's region thread on Folia). Switched to `teleportAsync()`.
+- **Folia/Luminol: spectator mode teleports no longer crash.** `SpectatorManager` uses `runAtEntity` for all player operations — both entering spectator mode (teleport to chamber center) and exiting it (teleport to exit location) were still using synchronous `teleport()` inside those callbacks. Switched to `teleportAsync()`. On Paper these calls are equivalent; on Folia the async variant is required.
+
 ## [1.4.5] - 2026-05-13
 ### Fixed
 - **TCP-preset spawners placed outside chambers can now be recovered with Silk Touch.** Vanilla trial spawners never drop anything when broken — not even with Silk Touch. TCP's protection listener only guards spawners *inside* registered chambers and returns early for anything outside them, meaning a spawner issued via `/tcp give` and placed anywhere on the map was permanently stuck there with no way to retrieve it. New `OrphanSpawnerMineListener` intercepts the break for any `TRIAL_SPAWNER` block carrying a `tcp:preset_id` tag that is not inside a chamber: with a Silk Touch tool the block is removed and the full preset item (PDC tag intact, so it can be re-placed and re-identified) drops naturally; without Silk Touch the break is cancelled and the player receives a hint. If the source preset has since been removed from `spawner_presets.yml`, a plain `trial_spawner` item is dropped as a fallback so the block is never permanently unrecoverable. TCP-WildSpawners (when installed) is unaffected: it drives mining through `BlockDamageEvent` and removes the block directly, so `BlockBreakEvent` never fires for spawners it manages.
@@ -1229,6 +1235,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.2...v1.4.3

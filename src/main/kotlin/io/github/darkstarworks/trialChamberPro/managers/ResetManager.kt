@@ -275,14 +275,14 @@ class ResetManager(private val plugin: TrialChamberPro) {
                                     else -> chamber.getExitLocation() ?: player.world.spawnLocation
                                 }
 
-                                player.teleport(destination)
-                                player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.name))
-
-                                // Track completion (thread-safe decrement)
-                                synchronized(this) {
-                                    remaining--
-                                    if (remaining == 0) {
-                                        continuation.resume(Unit) {}
+                                // teleportAsync is required on Folia/Luminol; sync teleport throws in region threads
+                                player.teleportAsync(destination).thenRun {
+                                    player.sendMessage(plugin.getMessageComponent("teleported-to-exit", "chamber" to chamber.name))
+                                    synchronized(this) {
+                                        remaining--
+                                        if (remaining == 0) {
+                                            continuation.resume(Unit) {}
+                                        }
                                     }
                                 }
                             }, Runnable {
