@@ -246,16 +246,18 @@ class ChamberDetailView(
                     player.sendMessage(plugin.getMessageComponent("gui-no-exit-location"))
                     return
                 }
-                player.teleport(exitLoc)
-                player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit", "chamber" to chamber.name))
+                player.teleportAsync(exitLoc).thenRun {
+                    player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit", "chamber" to chamber.name))
+                }
             }
             else -> {
                 val centerX = (chamber.minX + chamber.maxX) / 2.0
                 val centerY = (chamber.minY + chamber.maxY) / 2.0
                 val centerZ = (chamber.minZ + chamber.maxZ) / 2.0
                 val location = org.bukkit.Location(world, centerX, centerY, centerZ)
-                player.teleport(location)
-                player.sendMessage(plugin.getMessageComponent("gui-teleport-to-center", "chamber" to chamber.name))
+                player.teleportAsync(location).thenRun {
+                    player.sendMessage(plugin.getMessageComponent("gui-teleport-to-center", "chamber" to chamber.name))
+                }
             }
         }
         player.closeInventory()

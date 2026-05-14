@@ -117,12 +117,11 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
             // Put player in spectator mode (must be on entity's thread)
             player.gameMode = GameMode.SPECTATOR
 
-            // Teleport to chamber center
-            player.teleport(center)
-
-            // Send messages
-            player.sendMessage(startMessage)
-            player.sendMessage(exitHintMessage)
+            // Teleport to chamber center, then send messages once teleport completes
+            player.teleportAsync(center).thenRun {
+                player.sendMessage(startMessage)
+                player.sendMessage(exitHintMessage)
+            }
         })
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {
@@ -162,13 +161,12 @@ class SpectatorManager(private val plugin: TrialChamberPro) {
             // Restore game mode (must be on entity's thread)
             player.gameMode = data.previousGameMode
 
-            // Teleport if requested
+            // Teleport if requested, send message once complete (or immediately if no teleport)
             if (exitLocation != null) {
-                player.teleport(exitLocation)
+                player.teleportAsync(exitLocation).thenRun { player.sendMessage(exitMessage) }
+            } else {
+                player.sendMessage(exitMessage)
             }
-
-            // Send message
-            player.sendMessage(exitMessage)
         })
 
         if (plugin.config.getBoolean("debug.verbose-logging", false)) {

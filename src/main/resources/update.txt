@@ -1,4 +1,8 @@
 <black>.
+<aqua>[1.4.6] <gray>- <white>2026-05-14
+<lime>+ <white>FIX: <green>Folia/Luminol: chamber reset no longer crashes when teleporting players out (<yellow>Must use teleportAsync<green> error).
+<lime>+ <white>FIX: <green>Folia/Luminol: GUI teleport buttons (<yellow>Teleport to Exit<green>, <yellow>Teleport to Center<green>) no longer crash.
+<lime>+ <white>FIX: <green>Folia/Luminol: spectator mode enter/exit teleports no longer crash. Paper users: no change in behavior.
 <aqua>[1.4.4] <gray>- <white>2026-05-12
 <lime>+ <white>NEW: <green>Bundled vanilla-accurate loot tables — <yellow>vanilla-normal<green> and <yellow>vanilla-ominous<green> shipped as a commented section inside <yellow>loot.yml<green>. Faithful three-pool recreations transcribed from Mojang's own datapack JSONs. Uncomment to activate.
 <lime>+ <white>DOCS: <green><yellow>loot.yml<green> reference now opens with a "Want vanilla loot? It's already in the file." section explaining how to drop the bundled tables in.

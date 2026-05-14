@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.4.6] - 2026-05-14
+### Fixed
+- **Folia/Luminol: chamber reset no longer crashes when teleporting players out.** Calling `player.teleport()` on a Folia region thread throws `UnsupportedOperationException: Must use teleportAsync while in region threading`. `ResetManager.teleportPlayersOut` now uses `teleportAsync()` and chains the confirmation message + completion signal onto the returned `CompletableFuture`, so the reset sequence resumes only after every player has actually been moved.
+- **Folia/Luminol: GUI teleport buttons no longer crash.** The "Teleport to Exit" and "Teleport to Center" buttons in `ChamberDetailView`, and the "Teleport to Exit" button in `ChamberSettingsView`, were calling synchronous `teleport()` inside GUI click handlers (which run on the player's region thread on Folia). Switched to `teleportAsync()`.
+- **Folia/Luminol: spectator mode teleports no longer crash.** `SpectatorManager` uses `runAtEntity` for all player operations — both entering spectator mode (teleport to chamber center) and exiting it (teleport to exit location) were still using synchronous `teleport()` inside those callbacks. Switched to `teleportAsync()`. On Paper these calls are equivalent; on Folia the async variant is required.
+
 ## [1.4.5] - 2026-05-13
 ### Fixed
 - **Orphaned spawner recovery.** TCP-preset trial spawners placed outside any registered chamber (via `/tcp give`) can now be retrieved with a **Silk Touch** tool. Previously, vanilla's silent no-drop behaviour applied to these blocks — once placed outside a chamber they were permanently stuck in the world. Without Silk Touch the break is blocked and a hint message appears (`orphan-spawner-needs-silk-touch` in `messages.yml`). Spawners inside a registered chamber are unaffected; those continue to be managed by `ProtectionListener` as before. If TCP-WildSpawners is also installed, wild-preset spawners are handled by its own mining simulation (no Silk Touch required) and this listener never fires for those blocks.
@@ -1230,6 +1236,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
   - Protection listeners and optional integrations (WorldGuard, WorldEdit, PlaceholderAPI)
   - Statistics tracking and leaderboards
 
+[1.4.6]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.5...v1.4.6
+[1.4.5]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/darkstarworks/TrialChamberPro/compare/v1.4.1...v1.4.2

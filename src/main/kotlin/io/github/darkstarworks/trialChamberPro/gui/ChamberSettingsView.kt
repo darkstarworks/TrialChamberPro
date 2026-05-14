@@ -205,8 +205,9 @@ class ChamberSettingsView(
             player.sendMessage(plugin.getMessageComponent("gui-no-exit-location"))
             return
         }
-        player.teleport(exitLoc)
-        player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit"))
+        player.teleportAsync(exitLoc).thenRun {
+            player.sendMessage(plugin.getMessageComponent("gui-teleport-to-exit"))
+        }
         player.closeInventory()
     }
 
